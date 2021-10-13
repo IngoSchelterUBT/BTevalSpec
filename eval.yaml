@@ -1,0 +1,28 @@
+DESCRIPTION: '>'
+DIPOLE:
+- dipole.dat
+EXCIT: laser_profile.dat
+OPT:
+  FitSpectrum:
+    fit: false
+  FourierTransform:
+    fourier: true
+    min_pw: 17
+    smooth: 0
+    window: 0
+  PadeApprox:
+    pade: true
+    pade_dw: 1.0e-05
+    pade_smooth: 1.0e-07
+    pade_thin: 0
+    pade_wmax: 0.6
+SPEC:
+  excitations:
+    energies:
+    - 0
+    - 0.2
+    - 0.5
+    strenghts:
+    - 0
+    - 0.2
+    - 0.4

@@ -17,17 +17,24 @@ from pprint import pprint
 
 
 #Import Modules
-import Data
-
+import config
+import dipole
 
 #------------------------------------------------------------------------------#
 # Main
 #------------------------------------------------------------------------------#
 def main():
-  data = Data.Data()
-  #data.createConfig()
-  #data.readConfig()
-  #pprint(vars(data))
+  #Inizialize the object containing all the configuration information in eval.yaml
+  conf = config.Config()
+  #Inizialize a list of objects containing all configurations of all dipole files
+  dip = []
+  for i, fileName in enumerate(conf.dipoleFiles):
+    dip.append(dipole.Dipole(fileName))
+
+  pprint(vars(dip[0]))
+
+  #Do Fourier Transformation of the dipole moment file(s)
+
 
 #------------------------------------------------------------------------------#
 # Call main
