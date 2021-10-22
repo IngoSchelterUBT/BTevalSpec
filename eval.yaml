@@ -4,9 +4,9 @@ DIPOLE:
 EXCIT: laser_profile.dat
 OPT:
   FitSpectrum:
-    fit: false
+    fit: true
   FourierTransform:
-    fourier: true
+    fourier: false
     min_pw: 17
     smooth: 0
     window: 0

@@ -20,7 +20,7 @@ def writeEmptyConfig():
           }
  
   with open('eval.yaml','w') as file:
-    documents = yaml.dump(data,file)
+    yaml.dump(data,file)
 
 def readConfig():
   with open('eval.yaml') as file:

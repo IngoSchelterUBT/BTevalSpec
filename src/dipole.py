@@ -2,22 +2,24 @@
 import numpy as np
 
 #own module
-import inout
 import errorHandler as err
+import inout
 
 class Dipole:
 
-  def __init__(self,dipoleFile):
+  def __init__(self,fileName,dipoleId):
     #------------------------------------------------------------#
     ##############################################################
     # Read Diople-File after File for own dipole objects
     ##############################################################
-    dipoleFile = inout.readDipole(dipoleFile)
+    dipoleFile = inout.readDipole(fileName)
+    #ID for the dipole file, if there are multiple dipole files
+    self.dipoleId = dipoleId
     
     #Data of dipole file
     #number of atoms
     self.natoms = int(dipoleFile.get('NATOMS',[0])[0])
-    if self.natoms == 0: 
+    if self.natoms == 0:
       err.err(1,'There are no atoms in dipole file!')
     #number of atom types
     self.ntypes = int(dipoleFile.get('NTYPES',[0])[0])
@@ -34,17 +36,18 @@ class Dipole:
     totelec = sum(self.nelec)
     self.nelec = np.insert(self.nelec, 0, totelec, axis=0)
     #spacing of the used grid in bohr
-    self.dx = dipoleFile.get('DX',[0.])[0]
-    if self.dx == 0.:
+    self.dxyz = dipoleFile.get('DX',[0.])[0]
+    if self.dxyz == 0.:
       err.err(1, 'There is no grid spacing in dipole file!')
     #start time of propagation in rydberg units
     self.t_start = dipoleFile.get('T_START',[0.])[0]
     #length of time step in propagation
-    self.dt = dipoleFile.get('DT',0.)
+    self.dt = dipoleFile.get('DT',[0.])[0]
     if self.dt == 0.:
       err.errr(1, 'There is no time step in dipole file!')
     #boost energy of boost calculation in rydberg
     self.boostenergy = dipoleFile.get('BOOSTENERGY',[0.])[0]
     #k-vector of boost excitation 
     self.kvec = dipoleFile.get('BOOSTKVEC','empty')
-
+    #dipole moment for dipole file
+    self.dipData = np.loadtxt(fileName,comments='#')

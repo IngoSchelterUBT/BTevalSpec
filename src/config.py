@@ -14,6 +14,7 @@ class Config:
     configFile = inout.readConfig()
     # - configFile: dictionary for the configFile variables
     self.dipoleFiles = configFile.get('DIPOLE','dipole.dat')
+    self.numDipoleFiles = len(self.dipoleFiles)
     self.exitFile = configFile.get('EXCIT')
     
     ##############################################################
@@ -21,9 +22,9 @@ class Config:
     #boolean for fourier transformation
     self.fourier = configFile.get('OPT').get('FourierTransform').get('fourier',False)
     #Kaiser-Bessel window for fourier transformation
-    self.window = configFile.get('OPT').get('FourierTransform').get('window',0)
+    self.window = configFile.get('OPT').get('FourierTransform').get('window',0.)
     #smooth parameter for fourier tranformation
-    self.smooth = configFile.get('OPT').get('FourierTransform').get('smooth',0)
+    self.smooth = configFile.get('OPT').get('FourierTransform').get('smooth',0.)
     #default value for min. length of fourier tranform vector. Can increase the sampling rate of the ft. (default = 17)
     self.min_pw = int(configFile.get('OPT').get('FourierTransform').get('min_pw',17))
 

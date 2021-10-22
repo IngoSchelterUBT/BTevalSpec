@@ -16,9 +16,10 @@ from scipy.optimize import curve_fit
 from pprint import pprint
 
 
-#Import Modules
+#Import own Modules
 import config
 import dipole
+import fourierTransform as fourier
 
 #------------------------------------------------------------------------------#
 # Main
@@ -29,11 +30,15 @@ def main():
   #Inizialize a list of objects containing all configurations of all dipole files
   dip = []
   for i, fileName in enumerate(conf.dipoleFiles):
-    dip.append(dipole.Dipole(fileName))
+    dip.append(dipole.Dipole(fileName,i+1))
 
-  pprint(vars(dip[0]))
+  #pprint(vars(dip[0]))
 
   #Do Fourier Transformation of the dipole moment file(s)
+  if conf.fourier or conf.fit:
+    ft = []
+    for i, fileName in enumerate(conf.dipoleFiles):
+      ft.append(fourier.FT(conf,dip[i]))
 
 
 #------------------------------------------------------------------------------#
