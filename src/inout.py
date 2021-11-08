@@ -12,14 +12,14 @@ def writeEmptyConfig():
                       'PadeApprox' : {  'pade' : False, 'pade_wmax' : 0.6, 'pade_dw' : 0.00001, 'pade_smooth' : 0.0000001,
                                         'pade_thin' : 0
                                      },
-                      'FitSpectrum' : { 'fit' : False },
+                      'FitSpectrum' : { 'fit' : False, 'fit_guess' : False },
                     },
             'SPEC' : { 'excitations' : { 'energies' : [0, 0.2, 0.5], 'strenghts' : [0, 0.2, 0.4]
                                       },
                     },
           }
  
-  with open('eval.yaml','w') as file:
+  with open('eval_template.yaml','w') as file:
     yaml.dump(data,file)
 
 def readConfig():
@@ -63,7 +63,6 @@ def readDipole(dipolefile):
   elif dipole.get('DIP0')[-1] != 'dip_ry':
     err.err(1,'unit of DIP0 unknown!')
   
-  #To Do: Kommasepariertes Array als String umformatieren als numpy array!
   for k, v in dipole.items():
     if ',' in v[0]:
       dipole[k] = np.array([float(i) for i in v[0].split(',')]) #modifiziere v[0]: dort steht der value drinnen, d. h. wenn etwas Komma seperiertes ist dann aendere den value zu einer numpy list

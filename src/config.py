@@ -45,3 +45,4 @@ class Config:
     ##############################################################
     #Config for Fit calculation
     self.fit = configFile.get('OPT').get('FitSpectrum').get('fit',False)
+    self.fit_guess = configFile.get('OPT').get('FitSpectrum').get('fit_guess',False)

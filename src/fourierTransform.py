@@ -10,14 +10,14 @@ import errorHandler as err
 
 class FT:
   
-  def __init__(self,config,dipole):
+  def __init__(self,config,dipole,Id):
     #Save all the information needed for the fit, either from dipole files or from reading the fourier transformed dipole moment files
     #if ft should be transformed than the values for the fourier transformation are also needed
 
     ################################
     #information out of dipole file
     #id of fourier transform
-    self.ftId = dipole.dipoleId
+    self.ftId = Id
 
     ################################
     if config.fourier:
@@ -32,9 +32,8 @@ class FT:
       self.writeFT()
     elif not config.fourier and config.fit:
       #read propagation time and k-vector out of head Osci files
-      self.readOsci()
-
       #read fourier transformation out of Osci files, PW-Spectrum ist not needed
+      self.readOsci()
 
 
 
@@ -83,8 +82,6 @@ class FT:
       ft_imag = np.imag(ft)
       self.osci.append(np.column_stack([freq,ft_real,ft_imag]))
 
-    np.savetxt('test_osci.dat',self.osci[0])
-
     #calculate the pw spectrum
     self.pw = []
     
@@ -123,7 +120,7 @@ class FT:
     #N is length of the ft-vector
 
     #drop DC
-    dc = sum(tfunc)
+    dc = np.sum(tfunc)
     tfunc = tfunc - dc/float(len(tfunc))
 
 
