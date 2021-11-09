@@ -142,18 +142,9 @@ class FT:
 
   #Routine for writing the fourier transformations (osci) and pw-spectrums to file
   def writeFT(self):
-    #Save head information as dictionary
-    headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec.astype(str).tolist()}
-    
-    headDictStr = yaml.dump(headDict)
-    
-    head = str()
-    for i, line in enumerate(headDictStr.splitlines()):
-      if i == 0:
-        head += ('!BT ' + line)
-      else:
-        head += ('\n' + '!BT ' + line)
-    
+    #make Header
+    head = self.makeHeader()
+
     #Osci
     headOsci = head + '\n' + 'Energy (Ry) | real part of FT | imag part of FT'
     #create folder Osci, if it does not exist or delete all 'Osci_Id'-files in directory
@@ -174,9 +165,37 @@ class FT:
     for i in range(len(self.pw)):
       np.savetxt('PW/PW_' + str(self.ftId) + self.getDir(i),self.pw[i],header=headPW)
 
+  #Routine for making header as yaml-dictionary
+  def makeHeader(self):
+    #Save head information as dictionary
+    headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec.astype(str).tolist()}
+    
+    headDictStr = yaml.dump(headDict)
+    
+    head = str()
+    for i, line in enumerate(headDictStr.splitlines()):
+      if i == 0:
+        head += ('!BT ' + line)
+      else:
+        head += ('\n' + '!BT ' + line)
+    
+    return head
+
+
 
   #Routine for reading the osci-files
   def readOsci(self):
+    #Read head of Osci-file in x-direction
+    self.readHeaderOsci()
+
+    #Read the fourier transformation itself
+    self.osci = []
+
+    for i in range(3):
+      self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + self.getDir(i)))
+
+  #Routine for reading header information in osci-files with ftId (only x-direction)
+  def readHeaderOsci(self):
     try:
       OsciFile = open('Osci/Osci_' + str(self.ftId) + 'x','r')
     except:
@@ -204,12 +223,6 @@ class FT:
     if self.kvec == 0:
       err(1,'There is no kvec in Osci file!')
     self.kvec = np.array(self.kvec,dtype=float)
-    
-    #Read the fourier transformation itself
-    self.osci = []
-
-    for i in range(3):
-      self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + self.getDir(i)))
 
   #Get direction
   def getDir(self,i):

@@ -92,14 +92,21 @@ class Pade:
     m = int(2*(m/2)) #ensure m to be even by integer division
     n = int(m/2)
 
-    #Remove DC component of the dipole moment
-    dip = dip - np.sum(dip)/(m+1)
-
     #Get time step and propagation time
     t_start = time[0]
     t_stop = time[m]
     t_prop = t_stop - t_start
     dt = t_prop/m
+    
+    #Thin: Remove every 2nd line from the file starting at line 2
+    if config.pade_thin > 0:
+      for i in range(config.pade_thin):
+        time = np.delete(time, np.arange(0, time.size, 2))
+        func = np.delete(func, np.arange(0, func.size, 2))
+        dt = 2.*dt
+        
+    #Remove DC component of the dipole moment
+    dip = dip - np.sum(dip)/(m+1)
 
     #Get decay rate of the exponential function and apply to the dipole data
     #eta=-log(decayFraction)/t_prop

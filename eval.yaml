@@ -7,7 +7,7 @@ OPT:
     fit: false
     fit_guess: true
   FourierTransform:
-    fourier: false
+    fourier: true
     min_pw: 17
     smooth: 0
     window: 0
