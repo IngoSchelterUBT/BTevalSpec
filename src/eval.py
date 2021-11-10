@@ -49,6 +49,7 @@ def main():
   #Do Fourier Transformation of the dipole moment file(s) of if only fit is true
   #than read the Fourier Transformation
   if conf.fourier or conf.fit:
+    if conf.fourier: inout.cleanFT() #delete Osci and PW folder
     ft = []
     for i, fileName in enumerate(conf.dipoleFiles):
       ft.append(fourier.FT(conf,dip[i],i+1))
@@ -56,8 +57,8 @@ def main():
       ft.append(fourier.FT(conf,dip[3],4,trace=True))
 
   #Do Pade Approximation of the dipole moment file(s)
-  #To Do: insert boolean for making guess in fit
   if conf.pade or conf.fit_guess:
+    if conf.pade: inout.cleanPade() #delete PADE folder
     pade = []
     for i, fileName in enumerate(conf.dipoleFiles):
       pade.append(padeApprox.Pade(conf,dip[i],i+1))

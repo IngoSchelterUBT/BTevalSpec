@@ -1,5 +1,7 @@
 import yaml
 import numpy as np
+import shutil
+import os
 
 import errorHandler as err
 
@@ -28,3 +30,13 @@ def readConfig():
     
   return config
 
+
+def cleanFT():
+  if os.path.exists('Osci'):
+    shutil.rmtree('Osci')
+  if os.path.exists('PW'):
+    shutil.rmtree('PW')
+
+def cleanPade():
+  if os.path.exists('PADE'):
+    shutil.rmtree('PADE')
