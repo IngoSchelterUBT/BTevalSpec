@@ -36,10 +36,12 @@ def main():
   if conf.fourier or conf.pade:
     for i, fileName in enumerate(conf.dipoleFiles):
       dip.append(dipole.Dipole(fileName,i+1))
+    if conf.numDipoleFiles == 3:
+      dip.append(dipole.Dipole(conf.dipoleFiles,4))
   elif not conf.pade and not conf.fourier and (conf.fit or conf.fit_guess):
     #Construct dummy dip list. In this case the dipole moment is not needed
     #to be read.
-    for i, fileName in enumerate(conf.dipoleFiles):
+    for i in range(conf.numDipoleFiles):
       dip.append(0)
 
   #pprint(vars(dip[0]))
@@ -50,6 +52,8 @@ def main():
     ft = []
     for i, fileName in enumerate(conf.dipoleFiles):
       ft.append(fourier.FT(conf,dip[i],i+1))
+    if conf.numDipoleFiles == 3:
+      ft.append(fourier.FT(conf,dip[3],4,trace=True))
 
   #Do Pade Approximation of the dipole moment file(s)
   #To Do: insert boolean for making guess in fit
@@ -57,6 +61,8 @@ def main():
     pade = []
     for i, fileName in enumerate(conf.dipoleFiles):
       pade.append(padeApprox.Pade(conf,dip[i],i+1))
+    if conf.numDipoleFiles == 3:
+      pade.append(padeApprox.Pade(conf,dip[3],4,trace=True))
 
 
 #------------------------------------------------------------------------------#

@@ -10,7 +10,7 @@ import errorHandler as err
 
 class FT:
   
-  def __init__(self,config,dipole,Id):
+  def __init__(self,config,dipole,Id,trace=False):
     #Save all the information needed for the fit, either from dipole files or from reading the fourier transformed dipole moment files
     #if ft should be transformed than the values for the fourier transformation are also needed
 
@@ -29,11 +29,11 @@ class FT:
       self.calcFT(config,dipole)
 
       #write fourier transformation and pw-spectrum
-      self.writeFT()
+      self.writeFT(trace)
     elif not config.fourier and config.fit:
       #read propagation time and k-vector out of head Osci files
       #read fourier transformation out of Osci files, PW-Spectrum ist not needed
-      self.readOsci()
+      self.readOsci(trace)
 
 
 
@@ -90,7 +90,6 @@ class FT:
                               2**pw2,dipole.dt)
       self.pw.append(np.column_stack([freqPw,powerSpec]))
 
-    np.savetxt('test_pw.dat',self.pw[0])
 
 
     #output of osci and pw with the header cosisting the propagation time and the kvector
@@ -141,34 +140,48 @@ class FT:
     return pw
 
   #Routine for writing the fourier transformations (osci) and pw-spectrums to file
-  def writeFT(self):
+  def writeFT(self,trace=False):
     #make Header
-    head = self.makeHeader()
-
-    #Osci
+    head = self.makeHeader(trace)
     headOsci = head + '\n' + 'Energy (Ry) | real part of FT | imag part of FT'
     #create folder Osci, if it does not exist or delete all 'Osci_Id'-files in directory
     if not os.path.exists('Osci'):
       os.makedirs('Osci')
-
-    #Save all the Osci-files in directory
-    for i in range(len(self.osci)):
-      np.savetxt('Osci/Osci_' + str(self.ftId) + self.getDir(i),self.osci[i],header=headOsci)
-
-    #PW
     headPW = head + '\n' + 'Energy (Ry) | power spectrum'
     #create folder PW, if it does not exist or delete all 'PW_Id'-files in directory
     if not os.path.exists('PW'):
       os.makedirs('PW')
 
-    #Save all the PW-files in directory
-    for i in range(len(self.pw)):
-      np.savetxt('PW/PW_' + str(self.ftId) + self.getDir(i),self.pw[i],header=headPW)
+    if not trace:
+      #Osci
+      #Save all the Osci-files in directory
+      for i in range(len(self.osci)):
+        np.savetxt('Osci/Osci_' + str(self.ftId) + self.getDir(i),self.osci[i],header=headOsci)
+
+      #PW
+      #Save all the PW-files in directory
+      for i in range(len(self.pw)):
+        np.savetxt('PW/PW_' + str(self.ftId) + self.getDir(i),self.pw[i],header=headPW)
+    else:
+      #Osci
+      #Save the trace Osci-file in directory
+      for i in range(len(self.osci)): #is only one osci
+        np.savetxt('Osci/Osci',self.osci[i],header=headOsci)
+
+      #PW
+      #Save the trace PW-file in directory
+      for i in range(len(self.pw)): #is only one pw
+        np.savetxt('PW/PW',self.pw[i],header=headPW)
+      
 
   #Routine for making header as yaml-dictionary
-  def makeHeader(self):
-    #Save head information as dictionary
-    headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec.astype(str).tolist()}
+  def makeHeader(self,trace):
+    if not trace:
+      #Save head information as dictionary
+      headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec.astype(str).tolist()}
+    else:
+      headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec}
+
     
     headDictStr = yaml.dump(headDict)
     
@@ -184,20 +197,26 @@ class FT:
 
 
   #Routine for reading the osci-files
-  def readOsci(self):
+  def readOsci(self,trace=False):
     #Read head of Osci-file in x-direction
-    self.readHeaderOsci()
+    self.readHeaderOsci(trace)
 
     #Read the fourier transformation itself
     self.osci = []
 
-    for i in range(3):
-      self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + self.getDir(i)))
+    if not trace:
+      for i in range(3):
+        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + self.getDir(i)))
+    else:
+      self.osci.append(np.loadtxt('Osci/Osci'))
 
   #Routine for reading header information in osci-files with ftId (only x-direction)
-  def readHeaderOsci(self):
+  def readHeaderOsci(self,trace=False):
     try:
-      OsciFile = open('Osci/Osci_' + str(self.ftId) + 'x','r')
+      if not trace:
+        OsciFile = open('Osci/Osci_' + str(self.ftId) + 'x','r')
+      else:
+        OsciFile = open('Osci/Osci')
     except:
       err.err(1,('You are trying to do a fit (with no Fourier Trafo) but there' +
                 ' is no corresponding Osci-file in the Osci directory'))

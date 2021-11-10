@@ -14,7 +14,10 @@ class Config:
     configFile = inout.readConfig()
     # - configFile: dictionary for the configFile variables
     self.dipoleFiles = configFile.get('DIPOLE','dipole.dat')
-    self.numDipoleFiles = len(self.dipoleFiles)
+    if isinstance(self.dipoleFiles, list):
+      self.numDipoleFiles = len(self.dipoleFiles)
+    else:
+      self.numDipoleFiles = 1
     self.exitFile = configFile.get('EXCIT')
     
     ##############################################################

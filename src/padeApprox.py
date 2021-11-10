@@ -18,7 +18,7 @@ import f90_tools.mathtools as mathtools
 
 class Pade:
   
-  def __init__(self,config,dipole,Id):
+  def __init__(self,config,dipole,Id,trace=False):
     #Save all the information needed for the fit, either from dipole files or from reading the fourier transformed dipole moment files
     #if ft should be transformed than the values for the fourier transformation are also needed
 
@@ -37,10 +37,10 @@ class Pade:
       self.calcPade(config,dipole)
 
       #write Pade_Osci_* files in PADE directory
-      self.writePade()
+      self.writePade(trace)
     elif not config.pade and config.fit_guess:
       #read Pade_Osci_* files in PADE directory
-      self.readPadeOsci()
+      self.readPadeOsci(trace)
 
 
 
@@ -140,30 +140,41 @@ class Pade:
     return mu
 
   #Routine for writing the fourier transformations (osci) and pw-spectrums to file
-  def writePade(self):
+  def writePade(self,trace=False):
     #PadeOsci
     headPadeOsci = 'Energy (Ry) | imag part of pade approximation'
     #create folder PADE, if it does not exist or delete all 'Pade_Osci_Id'-files in directory
     if not os.path.exists('PADE'):
       os.makedirs('PADE')
 
-    #Save all the Pade_Osci-files in directory
-    for i in range(len(self.padeOsci)):
-      np.savetxt('PADE/Pade_Osci_' + str(self.padeId) + self.getDir(i),self.padeOsci[i],header=headPadeOsci)
+    if not trace:
+      #Save all the Pade_Osci-files in directory
+      for i in range(len(self.padeOsci)):
+        np.savetxt('PADE/Pade_Osci_' + str(self.padeId) + self.getDir(i),self.padeOsci[i],header=headPadeOsci)
+    else:
+      #Save trace Pade-file in directory
+      for i in range(len(self.padeOsci)):
+        np.savetxt('PADE/Pade_Osci',self.padeOsci[i],header=headPadeOsci)
 
 
   #Routine for reading the osci-files
-  def readPadeOsci(self):
+  def readPadeOsci(self,trace=False):
     try:
-      PadeOsciFile = open('PADE/Pade_Osci_' + str(self.padeId) + 'x','r')
+      if not trace:
+        PadeOsciFile = open('PADE/Pade_Osci_' + str(self.padeId) + 'x','r')
+      else:
+        PadeOsciFile = open('PADE/Pade_Osci','r')
     except:
       err.err(1,('You are trying to do a fit_guess (with no PADE-Approximation) but there' +
                 ' is no corresponding Pade-file in the PADE directory'))
     #Read the fourier transformation itself
     self.padeOsci = []
 
-    for i in range(3):
-      self.padeOsci.append(np.loadtxt('PADE/Pade_Osci_' + str(self.padeId) + self.getDir(i)))
+    if not trace:
+      for i in range(3):
+        self.padeOsci.append(np.loadtxt('PADE/Pade_Osci_' + str(self.padeId) + self.getDir(i)))
+    else:
+      self.padeOsci_append(np.loadtxt('PADE/Pade_Osci'))
 
   #Get direction
   def getDir(self,i):
