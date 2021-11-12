@@ -13,6 +13,7 @@ class Dipole:
       ##############################################################
       # Read all three dipole files for building trace
       ##############################################################
+      self.trace = True
       dipoleHeader = []
       kvecMatrix = np.empty((0,3), float)
       dipole = []
@@ -40,6 +41,7 @@ class Dipole:
       ##############################################################
       # Read Diople-File for creating dipole object
       ##############################################################
+      self.trace = False
       #dipoleFile ist the head information of the dipole file as dictionary
       dipoleFile = self.readDipoleHeader(fileName)
       #ID for the dipole file, if there are multiple dipole files
