@@ -21,6 +21,7 @@ import config
 import dipole
 import fourierTransform as fourier
 import padeApprox
+import specFit
 import inout
 
 #------------------------------------------------------------------------------#
@@ -35,35 +36,48 @@ def main():
   dip = []
   if conf.fourier or conf.pade:
     for i, fileName in enumerate(conf.dipoleFiles):
-      dip.append(dipole.Dipole(fileName,i+1))
+      dip.append(dipole.Dipole(fileName,i))
     if conf.numDipoleFiles == 3:
-      dip.append(dipole.Dipole(conf.dipoleFiles,4))
+      dip.append(dipole.Dipole(conf.dipoleFiles,3,calcFlag='trace'))
   elif not conf.pade and not conf.fourier and (conf.fit or conf.fit_guess):
     #Construct dummy dip list. In this case the dipole moment is not needed
     #to be read.
-    for i in range(conf.numDipoleFiles):
+    for i in range(conf.numDipoleFiles+1):
       dip.append(0)
 
-  #pprint(vars(dip[0]))
 
   #Do Fourier Transformation of the dipole moment file(s) of if only fit is true
   #than read the Fourier Transformation
+  ft = []
   if conf.fourier or conf.fit:
     if conf.fourier: inout.cleanFT() #delete Osci and PW folder
-    ft = []
     for i, fileName in enumerate(conf.dipoleFiles):
-      ft.append(fourier.FT(conf,dip[i],i+1))
+      ft.append(fourier.FT(conf,dip[i],i))
     if conf.numDipoleFiles == 3:
-      ft.append(fourier.FT(conf,dip[3],4,trace=True))
+      ft.append(fourier.FT(conf,dip[3],3,calcFlag='trace'))
 
   #Do Pade Approximation of the dipole moment file(s)
+  pade = []
   if conf.pade or conf.fit_guess:
     if conf.pade: inout.cleanPade() #delete PADE folder
-    pade = []
     for i, fileName in enumerate(conf.dipoleFiles):
-      pade.append(padeApprox.Pade(conf,dip[i],i+1))
+      pade.append(padeApprox.Pade(conf,dip[i],i))
     if conf.numDipoleFiles == 3:
-      pade.append(padeApprox.Pade(conf,dip[3],4,trace=True))
+      pade.append(padeApprox.Pade(conf,dip[3],3,calcFlag='trace'))
+  elif not conf.pade and conf.fit and not conf.fit_guess:
+    #construct dummy pade list
+    for i in range(conf.numDipoleFiles+1):
+      pade.append(0)
+      
+
+
+  #Do Fit of the spectrum
+  if conf.fit:
+    fit = []
+    for i, fileName in enumerate(conf.dipoleFiles):
+      fit.append(specFit.Fit(conf,ft[i],pade[i],i))
+    if conf.numDipoleFiles == 3:
+      fit.append(specFit.Fit(conf,ft[3],pade[3],3,calcFlag='trace'))
 
 
 #------------------------------------------------------------------------------#

@@ -7,13 +7,13 @@ import inout
 
 class Dipole:
 
-  def __init__(self,fileName,dipoleId):
-    if isinstance(fileName, list) and len(fileName) == 3:
+  def __init__(self,fileName,dipoleId,calcFlag='no'):
+    self.calcFlag = calcFlag
+    if isinstance(fileName, list) and len(fileName) == 3 and calcFlag == 'trace':
       #------------------------------------------------------------#
       ##############################################################
       # Read all three dipole files for building trace
       ##############################################################
-      self.trace = True
       dipoleHeader = []
       kvecMatrix = np.empty((0,3), float)
       dipole = []
@@ -36,15 +36,14 @@ class Dipole:
       self.dipData = trace
       self.kvec = 0 #set to default value for trace-dipole moment object
 
-    else:
+    elif calcFlag == 'no':
       #------------------------------------------------------------#
       ##############################################################
       # Read Diople-File for creating dipole object
       ##############################################################
-      self.trace = False
       #dipoleFile ist the head information of the dipole file as dictionary
       dipoleFile = self.readDipoleHeader(fileName)
-      #ID for the dipole file, if there are multiple dipole files
+      #ID for the dipole object, if there are multiple dipole objects
       self.dipoleId = dipoleId
       
       #Set data of dipole file in variables
@@ -52,6 +51,26 @@ class Dipole:
 
       #dipole moment for dipole file
       self.dipData = np.loadtxt(fileName,comments='#')
+
+    elif calcFlag == 'guess':
+      #------------------------------------------------------------#
+      ##############################################################
+      # Build the sum of one dipole moment in x-, y- and z-direction
+      ##############################################################
+      #dipoleFile ist the head information of the dipole file as dictionary
+      dipoleFile = self.readDipoleHeader(fileName)
+      
+      #ID for the dipole object
+      self.dipoleId = dipoleId
+
+      #Set data of dipole file in variables
+      self.setHeadInformation(dipoleFile)
+
+      #load dipole File
+      data = np.loadtxt(fileName,comments='#')
+
+      #safe as dipData the sum of x-, y- and z-component
+      self.dipData = np.column_stack([data[:,0],np.sum(data[:,1:],axis=1)])
 
 
   #Routine reads the head-information of the dipolefile and returns it as dictionary

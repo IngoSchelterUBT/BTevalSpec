@@ -8,6 +8,10 @@ OPT:
   FitSpectrum:
     fit: false
     fit_guess: false
+    fit_range:
+    - 0.1
+    - 0.6
+    guess_thres: 10
   FourierTransform:
     fourier: true
     min_pw: 17
@@ -21,11 +25,25 @@ OPT:
     pade_wmax: 0.6
 SPEC:
   excitations:
-    energies:
-    - 0
+  - energy: 0.2
+    fix: false
+    name: S1
+    phase: 0.05
+    strength: 0.1
+    transdip:
+    - 0.0
+    - 0.1
     - 0.2
-    - 0.5
-    strenghts:
-    - 0
-    - 0.2
+  - energy: 0.15
+    fix: true
+    name: S2
+    phase: 0.04
+    strength: 0.12
+    transdip:
+    - 0.0
+    - 0.3
     - 0.4
+  fit_abserr: 1.0e-12
+  fit_referr: 0.0001
+  fit_relerr: 1.0e-08
+  nex: 2
