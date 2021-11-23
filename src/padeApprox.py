@@ -5,11 +5,8 @@
 
 #File for calculation the fourier transformation of the input data (dipole file(s))
 
-import yaml
-import os, glob
+import os
 import numpy as np
-from scipy.fft import fft,fftfreq
-from scipy import signal
 
 #import own modules
 import errorHandler as err

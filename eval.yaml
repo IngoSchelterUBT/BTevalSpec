@@ -13,12 +13,12 @@ OPT:
     - 0.1
     - 0.5
   FourierTransform:
-    fourier: false
+    fourier: true
     min_pw: 17
     smooth: 0
     window: 0
   PadeApprox:
-    pade: false
+    pade: true
     pade_dw: 1.0e-05
     pade_smooth: 1.0e-07
     pade_thin: 0

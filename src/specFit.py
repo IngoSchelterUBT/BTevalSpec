@@ -1,7 +1,6 @@
 #File for calculation the fit
 
 import numpy as np
-from scipy.fft import fft,fftfreq
 from scipy import signal
 
 import dipole
@@ -48,17 +47,9 @@ class Fit:
     # - if only one file is fitted (calcFlag=='trace'), then the list only contains
     #   one guess.
     
-    #make guess or read guess out of config
+    # 1.) Make guess or read guess out of config
     if config.fit_guess:
-      #Make guess out of Pade-Approximation
-      if calcFlag == 'no':
-        #if x-, y- and z-file are fitted, then calculate a pade-Approximation of the sum of x-,y- and z-file
-        #combine the three guesses to one guess, with
-        #energy | a1 (x-direction) | a2 (y-direction) | a3 (z-direction)
-        self.guess =  self.makeGuess(config,calcFlag)
-      elif calcFlag == 'trace':
-        #only the trace is fitted, i.e. only one guess has to be made and amplitude is oscillator strength
-        self.guess = self.makeGuess(config,calcFlag)
+      self.guess = self.makeGuess(config,calcFlag)
     else:
       #In object config.excitations are the names, energies, osciStrengths, phases and transdips of 
       #all the excitations saved
@@ -71,7 +62,19 @@ class Fit:
         #read oscillator strength as guess
         self.guess = np.column_stack([config.excitations.energies,config.excitations.osciStrengths])
 
+    # 2.) Make guess or read guess out of config
+    if calcFlag == 'no':
+      #self.makeMultifit()
+      #self.plotMultifit()
+      return
+    elif calcFlag == 'trace':
+      #self.makeTracefit()
+      #self.plotTracefit()
+      return
 
+#-----------------------------------------------------------------------------#
+#   Methods for Making Guess
+#-----------------------------------------------------------------------------#
   #Routine for making guess out of pade-Approximation
   def makeGuess(self,config,calcFlag='no'):
     # 1) Create Pade-Approximation depending on all three files should be fitted or just the trace
@@ -102,6 +105,9 @@ class Fit:
   #Routine for creating padeSum, which is the Pade-Approximation from which the fit is made of
   def createPade(self,config,calcFlag):
     if calcFlag == 'no':
+      #if x-, y- and z-file are fitted, then calculate a pade-Approximation of the sum of x-,y- and z-file
+      #combine the three guesses to one guess, with
+      #energy | a1 (x-direction) | a2 (y-direction) | a3 (z-direction)
       #create a dipole object which contains the sum of x-, y- and z-component of the fitted dipole moment
       dip = dipole.Dipole(config.dipoleFiles[self.fitId],-1,calcFlag='guess')
       #calculate pade-Approximation out of this summed up dipole File
@@ -109,6 +115,7 @@ class Fit:
       #set padeSum as this padeApproximation
       padeSum = pade.padeOsci[0][(pade.padeOsci[0][:,0] >= self.fit_range[0]) & (pade.padeOsci[0][:,0] <= self.fit_range[1]),:]
     elif calcFlag == 'trace':
+      #only the trace is fitted, i.e. only one guess has to be made and amplitude is oscillator strength
       padeSum = self.padeOsci[0]
 
     return padeSum
@@ -124,6 +131,14 @@ class Fit:
       w_pade = np.sort(padeSum[pos_peaks,0])
 
     return w_pade
+
+#-----------------------------------------------------------------------------#
+#   Methods for Making Multifit
+#-----------------------------------------------------------------------------#
+  #Routine for multifit
+  def makeMultifit():
+    return
+
 
   #Routine for whole fit-function
   #x: are the x-values of the fit function
