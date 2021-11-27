@@ -183,18 +183,14 @@ class Fit:
 
   #Routine for whole fit-function
   #x is a list of numpy arrays with the energy axis of every direction
-  def fit_sinc(self, params, x):
+  def fit_sinc(self, w, f, x):
     sinc = np.array([])
     for k in range(len(x)):
       s = np.zeros(len(x[k]))
       off = int(k*len(self.guess[:,0]))
-      for j in range(len(x[k])):
-        for i in range(len(self.guess[:,0])):
-          if (x[k][j]-params['w_%i' % (i+1+off)]) != 0.0:
-            s[j] += params['f_%i' % (i+1+off)]/params['w_%i' % (i+1+off)]*\
-                    np.sin(self.propTime*(x[k][j]-params['w_%i' % (i+1+off)]))/(x[k][j]-params['w_%i' % (i+1+off)])
-          else:
-            s[j] = params['f_%i' % (i+1+off)]/params['w_%i' % (i+1+off)]*self.propTime
+      for i in range(len(self.guess[:,0])):
+        s += f[i+off]/w[i+off]*\
+             np.sinc(self.propTime*(x[k]-w[i+off]))*self.propTime
       
       sinc = np.append(sinc,s)
     
@@ -202,19 +198,21 @@ class Fit:
 
 
   #Routine for calculatin the total residual for fits of sinc-Function to osci_imag
-  #x is an array appending self.osci[0][:,0], 1*osci_range+self.osci[1][:,0], 2*osci_range+self.osci[2][:,0]
+  #x is an array appending self.osci[0][:,0], self.osci[1][:,0], self.osci[2][:,0]
   #data is an array appending self.osci[0][:,2], self.osci[1][:,2] and self.osci[2][:,2]. I. e. self.osci[:2][:,2]
   def objective(self, params, x, data):
-    #resid = 0.0*data[:]
-
+    #read out of params w and f in arrays
+    w = np.array([])
+    f = np.array([])
+    for j in range(len(self.guess[0,1:])):
+      off = int(j*len(self.guess[:,0]))
+      for i in range(len(self.guess[:,0])):
+        w = np.append(w,params['w_%i' % (i+1+off)])
+        f = np.append(f,params['f_%i' % (i+1+off)])
+    
     #make residual per data set
-    #for i in range(len(data)):
-    #  resid[i] = data[i] - self.fit_sinc(params, x)
-    resid = data - self.fit_sinc(params,x)
+    resid = data - self.fit_sinc(w, f, x)
 
     #now flatten this to a 1D array, as minimize() needs
     return resid
     
-
-
-
