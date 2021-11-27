@@ -1,24 +1,25 @@
 DESCRIPTION: '>'
 DIPOLE:
-- dipole_k100.dat
-- dipole_k010.dat
-- dipole_k001.dat
+#- dipole_k100.dat
+#- dipole_k010.dat
+#- dipole_k001.dat
+- dipole.dat
 EXCIT: laser_profile.dat
 OPT:
   FitSpectrum:
     fit: true
     fit_guess: true
-    guess_thres: 10
+    guess_thres: 1000
     fit_range:
     - 0.1
     - 0.5
   FourierTransform:
-    fourier: true
+    fourier: false
     min_pw: 17
     smooth: 0
     window: 0
   PadeApprox:
-    pade: true
+    pade: false
     pade_dw: 1.0e-05
     pade_smooth: 1.0e-07
     pade_thin: 0

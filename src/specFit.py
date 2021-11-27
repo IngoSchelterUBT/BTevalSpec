@@ -6,6 +6,7 @@ from scipy import signal
 import dipole
 import padeApprox
 import errorHandler as err
+from lmfit import Parameters, minimize, report_fit
 
 #For tests
 from pprint import pprint
@@ -62,9 +63,9 @@ class Fit:
         #read oscillator strength as guess
         self.guess = np.column_stack([config.excitations.energies,config.excitations.osciStrengths])
 
-    # 2.) Make guess or read guess out of config
+    # 2.) Make multifit or make single fit for trace
     if calcFlag == 'no':
-      #self.makeMultifit()
+      self.makeMultifit()
       #self.plotMultifit()
       return
     elif calcFlag == 'trace':
@@ -98,7 +99,8 @@ class Fit:
       f = np.column_stack([f,f_temp[i]])
     
     #calculate values for guess of fit-function
-    f = f*w[:,np.newaxis]/self.propTime
+    for i in range(len(f[0,:])):
+      f[:,i] = f[:,i]*w[:]/self.propTime
 
     return np.column_stack([w,f])
 
@@ -136,23 +138,83 @@ class Fit:
 #   Methods for Making Multifit
 #-----------------------------------------------------------------------------#
   #Routine for multifit
-  def makeMultifit():
-    return
+  def makeMultifit(self):
+    #Make a list of w_i and f_i for all values of x-, y- and z-
+    fit_params = Parameters()
+    self.osci_range = np.abs(self.osci[0][0,0] - self.osci[0][len(self.osci[0][:,0])-1,0])
+    for j in range(len(self.guess[0,1:])):
+      off = int(j*len(self.guess[:,0]))
+      for i in range(len(self.guess[:,0])):
+        fit_params.add('w_%i' % (i+1+off), value=self.guess[i,0])
+        fit_params.add('f_%i' % (i+1+off), value=self.guess[i,j+1])
+      
+    #Make constraint that 'w_1' must equal 'w_(1+off)'
+    for j in range(1,len(self.guess[0,1:])):
+      off = int(j*len(self.guess[:,0]))
+      for i in range(len(self.guess[:,0])):
+        fit_params['w_%i' % (i+1+off)].expr = 'w_%i' % (i+1)
+
+    #calculate Fit
+    #x is a list of numpy arrays with the energy axis of every direction
+    x = []
+    for j in range(len(self.guess[0,1:])):
+      x.append(self.osci[j][:,0])
+    #data is a list of the imaginary part of the fourier transform
+    data = self.osci[0][:,2]
+    for j in range(1,len(self.guess[0,1:])):
+      data = np.append(data,self.osci[j][:,2])
+
+    #Ausgabe zum Testen!
+    #for j in range(len(self.guess[0,1:])):
+    #  np.savetxt('guess_%i.dat' % (j),np.column_stack([self.guess[:,0],self.guess[:,j+1]]))
+    #for j in range(len(x)):
+    #  np.savetxt('test_%i.dat' % (j),np.column_stack([x[j],self.osci[j][:,2]]))
+    #y = self.fit_sinc(fit_params,x)
+    #omega = x[0]
+    #for j in range(1,len(x)):
+    #  omega = np.append(omega,j*self.osci_range+x[j])
+    #np.savetxt('guess_test.dat',np.column_stack([omega,y]))
+    #exit()
+
+    #fuehre den Fit durch
+    out = minimize(self.objective, fit_params, args=(x,data))
+    report_fit(out.params)
 
 
   #Routine for whole fit-function
-  #x: are the x-values of the fit function
-  #guess: is a matrix of first column of energy of peaks and second column of oscillator strength of peaks
-  def fit_sinc(x,guess):
-    s = np.zeros(len(x))
-    for j in range(len(x)):
-      s[j] = 0.0
-      for i in range(len(guess[:,0])):
-        if (x[j]-guess[i,0]) != 0.0:
-          s[j] += guess[i,1]/guess[i,0]*np.sin(self.propTime*(x[j]-guess[i,0]))/(x[j]-guess[i,0])
-        else:
-          s[j] = guess[i,1]/guess[i,0]*self.propTime
+  #x is a list of numpy arrays with the energy axis of every direction
+  def fit_sinc(self, params, x):
+    sinc = np.array([])
+    for k in range(len(x)):
+      s = np.zeros(len(x[k]))
+      off = int(k*len(self.guess[:,0]))
+      for j in range(len(x[k])):
+        for i in range(len(self.guess[:,0])):
+          if (x[k][j]-params['w_%i' % (i+1+off)]) != 0.0:
+            s[j] += params['f_%i' % (i+1+off)]/params['w_%i' % (i+1+off)]*\
+                    np.sin(self.propTime*(x[k][j]-params['w_%i' % (i+1+off)]))/(x[k][j]-params['w_%i' % (i+1+off)])
+          else:
+            s[j] = params['f_%i' % (i+1+off)]/params['w_%i' % (i+1+off)]*self.propTime
+      
+      sinc = np.append(sinc,s)
     
-    return s
+    return sinc
+
+
+  #Routine for calculatin the total residual for fits of sinc-Function to osci_imag
+  #x is an array appending self.osci[0][:,0], 1*osci_range+self.osci[1][:,0], 2*osci_range+self.osci[2][:,0]
+  #data is an array appending self.osci[0][:,2], self.osci[1][:,2] and self.osci[2][:,2]. I. e. self.osci[:2][:,2]
+  def objective(self, params, x, data):
+    #resid = 0.0*data[:]
+
+    #make residual per data set
+    #for i in range(len(data)):
+    #  resid[i] = data[i] - self.fit_sinc(params, x)
+    resid = data - self.fit_sinc(params,x)
+
+    #now flatten this to a 1D array, as minimize() needs
+    return resid
+    
+
 
 
