@@ -1,15 +1,15 @@
 DESCRIPTION: '>'
 DIPOLE:
-#- dipole_k100.dat
-#- dipole_k010.dat
-#- dipole_k001.dat
-- dipole.dat
+- dipole_k100.dat
+- dipole_k010.dat
+- dipole_k001.dat
+#- dipole.dat
 EXCIT: laser_profile.dat
 OPT:
   FitSpectrum:
     fit: true
     fit_guess: true
-    guess_thres: 1000
+    guess_thres: 200
     fit_range:
     - 0.1
     - 0.5

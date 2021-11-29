@@ -80,6 +80,7 @@ def main():
       fit.append(specFit.Fit(conf,ft[3],pade[3],3,calcFlag='trace'))
 
 
+  input("Press [enter] to end and close all plots!")
 #------------------------------------------------------------------------------#
 # Call main
 #------------------------------------------------------------------------------#

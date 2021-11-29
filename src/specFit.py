@@ -2,11 +2,16 @@
 
 import numpy as np
 from scipy import signal
+from lmfit import Parameters, minimize, report_fit
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 
+#own modules
 import dipole
 import padeApprox
 import errorHandler as err
-from lmfit import Parameters, minimize, report_fit
+import util
 
 #For tests
 from pprint import pprint
@@ -64,14 +69,15 @@ class Fit:
         self.guess = np.column_stack([config.excitations.energies,config.excitations.osciStrengths])
 
     # 2.) Make multifit or make single fit for trace
-    if calcFlag == 'no':
-      self.makeMultifit()
-      #self.plotMultifit()
-      return
-    elif calcFlag == 'trace':
-      #self.makeTracefit()
-      #self.plotTracefit()
-      return
+    #     The following routine call calculates the fit of the trace, as well!
+    self.fit_result = self.makeMultifit()
+
+    # 3.) Plot the result of the fit, the raw data and deviation
+    self.plotFit(calcFlag)
+    #TODO:
+    # - Plot the fit results. I.e. multifit(s) and fit of trace.
+    # - Deviation between fit and data has to be calculated.
+    # - Print fit results for every line in yaml file.
 
 #-----------------------------------------------------------------------------#
 #   Methods for Making Guess
@@ -156,6 +162,7 @@ class Fit:
 
     #calculate Fit
     #x is a list of numpy arrays with the energy axis of every direction
+    #  in the case of 'trace' there is only x[0] as a numpy array of the energy
     x = []
     for j in range(len(self.guess[0,1:])):
       x.append(self.osci[j][:,0])
@@ -164,25 +171,31 @@ class Fit:
     for j in range(1,len(self.guess[0,1:])):
       data = np.append(data,self.osci[j][:,2])
 
-    #Ausgabe zum Testen!
-    #for j in range(len(self.guess[0,1:])):
-    #  np.savetxt('guess_%i.dat' % (j),np.column_stack([self.guess[:,0],self.guess[:,j+1]]))
-    #for j in range(len(x)):
-    #  np.savetxt('test_%i.dat' % (j),np.column_stack([x[j],self.osci[j][:,2]]))
-    #y = self.fit_sinc(fit_params,x)
-    #omega = x[0]
-    #for j in range(1,len(x)):
-    #  omega = np.append(omega,j*self.osci_range+x[j])
-    #np.savetxt('guess_test.dat',np.column_stack([omega,y]))
-    #exit()
-
-    #fuehre den Fit durch
+    #Calculate fit
     out = minimize(self.objective, fit_params, args=(x,data))
     report_fit(out.params)
 
+    #create fit_result as column_stack([w,f])
+    fit_result = np.empty((len(self.guess[:,0]),0))
+    w = np.zeros(len(self.guess[:,0]))
+    for i in range(len(self.guess[:,0])):
+      w[i] = out.params['w_%i' % (i+1)]
+    fit_result = np.column_stack([fit_result,w])
+
+    #number_direct is 1 for trace and 3 for multifit
+    f = np.zeros(len(self.guess[:,0]))
+    for j in range(len(self.guess[0,1:])):
+      off = int(j*len(self.guess[:,0]))
+      for i in range(len(self.guess[:,0])):
+        f[i] = out.params['f_%i' % (i+1+off)]
+
+      fit_result = np.column_stack([fit_result,f])
+        
+    return fit_result
 
   #Routine for whole fit-function
-  #x is a list of numpy arrays with the energy axis of every direction
+  #x is a list of numpy arrays with the energy axis of every direction for the trace-fit
+  #  there is only x[0]
   def fit_sinc(self, w, f, x):
     sinc = np.array([])
     for k in range(len(x)):
@@ -190,7 +203,7 @@ class Fit:
       off = int(k*len(self.guess[:,0]))
       for i in range(len(self.guess[:,0])):
         s += f[i+off]/w[i+off]*\
-             np.sinc(self.propTime*(x[k]-w[i+off]))*self.propTime
+             np.sinc(self.propTime*(x[k]-w[i+off])/np.pi)*self.propTime
       
       sinc = np.append(sinc,s)
     
@@ -216,3 +229,65 @@ class Fit:
     #now flatten this to a 1D array, as minimize() needs
     return resid
     
+#-----------------------------------------------------------------------------#
+#   Methods for Making Plot
+#-----------------------------------------------------------------------------#
+  def plotFit(self,calcFlag):
+    plt.ion()
+    if calcFlag == 'no':
+      fig = plt.figure()
+      gs = fig.add_gridspec(len(self.osci), hspace=0)
+      axs = gs.subplots(sharex=True, sharey=True)
+      for i in range(len(self.osci)):
+        axs[i].plot(self.osci[i][:,0],self.osci[i][:,2], label='Data in ' + util.getDir(i)
+                    + '-direction')
+        axs[i].legend(loc='best')
+        axs[i].plot(self.osci[i][:,0],
+                    self.sinc(self.fit_result[:,0],self.fit_result[:,i+1],self.osci[i][:,0]),
+                    label='Fit in ' + util.getDir(i) + '-direction')
+        axs[i].legend(loc='best')
+        axs[i].plot(self.osci[i][:,0],
+                    self.osci[i][:,2] -
+                    self.sinc(self.fit_result[:,0],self.fit_result[:,i+1],self.osci[i][:,0]),
+                    label='Error in ' + util.getDir(i) + '-direction')
+        for j in range(len(self.fit_result[:,0])):
+          #axs[i].arrow(self.fit_result[j,0], 0., 0., self.fit_result[j,i+1], length_includes_head=True,
+          #             head_width=0.08, head_length=0.000002)
+          axs[i].annotate("", xy=(self.fit_result[j,0],self.fit_result[j,i+1]*self.propTime/self.fit_result[j,0]),
+                          xytext=(self.fit_result[j,0], 0.), arrowprops={'arrowstyle':'->'})
+        axs[i].set_xlabel('Energy (Ry)')
+        axs[i].legend(loc='best')
+        axs[i].set_ylabel('$S(\hbar \omega)$')
+
+      for ax in axs:
+        ax.label_outer()
+      
+      plt.show(block=False)
+
+    elif calcFlag == 'trace':
+      fig = plt.figure()
+      plt.plot(self.osci[0][:,0],self.osci[0][:,2], label='Data trace')
+      plt.plot(self.osci[0][:,0],
+               self.sinc(self.fit_result[:,0],self.fit_result[:,1],self.osci[0][:,0]),
+               label='Fit for trace')
+      plt.plot(self.osci[0][:,0],
+               self.osci[0][:,2] -
+               self.sinc(self.fit_result[:,0],self.fit_result[:,1],self.osci[0][:,0]),
+               label='Error for trace')
+      for j in range(len(self.fit_result[:,0])):
+          plt.annotate("", xy=(self.fit_result[j,0],self.fit_result[j,1]*self.propTime/self.fit_result[j,0]),
+                       xytext=(self.fit_result[j,0], 0.), arrowprops={'arrowstyle':'->'})
+      plt.legend(loc='best')
+      plt.xlabel('Energy (Ry)')
+      plt.ylabel('$S(\hbar \omega)$')
+      plt.show(block=False)
+                    
+
+
+  def sinc(self, w, f, x):
+    s = np.zeros(len(x))
+    for i in range(len(w)):
+      s += f[i]/w[i]*np.sinc(self.propTime*(x-w[i])/np.pi)*self.propTime
+
+    return s
+      

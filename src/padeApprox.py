@@ -10,6 +10,7 @@ import numpy as np
 
 #import own modules
 import errorHandler as err
+import util
 #import f90 module
 import f90_tools.mathtools as mathtools
 
@@ -147,7 +148,7 @@ class Pade:
     if calcFlag == 'no':
       #Save all the Pade_Osci-files in directory
       for i in range(len(self.padeOsci)):
-        np.savetxt('PADE/Pade_Osci_' + str(self.padeId) + self.getDir(i),self.padeOsci[i],header=headPadeOsci)
+        np.savetxt('PADE/Pade_Osci_' + str(self.padeId) + util.getDir(i),self.padeOsci[i],header=headPadeOsci)
     elif calcFlag == 'trace':
       #Save trace Pade-file in directory
       for i in range(len(self.padeOsci)):
@@ -171,17 +172,6 @@ class Pade:
 
     if calcFlag == 'no':
       for i in range(3):
-        self.padeOsci.append(np.loadtxt('PADE/Pade_Osci_' + str(self.padeId) + self.getDir(i)))
+        self.padeOsci.append(np.loadtxt('PADE/Pade_Osci_' + str(self.padeId) + util.getDir(i)))
     elif calcFlag == 'trace':
       self.padeOsci.append(np.loadtxt('PADE/Pade_Osci'))
-
-  #Get direction
-  def getDir(self,i):
-    if i == 0:
-      return 'x'
-    elif i == 1:
-      return 'y'
-    elif i == 2:
-      return 'z'
-    else:
-      err.err(1,'There can not be more directions than x, y and z!')

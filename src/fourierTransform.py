@@ -6,7 +6,9 @@ import numpy as np
 from scipy.fft import fft,fftfreq
 from scipy import signal
 
+#own modules
 import errorHandler as err
+import util
 
 class FT:
   
@@ -156,12 +158,12 @@ class FT:
       #Osci
       #Save all the Osci-files in directory
       for i in range(len(self.osci)):
-        np.savetxt('Osci/Osci_' + str(self.ftId) + self.getDir(i),self.osci[i],header=headOsci)
+        np.savetxt('Osci/Osci_' + str(self.ftId) + util.getDir(i),self.osci[i],header=headOsci)
 
       #PW
       #Save all the PW-files in directory
       for i in range(len(self.pw)):
-        np.savetxt('PW/PW_' + str(self.ftId) + self.getDir(i),self.pw[i],header=headPW)
+        np.savetxt('PW/PW_' + str(self.ftId) + util.getDir(i),self.pw[i],header=headPW)
     elif calcFlag == 'trace':
       #Osci
       #Save the trace Osci-file in directory
@@ -206,7 +208,7 @@ class FT:
 
     if calcFlag == 'no':
       for i in range(3):
-        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + self.getDir(i)))
+        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + util.getDir(i)))
     elif calcFlag == 'trace':
       self.osci.append(np.loadtxt('Osci/Osci'))
 
@@ -242,14 +244,3 @@ class FT:
     if self.kvec == -1:
       err(1,'There is no kvec in Osci file!')
     self.kvec = np.array(self.kvec,dtype=float)
-
-  #Get direction
-  def getDir(self,i):
-    if i == 0:
-      return 'x'
-    elif i == 1:
-      return 'y'
-    elif i == 2:
-      return 'z'
-    else:
-      err.err(1,'There can not be more directions than x, y and z!')
