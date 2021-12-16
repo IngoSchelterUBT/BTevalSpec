@@ -21,6 +21,7 @@ import config
 import dipole
 import fourierTransform as fourier
 import padeApprox
+import specGuess
 import specFit
 import inout
 
@@ -70,14 +71,21 @@ def main():
       pade.append(0)
       
 
+  #Do Guess for fit of the spectrum
+  if conf.fit:
+    guess = []
+    for i, fileName in enumerate(conf.dipoleFiles):
+      guess.append(specGuess.Guess(conf,ft[i],pade[i],i))
+    if conf.numDipoleFiles == 3:
+      guess.append(specGuess.Guess(conf,ft[3],pade[3],3,calcFlag='trace'))
 
   #Do Fit of the spectrum
   if conf.fit:
     fit = []
     for i, fileName in enumerate(conf.dipoleFiles):
-      fit.append(specFit.Fit(conf,ft[i],pade[i],i))
+      fit.append(specFit.Fit(conf,ft[i],guess[i],i))
     if conf.numDipoleFiles == 3:
-      fit.append(specFit.Fit(conf,ft[3],pade[3],3,calcFlag='trace'))
+      fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
 
 
   input("Press [enter] to end and close all plots!")

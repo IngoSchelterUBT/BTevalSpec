@@ -1,7 +1,6 @@
-#File for calculation the fit
+#File for calculation and plot of fit
 
 import numpy as np
-from scipy import signal
 from lmfit import Parameters, minimize, report_fit
 import matplotlib
 matplotlib.use("TkAgg")
@@ -9,7 +8,6 @@ import matplotlib.pyplot as plt
 
 #own modules
 import dipole
-import padeApprox
 import errorHandler as err
 import util
 
@@ -17,35 +15,20 @@ import util
 from pprint import pprint
 
 class Fit:
-  
-  def __init__(self,config,ft,pade,Id,calcFlag='no'):
-    ################################
-    #id of fit
-    self.fitId = Id
-    #read fit range out of config-File
-    self.fit_range = config.fit_range
-    #read propataion time out of dipole-File
+  def __init__(self,config,ft,guess,Id,calcFlag='no'):
+    #read propagation time out of fourierTransform
     self.propTime = ft.propTime
-    #read guess threshold out of config-File
-    if config.fit_guess: self.guess_thres = config.guess_thres
+    #read osci files out of guess
+    self.osci = guess.osci
+    #read guess out of guess-object
+    self.guess = guess.guess
 
-    ################################
-    #Filter padeOsci and Osci
-    self.osci = []
-    self.padeOsci = []
-    for i in range(len(ft.osci)):
-      self.osci.append(ft.osci[i][(ft.osci[i][:,0] >= self.fit_range[0]) & (ft.osci[i][:,0] <= self.fit_range[1]),:])
-      if config.fit_guess:
-        self.padeOsci.append(pade.padeOsci[i][(pade.padeOsci[i][:,0] >= self.fit_range[0]) & (pade.padeOsci[i][:,0] <= self.fit_range[1]),:])
-
-    #Make Fit
-    self.makeFit(config,calcFlag)
-
+    #run actuel fit
+    self.makeFit(config,calcFlag) #saves fit results in self.fit_result
 
 #-----------------------------------------------------------------------------#
 #   Methods of the class Fit
 #-----------------------------------------------------------------------------#
-  #Routine for making fit
   def makeFit(self,config,calcFlag='no'):
     #Make an list for the guess, 
     # - if three files are fitted (calcFlag=='no'), then the list contains the
@@ -53,96 +36,15 @@ class Fit:
     # - if only one file is fitted (calcFlag=='trace'), then the list only contains
     #   one guess.
     
-    # 1.) Make guess or read guess out of config
-    if config.fit_guess:
-      self.guess = self.makeGuess(config,calcFlag)
-    else:
-      #In object config.excitations are the names, energies, osciStrengths, phases and transdips of 
-      #all the excitations saved
-      self.excitations = config.excitations
-      #read guess out of config-file
-      if calcFlag == 'no':
-        #read a1, a2, a3 as guess for fit
-        self.guess = np.column_stack([config.excitations.energies,config.excitations.transdips])
-      elif calcFlag == 'trace':
-        #read oscillator strength as guess
-        self.guess = np.column_stack([config.excitations.energies,config.excitations.osciStrengths])
-
-    # 2.) Make multifit or make single fit for trace
+    # 1.) Make multifit or make single fit for trace
     #     The following routine call calculates the fit of the trace, as well!
     self.fit_result = self.makeMultifit()
 
-    # 3.) Plot the result of the fit, the raw data and deviation
+    # 2.) Plot the result of the fit, the raw data and deviation
     self.plotFit(calcFlag)
     #TODO:
-    # - Plot the fit results. I.e. multifit(s) and fit of trace.
-    # - Deviation between fit and data has to be calculated.
     # - Print fit results for every line in yaml file.
 
-#-----------------------------------------------------------------------------#
-#   Methods for Making Guess
-#-----------------------------------------------------------------------------#
-  #Routine for making guess out of pade-Approximation
-  def makeGuess(self,config,calcFlag='no'):
-    # 1) Create Pade-Approximation depending on all three files should be fitted or just the trace
-    padeSum = self.createPade(config,calcFlag)
-    
-    # 2) look for peaks in the Pade Approximation (padeSum)
-    w = self.searchPeaks(padeSum,calcFlag)
-
-    # 3) Make a guess for the oscillator strength out of the imag part of Osci (imag part of ft of dipole moment)
-    #    i.e. search for the corresponding energy and oscillator strength in the fourier transformation
-    f_temp = [np.array([])]*len(self.osci)
-    for i in range(len(self.osci)):
-      for j in range(len(w)):
-        abs_diff = np.abs(self.osci[i][:,0]-w[j])
-        index_smallest_diff = abs_diff.argmin()
-        #f as oscillator strength of imaginary part (third column of osci)
-        f_temp[i] = np.append(f_temp[i],self.osci[i][index_smallest_diff,2])
-    
-    f = np.empty((len(w),0))
-    for i in range(len(self.osci)):
-      f = np.column_stack([f,f_temp[i]])
-    
-    #calculate values for guess of fit-function
-    for i in range(len(f[0,:])):
-      f[:,i] = f[:,i]*w[:]/self.propTime
-
-    return np.column_stack([w,f])
-
-  #Routine for creating padeSum, which is the Pade-Approximation from which the fit is made of
-  def createPade(self,config,calcFlag):
-    if calcFlag == 'no':
-      #if x-, y- and z-file are fitted, then calculate a pade-Approximation of the sum of x-,y- and z-file
-      #combine the three guesses to one guess, with
-      #energy | a1 (x-direction) | a2 (y-direction) | a3 (z-direction)
-      #create a dipole object which contains the sum of x-, y- and z-component of the fitted dipole moment
-      dip = dipole.Dipole(config.dipoleFiles[self.fitId],-1,calcFlag='guess')
-      #calculate pade-Approximation out of this summed up dipole File
-      pade = padeApprox.Pade(config,dip,-1,calcFlag='guess')
-      #set padeSum as this padeApproximation
-      padeSum = pade.padeOsci[0][(pade.padeOsci[0][:,0] >= self.fit_range[0]) & (pade.padeOsci[0][:,0] <= self.fit_range[1]),:]
-    elif calcFlag == 'trace':
-      #only the trace is fitted, i.e. only one guess has to be made and amplitude is oscillator strength
-      padeSum = self.padeOsci[0]
-
-    return padeSum
-
-  #Routine for searching Peaks in Pade-Approximation
-  def searchPeaks(self,padeSum,calcFlag):
-    pos_peaks, _ = signal.find_peaks(padeSum[:,1],height=self.guess_thres)
-    #only look for negative peaks, if the trace is NOT fitted (i.e. calcFlag==no)
-    if calcFlag == 'no':
-      neg_peaks, _ = signal.find_peaks(-padeSum[:,1],height=self.guess_thres)
-      w_pade = np.sort(padeSum[np.append(pos_peaks,neg_peaks),0])
-    elif calcFlag == 'trace':
-      w_pade = np.sort(padeSum[pos_peaks,0])
-
-    return w_pade
-
-#-----------------------------------------------------------------------------#
-#   Methods for Making Multifit
-#-----------------------------------------------------------------------------#
   #Routine for multifit
   def makeMultifit(self):
     #Make a list of w_i and f_i for all values of x-, y- and z-
@@ -228,7 +130,8 @@ class Fit:
 
     #now flatten this to a 1D array, as minimize() needs
     return resid
-    
+
+
 #-----------------------------------------------------------------------------#
 #   Methods for Making Plot
 #-----------------------------------------------------------------------------#
@@ -291,3 +194,4 @@ class Fit:
 
     return s
       
+
