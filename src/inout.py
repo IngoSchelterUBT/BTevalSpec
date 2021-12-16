@@ -14,7 +14,7 @@ def writeEmptyConfig():
                       'PadeApprox' : {  'pade' : False, 'pade_wmax' : 0.6, 'pade_dw' : 0.00001, 'pade_smooth' : 0.0000001,
                                         'pade_thin' : 0
                                      },
-                      'FitSpectrum' : { 'fit' : False, 'fit_guess' : False, 'fit_range' : [0.1, 0.6], 'guess_thres' : 10},
+                      'FitSpectrum' : { 'fit' : False, 'fit_guess' : False, 'fit_range' : [0.1, 0.6], 'guess_thres' : 0.1},
                     },
             'SPEC' : { 'nex' : 2, 'fit_abserr' : 1.0e-12, 'fit_referr' : 1.0e-4, 'fit_relerr' : 1.0e-8, 
                        'excitations' : [{'name' : 'S1', 'fix' : False, 'energy' : 0.2, 'strength' : 0.1, 'phase' : 0.05,

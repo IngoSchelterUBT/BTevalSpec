@@ -11,7 +11,7 @@ OPT:
     fit_range:
     - 0.1
     - 0.6
-    guess_thres: 10
+    guess_thres: 0.1
   FourierTransform:
     fourier: true
     min_pw: 17

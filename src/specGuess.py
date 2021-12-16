@@ -111,13 +111,26 @@ class Guess:
 
   #Routine for searching Peaks in Pade-Approximation
   def searchPeaks(self,padeSum,calcFlag):
-    pos_peaks, _ = signal.find_peaks(padeSum[:,1],height=self.guess_thres)
+    maxPadeOsci = self.findMaxPeak(padeSum,calcFlag)
+    pos_peaks, _ = signal.find_peaks(padeSum[:,1],height=self.guess_thres*maxPadeOsci)
     #only look for negative peaks, if the trace is NOT fitted (i.e. calcFlag==no)
     if calcFlag == 'no':
-      neg_peaks, _ = signal.find_peaks(-padeSum[:,1],height=self.guess_thres)
+      neg_peaks, _ = signal.find_peaks(-padeSum[:,1],height=self.guess_thres*maxPadeOsci)
       w_pade = np.sort(padeSum[np.append(pos_peaks,neg_peaks),0])
     elif calcFlag == 'trace':
       w_pade = np.sort(padeSum[pos_peaks,0])
 
     return w_pade
+
+  #Routine for finding maximum peak in PadeOsci
+  def findMaxPeak(self,padeSum,calcFlag):
+    pos_peaks, _ = signal.find_peaks(padeSum[:,1])
+    #only look for negative peaks,if the trace is NOT fitted (i.e. calcFlag==no)
+    if calcFlag == 'no':
+      neg_peaks, _ = signal.find_peaks(-padeSum[:,1])
+      f_pade = np.sort(padeSum[np.append(pos_peaks,neg_peaks),1])
+    elif calcFlag == 'trace':
+      f_pade = np.sort(padeSum[pos_peaks,1])
+
+    return np.amax(f_pade)
 

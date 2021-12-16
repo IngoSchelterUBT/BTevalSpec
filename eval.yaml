@@ -9,7 +9,7 @@ OPT:
   FitSpectrum:
     fit: true
     fit_guess: true
-    guess_thres: 200
+    guess_thres: 0.05
     fit_range:
     - 0.1
     - 0.5

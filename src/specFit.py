@@ -16,6 +16,8 @@ from pprint import pprint
 
 class Fit:
   def __init__(self,config,ft,guess,Id,calcFlag='no'):
+    #set id from input
+    self.fitId = Id
     #read propagation time out of fourierTransform
     self.propTime = ft.propTime
     #read osci files out of guess
@@ -164,6 +166,8 @@ class Fit:
 
       for ax in axs:
         ax.label_outer()
+
+      fig.suptitle("Fit of dipole file " + str(self.fitId + 1))
       
       plt.show(block=False)
 
@@ -183,6 +187,7 @@ class Fit:
       plt.legend(loc='best')
       plt.xlabel('Energy (Ry)')
       plt.ylabel('$S(\hbar \omega)$')
+      fig.suptitle("Fit of trace")
       plt.show(block=False)
                     
 

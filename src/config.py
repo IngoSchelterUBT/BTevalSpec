@@ -52,7 +52,7 @@ class Config:
     self.fit = configFile.get('OPT').get('FitSpectrum').get('fit',False)
     self.fit_guess = configFile.get('OPT').get('FitSpectrum').get('fit_guess',False)
     self.fit_range = np.sort(configFile.get('OPT').get('FitSpectrum').get('fit_range',np.array([0])))
-    self.guess_thres = configFile.get('OPT').get('FitSpectrum').get('guess_thres',10)
+    self.guess_thres = configFile.get('OPT').get('FitSpectrum').get('guess_thres',0.1)
     
     ##############################################################
     #Config for Fit output/guess
