@@ -20,10 +20,19 @@ class Fit:
     self.fitId = Id
     #read propagation time out of fourierTransform
     self.propTime = ft.propTime
+    #read absolute error criterium out of config file
+    self.fit_relerr_crit = config.fit_relerr_crit
+    #read maximum of fit iterations out of config file
+    self.fit_max_iter = config.fit_max_iter
     #read osci files out of guess
     self.osci = guess.osci
     #read guess out of guess-object
     self.guess = guess.guess
+    #read fit_range
+    self.fit_range = config.fit_range
+    #calculate dw as the frequency step
+    self.dw = (self.osci[0][len(self.osci[0][:,0])-1,0]-self.osci[0][0,0]) /\
+              float((len(self.osci[0][:,0])-1))
 
     #run actuel fit
     self.makeFit(config,calcFlag) #saves fit results in self.fit_result
@@ -40,7 +49,27 @@ class Fit:
     
     # 1.) Make multifit or make single fit for trace
     #     The following routine call calculates the fit of the trace, as well!
-    self.fit_result = self.makeMultifit()
+    for i in range(self.fit_max_iter):
+      if i+1 == self.fit_max_iter:
+        print('Maximum number of iterations for fit exceeded for file ' + str(self.fitId+1))
+      
+      #Calculate the multifit (or in case of trace singlefit)
+      self.fit_result = self.makeMultifit()
+
+      #Calculate relative error between fit and raw data (in case of multifit the largest error is returned)
+      self.fit_relerr = self.calcFitRelErr()
+      print('fit_relerr = ' + str(self.fit_relerr) + ', fitId = ' + str(self.fitId))
+      
+      #stop if error criterium is fullfilled, else add a new line at maximum deviation
+      #between fit and raw data
+      if self.fit_relerr < self.fit_relerr_crit:
+        print('Fit converged to file ' + str(self.fitId+1))
+        break
+      else:
+        #add a new line in the spectrum and give a new guess at the position of the
+        #maxiumum deviation between fit and raw data
+        self.addNewLine()
+
 
     # 2.) Plot the result of the fit, the raw data and deviation
     self.plotFit(calcFlag)
@@ -133,6 +162,46 @@ class Fit:
     #now flatten this to a 1D array, as minimize() needs
     return resid
 
+  #Routine for calculation the relative error between fit and raw data (in case
+  #of multifit the minimum error is returned)
+  #absolute error is defined as err(dat,fit) = sqrt( [int(data-fit)^2 dw] / [fit-range] ) 
+  #(integrals over fit range)
+  def calcFitRelErr(self):
+    rel_error = np.array([])
+    for i in range(len(self.osci)):
+      abs_err = np.sqrt(np.sum((self.osci[i][:,2] -\
+                self.sinc(self.fit_result[:,0],self.fit_result[:,i+1],self.osci[i][:,0]))**2.)*\
+                self.dw/np.abs(self.fit_range[1] - self.fit_range[0]))
+      reference_err = np.sqrt(np.sum((self.osci[i][:,2])**2.)*\
+                self.dw/np.abs(self.fit_range[1] - self.fit_range[0]))
+      rel_error = np.append(rel_error,abs_err/reference_err)
+
+    return np.amin(rel_error)
+
+  #Routine for adding new line in guess for new fit at the maximum deviation between
+  #fit and raw data
+  def addNewLine(self):
+    max_dev = np.array([])
+    max_index = np.array([])
+    for i in range(len(self.osci)):
+      dev = self.osci[i][:,2] -\
+            self.sinc(self.fit_result[:,0],self.fit_result[:,i+1],self.osci[i][:,0])
+      max_dev = np.append(max_dev,np.amax(dev))
+      max_index = np.append(max_index,np.argmax(dev))
+
+    #Frequency of maximum deviation between fit and raw data
+    w_max = self.osci[int(np.argmax(max_dev))][int(max_index[np.argmax(max_dev)]),0]
+    
+    #find corresponding amplitude(s) to the frequency
+    f_max = np.array([])
+    for i in range(len(self.osci)):
+      abs_diff = np.abs(self.osci[i][:,0] - w_max)
+      index_smallest_diff = abs_diff.argmin()
+      f_max = np.append(f_max,self.osci[i][index_smallest_diff,2]*w_max/self.propTime)
+
+    newLine = np.concatenate([[w_max],f_max])
+    self.guess = np.vstack((self.guess,newLine))
+    self.guess = self.guess[self.guess[:,0].argsort()]
 
 #-----------------------------------------------------------------------------#
 #   Methods for Making Plot
@@ -192,6 +261,7 @@ class Fit:
                     
 
 
+  #Function for plotting the fit-results
   def sinc(self, w, f, x):
     s = np.zeros(len(x))
     for i in range(len(w)):

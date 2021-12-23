@@ -49,9 +49,17 @@ class Config:
   
     ##############################################################
     #Config for Fit calculation
+    #boolean if fit should be calculated
     self.fit = configFile.get('OPT').get('FitSpectrum').get('fit',False)
+    #boolean if guess for fit out of Pade approximation should be done (or read out of config file if False)
     self.fit_guess = configFile.get('OPT').get('FitSpectrum').get('fit_guess',False)
+    #criterium for fit, i.e. absolute deviation between raw data and fit
+    self.fit_relerr_crit = configFile.get('OPT').get('FitSpectrum').get('fit_relerr_crit',0.1)
+    #maximum numer of iterations for reaching the desired absolute deviation between raw data and fit
+    self.fit_max_iter = configFile.get('OPT').get('FitSpectrum').get('fit_max_iter',1)
+    #range of fit in spectrum
     self.fit_range = np.sort(configFile.get('OPT').get('FitSpectrum').get('fit_range',np.array([0])))
+    #relative threshold (according to the maximum line) which line in the Pade approximation should be identified as an excitation line
     self.guess_thres = configFile.get('OPT').get('FitSpectrum').get('guess_thres',0.1)
     
     ##############################################################

@@ -8,9 +8,11 @@ OPT:
   FitSpectrum:
     fit: false
     fit_guess: false
+    fit_max_iter: 1
     fit_range:
     - 0.1
     - 0.6
+    fit_relerr_crit: 1.0e-12
     guess_thres: 0.1
   FourierTransform:
     fourier: true
