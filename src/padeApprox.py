@@ -7,7 +7,6 @@
 
 import os
 import numpy as np
-
 #import own modules
 import errorHandler as err
 import util
@@ -148,7 +147,7 @@ class Pade:
     if calcFlag == 'no':
       #Save all the Pade_Osci-files in directory
       for i in range(len(self.padeOsci)):
-        np.savetxt('PADE/Pade_Osci_' + str(self.padeId) + util.getDir(i),self.padeOsci[i],header=headPadeOsci)
+        np.savetxt('PADE/Pade_Osci_' + str(self.padeId + 1) + util.getDir(i),self.padeOsci[i],header=headPadeOsci)
     elif calcFlag == 'trace':
       #Save trace Pade-file in directory
       for i in range(len(self.padeOsci)):
@@ -159,7 +158,7 @@ class Pade:
   def readPadeOsci(self,calcFlag):
     try:
       if calcFlag == 'no':
-        PadeOsciFile = open('PADE/Pade_Osci_' + str(self.padeId) + 'x','r')
+        PadeOsciFile = open('PADE/Pade_Osci_' + str(self.padeId + 1) + 'x','r')
       elif calcFlag == 'trace':
         PadeOsciFile = open('PADE/Pade_Osci','r')
       elif calcFlag == 'guess':
@@ -172,6 +171,6 @@ class Pade:
 
     if calcFlag == 'no':
       for i in range(3):
-        self.padeOsci.append(np.loadtxt('PADE/Pade_Osci_' + str(self.padeId) + util.getDir(i)))
+        self.padeOsci.append(np.loadtxt('PADE/Pade_Osci_' + str(self.padeId + 1) + util.getDir(i)))
     elif calcFlag == 'trace':
       self.padeOsci.append(np.loadtxt('PADE/Pade_Osci'))

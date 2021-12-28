@@ -9,12 +9,12 @@ OPT:
   FitSpectrum:
     fit: true
     fit_guess: true
-    guess_thres: 0.05
-    fit_relerr_crit: 0.1
+    guess_thres: 0.1
+    fit_relerr_crit: 0.1 #this is only for the single fits NOT trace
     fit_max_iter: 30
     fit_range:
-    - 0.1
-    - 0.5
+    - 0.2
+    - 0.35
   FourierTransform:
     fourier: false
     min_pw: 17

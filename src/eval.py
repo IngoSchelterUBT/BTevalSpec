@@ -8,7 +8,7 @@ import sys
 import os.path
 import getopt
 import matplotlib
-matplotlib.use("TkAgg")
+#matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
@@ -24,6 +24,7 @@ import padeApprox
 import specGuess
 import specFit
 import inout
+import handleTrace
 
 #------------------------------------------------------------------------------#
 # Main
@@ -85,10 +86,12 @@ def main():
     for i, fileName in enumerate(conf.dipoleFiles):
       fit.append(specFit.Fit(conf,ft[i],guess[i],i))
     if conf.numDipoleFiles == 3:
+      handleTrace.guessTrace(guess[3], fit) 
       fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
 
 
   input("Press [enter] to end and close all plots!")
+
 #------------------------------------------------------------------------------#
 # Call main
 #------------------------------------------------------------------------------#

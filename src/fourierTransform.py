@@ -158,12 +158,12 @@ class FT:
       #Osci
       #Save all the Osci-files in directory
       for i in range(len(self.osci)):
-        np.savetxt('Osci/Osci_' + str(self.ftId) + util.getDir(i),self.osci[i],header=headOsci)
+        np.savetxt('Osci/Osci_' + str(self.ftId + 1) + util.getDir(i),self.osci[i],header=headOsci)
 
       #PW
       #Save all the PW-files in directory
       for i in range(len(self.pw)):
-        np.savetxt('PW/PW_' + str(self.ftId) + util.getDir(i),self.pw[i],header=headPW)
+        np.savetxt('PW/PW_' + str(self.ftId + 1) + util.getDir(i),self.pw[i],header=headPW)
     elif calcFlag == 'trace':
       #Osci
       #Save the trace Osci-file in directory
@@ -208,7 +208,7 @@ class FT:
 
     if calcFlag == 'no':
       for i in range(3):
-        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + util.getDir(i)))
+        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId + 1) + util.getDir(i)))
     elif calcFlag == 'trace':
       self.osci.append(np.loadtxt('Osci/Osci'))
 
@@ -216,7 +216,7 @@ class FT:
   def readHeaderOsci(self,calcFlag='no'):
     try:
       if calcFlag == 'no':
-        OsciFile = open('Osci/Osci_' + str(self.ftId) + 'x','r')
+        OsciFile = open('Osci/Osci_' + str(self.ftId + 1) + 'x','r')
       elif calcFlag == 'trace':
         OsciFile = open('Osci/Osci')
     except:

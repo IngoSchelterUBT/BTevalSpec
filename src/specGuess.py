@@ -3,13 +3,15 @@
 import numpy as np
 from scipy import signal
 import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 #own modules
 import dipole
 import padeApprox
 import errorHandler as err
+
+#TODO: Delete making guess for trace! In this case only create self.guess = [] this is
+#      handeled after the fit of the 3 directions.
 
 class Guess:
   def __init__(self,config,ft,pade,Id,calcFlag='no'):
@@ -73,21 +75,7 @@ class Guess:
 
     # 3) Make a guess for the oscillator strength out of the imag part of Osci (imag part of ft of dipole moment)
     #    i.e. search for the corresponding energy and oscillator strength in the fourier transformation
-    f_temp = [np.array([])]*len(self.osci)
-    for i in range(len(self.osci)):
-      for j in range(len(w)):
-        abs_diff = np.abs(self.osci[i][:,0]-w[j])
-        index_smallest_diff = abs_diff.argmin()
-        #f as oscillator strength of imaginary part (third column of osci)
-        f_temp[i] = np.append(f_temp[i],self.osci[i][index_smallest_diff,2])
-    
-    f = np.empty((len(w),0))
-    for i in range(len(self.osci)):
-      f = np.column_stack([f,f_temp[i]])
-    
-    #calculate values for guess of fit-function
-    for i in range(len(f[0,:])):
-      f[:,i] = f[:,i]*w[:]/self.propTime
+    f = self.searchAmplitude(w)
 
     return np.column_stack([w,f])
   
@@ -121,6 +109,27 @@ class Guess:
       w_pade = np.sort(padeSum[pos_peaks,0])
 
     return w_pade
+
+  #Routine for searching Amplitudes in Osci, i.e. make Guess for amplitudes
+  def searchAmplitude(self,w):
+    f_temp = [np.array([])]*len(self.osci)
+    for i in range(len(self.osci)):
+      for j in range(len(w)):
+        abs_diff = np.abs(self.osci[i][:,0]-w[j])
+        index_smallest_diff = abs_diff.argmin()
+        #f as oscillator strength of imaginary part (third column of osci)
+        f_temp[i] = np.append(f_temp[i],self.osci[i][index_smallest_diff,2])
+    
+    f = np.empty((len(w),0))
+    for i in range(len(self.osci)):
+      f = np.column_stack([f,f_temp[i]])
+    
+    #calculate values for guess of fit-function
+    for i in range(len(f[0,:])):
+      f[:,i] = f[:,i]*w[:]/self.propTime
+
+    return f
+    
 
   #Routine for finding maximum peak in PadeOsci
   def findMaxPeak(self,padeSum,calcFlag):

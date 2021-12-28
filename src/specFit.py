@@ -3,7 +3,7 @@
 import numpy as np
 from lmfit import Parameters, minimize, report_fit
 import matplotlib
-matplotlib.use("TkAgg")
+#matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 
 #own modules
@@ -58,7 +58,10 @@ class Fit:
 
       #Calculate relative error between fit and raw data (in case of multifit the largest error is returned)
       self.fit_relerr = self.calcFitRelErr()
-      print('fit_relerr = ' + str(self.fit_relerr) + ', fitId = ' + str(self.fitId))
+      print('fit_relerr = ' + str(self.fit_relerr) + ', fitId = ' + str(self.fitId+1))
+      if calcFlag == 'trace':
+        print('Trace is fitted without iteration!')
+        break
       
       #stop if error criterium is fullfilled, else add a new line at maximum deviation
       #between fit and raw data

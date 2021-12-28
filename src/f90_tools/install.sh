@@ -4,7 +4,8 @@
 #ifort -c mathtools.f90
 
 #Python compilation of fortran code
-python3 -m numpy.f2py -c mathtools.f90 -m mathtools --fcompiler=intelem --quiet
+#python3 -m numpy.f2py -c mathtools.f90 -m mathtools --fcompiler=intelem #--quiet
+python3 -m numpy.f2py -c mathtools.f90 -m mathtools --fcompiler=gnu95 #--quiet
 
 #Include in python:
 #import mathtools
