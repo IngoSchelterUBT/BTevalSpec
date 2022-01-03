@@ -3,19 +3,20 @@ DIPOLE:
 - dipole_k100.dat
 - dipole_k010.dat
 - dipole_k001.dat
+#- dipole.dat
 EXCIT: laser_profile.dat
 OPT:
   FitSpectrum:
-    fit: false
+    fit: true
     fit_guess: false
-    fit_max_iter: 1
-    fit_range:
-    - 0.1
-    - 0.6
-    fit_relerr_crit: 1.0e-12
     guess_thres: 0.1
+    fit_relerr_crit: 0.1 #this is only for the single fits NOT trace
+    fit_max_iter: 30
+    fit_range:
+    - 0.2
+    - 0.35
   FourierTransform:
-    fourier: true
+    fourier: false
     min_pw: 17
     smooth: 0
     window: 0
@@ -32,7 +33,7 @@ SPEC:
     name: S1
     phase: 0.05
     strength: 0.1
-    transdip:
+    transdip: #the transition dipole vector is unnormalized!!
     - 0.0
     - 0.1
     - 0.2
@@ -45,4 +46,7 @@ SPEC:
     - 0.0
     - 0.3
     - 0.4
+  fit_abserr: 1.0e-12
+  fit_referr: 0.0001
+  fit_relerr: 1.0e-08
   nex: 2

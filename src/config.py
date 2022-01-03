@@ -65,21 +65,23 @@ class Config:
     ##############################################################
     #Config for Fit output/guess
     #Read list of excitations as class
-    self.excitations = self.Excitations(configFile)
+    self.excitations = self.Excitations(configFile,self.numDipoleFiles)
 
   class Excitations:
     
-    def __init__(self,configFile):
+    def __init__(self,configFile,numDipoleFiles):
       excitations = configFile.get('SPEC').get('excitations',[])
       self.names = []
       self.energies = np.array([])
       self.osciStrengths = np.array([])
       self.phases = np.array([])
-      self.transdips = np.empty((0,3)) #transdip is a matrix with the vectors as rows (unnormalized!!)
+      self.amplitudes = [] #amplitudes as list of numpy arrays
+      self.fix = []
       for i in range(len(excitations)):
-        self.names.append(excitations[i].get('name'))
+        self.names.append(excitations[i].get('name','none'))
         self.energies = np.append(self.energies,excitations[i].get('energy'))
-        self.osciStrengths = np.append(self.osciStrengths,excitations[i].get('strength'))
-        self.phases = np.append(self.phases,excitations[i].get('phase'))
-        self.transdips = np.vstack((self.transdips,np.array([excitations[i].get('transdip',np.array([]))])))
-
+        self.osciStrengths = np.append(self.osciStrengths,excitations[i].get('strength',0.0))
+        self.fix.append(excitations[i].get('fix',False))
+        #self.phases = np.append(self.phases,excitations[i].get('phase'))
+        for j in range(numDipoleFiles):
+          self.amplitudes.append(excitations[i].get('amplitude_file%i' % (j+1),np.array([])))

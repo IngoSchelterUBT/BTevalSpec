@@ -55,14 +55,31 @@ class Guess:
     else:
       #In object config.excitations are the names, energies, osciStrengths, phases and transdips of 
       #all the excitations saved
-      self.excitations = config.excitations
+      self.guess = np.zeros((len(config.excitations.energies),1+len(self.osci)))
+      self.guess[:,0] = config.excitations.energies
       #read guess out of config-file
       if calcFlag == 'no':
-        #read a1, a2, a3 as guess for fit
-        self.guess = np.column_stack([config.excitations.energies,config.excitations.transdips])
+        #TODO: - read a1 oder a2 oder a3 as guess for fit
+        #      - for new added line search in Osci for guess of amplitude
+        for i in range(len(config.excitations.energies)):
+          if len(config.excitations.amplitudes[i]) == 0:
+            #new added line -> search in Osci for guess of amplitude
+            #in searchAmplitude(w) w must be an array of energies, in this case of
+            #length 1
+            amp = self.searchAmplitude(np.array([config.excitations.energies[i]]))
+            self.guess[i,1:] = amp
+          else:
+            self.guess[i,1:] = config.excitations.amplitudes[i]
       elif calcFlag == 'trace':
         #read oscillator strength as guess
-        self.guess = np.column_stack([config.excitations.energies,config.excitations.osciStrengths])
+        #TODO: - read strength
+        #      - for new added line search in Osci for guess of strength
+        for i in range(len(config.excitations.energies)):
+          if config.excitations.osciStrengths[i] == 0.0:
+            strength = self.searchAmplitude(np.array([config.excitations.energies[i]]))
+            self.guess[i,1:] = strength
+          else:
+            self.guess[i,1:] = config.excitations.osciStrengths[i]
   
   
   #Routine for making guess out of pade-Approximation

@@ -89,6 +89,9 @@ def main():
       handleTrace.guessTrace(guess[3], fit) 
       fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
 
+  #write excitation lines
+  inout.writeExcitations(conf,fit)
+
 
   input("Press [enter] to end and close all plots!")
 

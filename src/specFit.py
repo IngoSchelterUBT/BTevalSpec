@@ -14,13 +14,37 @@ import util
 #For tests
 from pprint import pprint
 
+#==============================================================================#
+# Class Fit
+#==============================================================================#
+# The Class consists of the following variables:
+# - fitId: Id of the file that is fitted (starting with 0).
+# - propTime: Propagation time of the BTDFT calculation.
+# - fit_relerr_crit: relative error criterium for fit read out of eval.yaml
+# - fit_max_iter: Maxiumum number of iterations of the fit. Per iteration one
+#   additional line is added in the spectrum.
+# - osci: List of the fourier transformation of the dipole moment (x-, y- and z-
+#   direction). Only for the fitted range.
+# - guess: Initial guess of excitation lines (first column energies, then
+#   amplitudes: 1 column for trace, 3 columns for multifit)
+# - fit_range: range of the fitted spectrum (see eval.yaml)
+# - fix: List of booleans of the line shoud be fixed or not
+# - dw: Energy steps of the x-axis.
+# - fit_relerr: Relative error between fit and data.
+# - osci_range: Range of fitted spectrum of cutted osci file.
+# - fit_result: Result of fitted spectrum. First column energies, then
+#   amplitudes: 1 column for trace, 3 columns for multifit)
+# - lineId (added in handleTrace.py): Only for multifit. Labels which line in
+#   the multifit contains to which line in the fit of the trace.
+#------------------------------------------------------------------------------#
+
 class Fit:
   def __init__(self,config,ft,guess,Id,calcFlag='no'):
     #set id from input
     self.fitId = Id
     #read propagation time out of fourierTransform
     self.propTime = ft.propTime
-    #read absolute error criterium out of config file
+    #read relative error criterium out of config file
     self.fit_relerr_crit = config.fit_relerr_crit
     #read maximum of fit iterations out of config file
     self.fit_max_iter = config.fit_max_iter
@@ -30,6 +54,8 @@ class Fit:
     self.guess = guess.guess
     #read fit_range
     self.fit_range = config.fit_range
+    #read fix booleans, if line should be fixed or not
+    self.fix = config.excitations.fix
     #calculate dw as the frequency step
     self.dw = (self.osci[0][len(self.osci[0][:,0])-1,0]-self.osci[0][0,0]) /\
               float((len(self.osci[0][:,0])-1))
@@ -76,8 +102,6 @@ class Fit:
 
     # 2.) Plot the result of the fit, the raw data and deviation
     self.plotFit(calcFlag)
-    #TODO:
-    # - Print fit results for every line in yaml file.
 
   #Routine for multifit
   def makeMultifit(self):
@@ -87,8 +111,8 @@ class Fit:
     for j in range(len(self.guess[0,1:])):
       off = int(j*len(self.guess[:,0]))
       for i in range(len(self.guess[:,0])):
-        fit_params.add('w_%i' % (i+1+off), value=self.guess[i,0])
-        fit_params.add('f_%i' % (i+1+off), value=self.guess[i,j+1])
+        fit_params.add('w_%i' % (i+1+off), vary=not self.fix[i], value=self.guess[i,0])
+        fit_params.add('f_%i' % (i+1+off), vary=not self.fix[i], value=self.guess[i,j+1])
       
     #Make constraint that 'w_1' must equal 'w_(1+off)'
     for j in range(1,len(self.guess[0,1:])):
