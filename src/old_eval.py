@@ -11,7 +11,6 @@ import matplotlib
 #matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
-import multiprocessing
 
 #only for tests
 from pprint import pprint
