@@ -82,14 +82,14 @@ def writeExcitations(conf,fit): #attention conf is the object!!
       if conf.fit_guess or conf.excitations.names[i] == 'none':
         exc['name'] = 'S%i' % (i+1)
       else:
-        exc['name'] = config.excitations.names[i]
+        exc['name'] = conf.excitations.names[i]
       if conf.fit_guess:
         exc['fix'] = False
       else:
         exc['fix'] = conf.excitations.fix[i]
       exc['name'] = 'S%i' % (i+1)
       exc['energy'] = float(fit[0].fit_result[i,0])
-      exc['amplitudes_file1'] = np.ndarray.tolist(fit[0].fit_result[i,1:])[0]
+      exc['amplitudes_file1'] = np.ndarray.tolist(fit[0].fit_result[i,1:])
       excitations.append(exc)
 
   config['SPEC']['excitations'] = excitations

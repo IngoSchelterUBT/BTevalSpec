@@ -104,7 +104,7 @@ class Fit:
         self.addNewLine()
 
 
-    # 2.) Plot the result of the fit, the raw data and deviation
+    # 2.) Plot the result of the fit, the raw data and deviation (is done later, not parallel)
     #self.plotFit(calcFlag)
 
   #Routine for multifit

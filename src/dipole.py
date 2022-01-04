@@ -155,7 +155,7 @@ class Dipole:
     #length of time step in propagation
     self.dt = dipoleFile.get('DT',[0.])[0]
     if self.dt == 0.:
-      err.errr(1, 'There is no time step in dipole file!')
+      err.err(1, 'There is no time step in dipole file!')
     #boost energy of boost calculation in rydberg
     self.boostenergy = dipoleFile.get('BOOSTENERGY',[0.])[0]
     #k-vector of boost excitation

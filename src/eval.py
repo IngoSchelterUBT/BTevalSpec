@@ -8,7 +8,7 @@ import sys
 import os.path
 import getopt
 import matplotlib
-#matplotlib.use("TkAgg")
+matplotlib.use("Qt5Agg")
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import concurrent.futures
@@ -33,6 +33,7 @@ def main():
   #write template config
   if not os.path.isfile('eval.yaml'):
     inout.writeEmptyConfig()
+    err.err(1,'There was no eval.yaml file, now a template is created!')
   #Inizialize the object containing all the configuration information in eval.yaml
   conf = config.Config()
   #Inizialize a list of objects containing all configurations of all dipole files
