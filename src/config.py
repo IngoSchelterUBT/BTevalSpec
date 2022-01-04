@@ -7,7 +7,6 @@ import inout
 #TODO: make errors for a false configuration!!
 
 class Config:
-
   def __init__(self):
     #------------------------------------------------------------#
     ##############################################################
@@ -21,7 +20,7 @@ class Config:
     else:
       self.numDipoleFiles = 1
     self.exitFile = configFile.get('EXCIT')
-    
+
     ##############################################################
     #Data of configFile-file
     #boolean for fourier transformation
@@ -42,11 +41,11 @@ class Config:
     self.pade_wmax = configFile.get('OPT').get('PadeApprox').get('pade_wmax',0.6)
     #PADE_DW (default=0.00001)
     self.pade_dw = configFile.get('OPT').get('PadeApprox').get('pade_dw',1.0e-5)
-    #smooth parameter for Pade-Approximation 
+    #smooth parameter for Pade-Approximation
     self.pade_smooth = configFile.get('OPT').get('PadeApprox').get('pade_smooth',1.0e-7)
     #only keep every 2^n th data point to avoid running out of memory in pade program
     self.pade_thin = int(configFile.get('OPT').get('PadeApprox').get('pade_thin',0))
-  
+
     ##############################################################
     #Config for Fit calculation
     #boolean if fit should be calculated
@@ -61,16 +60,20 @@ class Config:
     self.fit_range = np.sort(configFile.get('OPT').get('FitSpectrum').get('fit_range',np.array([0])))
     #relative threshold (according to the maximum line) which line in the Pade approximation should be identified as an excitation line
     self.guess_thres = configFile.get('OPT').get('FitSpectrum').get('guess_thres',0.1)
-    
+
     ##############################################################
     #Config for Fit output/guess
     #Read list of excitations as class
     self.excitations = self.Excitations(configFile,self.numDipoleFiles)
 
   class Excitations:
-    
+
     def __init__(self,configFile,numDipoleFiles):
-      excitations = configFile.get('SPEC').get('excitations',[])
+      excitations = configFile.get('SPEC','none')
+      if excitations == 'none':
+        return
+      else:
+        excitations = excitations.get('excitations',[])
       self.names = []
       self.energies = np.array([])
       self.osciStrengths = np.array([])

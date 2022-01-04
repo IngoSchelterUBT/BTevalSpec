@@ -11,7 +11,6 @@ import errorHandler as err
 import util
 
 class FT:
-  
   def __init__(self,config,dipole,Id,calcFlag='no'):
     #Save all the information needed for the fit, either from dipole files or from reading the fourier transformed dipole moment files
     #if ft should be transformed than the values for the fourier transformation are also needed
@@ -33,7 +32,6 @@ class FT:
       #write fourier transformation and pw-spectrum
       self.writeFT(calcFlag)
     elif not config.fourier and config.fit:
-      #read propagation time and k-vector out of head Osci files
       #read fourier transformation out of Osci files, PW-Spectrum ist not needed
       self.readOsci(calcFlag)
 
@@ -44,7 +42,7 @@ class FT:
 #-----------------------------------------------------------------------------#
   #Routine for calculation the fourier transformation and the PW
   def calcFT(self,config,dipole):
-    time = dipole.dipData[:,0] 
+    time = dipole.dipData[:,0]
     func = dipole.dipData[:,1:]
 
     #calculating lenght of ft array as a power of 2
@@ -59,7 +57,7 @@ class FT:
     #frequencies
     freq = self.getFreq(2**pw2,dipole.dt,False)
     freqPw = self.getFreq(2**(pw2-1)+1,dipole.dt,True)
-    
+
     #smooth the signal if smooth parameter is greater than 0.
     if config.smooth > 0.:
       for i in range(func.shape[1]):
@@ -75,7 +73,7 @@ class FT:
     #dipole moments
     #variable to transform Ry to Osci
     Ry2Osci = np.sqrt(dipole.nelec[0])/np.sqrt(dipole.boostenergy)/np.sqrt(2)/3.
-    
+
     #Do fourier transformation for x-, y- and z-dipole moment
     for i in range(len(func[0,:])):
       ft = self.fft(func[:,i],2**pw2,dipole.dt)
@@ -86,7 +84,7 @@ class FT:
 
     #calculate the pw spectrum
     self.pw = []
-    
+
     for i in range(func.shape[1]):
       powerSpec = self.pwSpec((self.osci[i][:,1]+1j*self.osci[i][:,2])/dipole.dt/Ry2Osci,
                               2**pw2,dipole.dt)
@@ -95,8 +93,8 @@ class FT:
 
 
     #output of osci and pw with the header cosisting the propagation time and the kvector
-      
-      
+
+
 
 
   #Routine for calculating the fourier transformation of the time
@@ -174,7 +172,7 @@ class FT:
       #Save the trace PW-file in directory
       for i in range(len(self.pw)): #is only one pw
         np.savetxt('PW/PW',self.pw[i],header=headPW)
-      
+
 
   #Routine for making header as yaml-dictionary
   def makeHeader(self,calcFlag):
@@ -184,16 +182,16 @@ class FT:
     elif calcFlag == 'trace':
       headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec}
 
-    
+
     headDictStr = yaml.dump(headDict)
-    
+
     head = str()
     for i, line in enumerate(headDictStr.splitlines()):
       if i == 0:
         head += ('!BT ' + line)
       else:
         head += ('\n' + '!BT ' + line)
-    
+
     return head
 
 
@@ -227,7 +225,7 @@ class FT:
       l = line.split()
       if l[1] == '!BT':
         head += (str(line))
-    
+
     headYaml = str()
     for i, line in enumerate(head.splitlines()):
       if i == 0:

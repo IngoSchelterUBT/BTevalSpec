@@ -6,7 +6,6 @@ import errorHandler as err
 import inout
 
 class Dipole:
-
   def __init__(self,fileName,dipoleId,calcFlag='no'):
     self.calcFlag = calcFlag
     if isinstance(fileName, list) and len(fileName) == 3 and calcFlag == 'trace':
@@ -45,7 +44,7 @@ class Dipole:
       dipoleFile = self.readDipoleHeader(fileName)
       #ID for the dipole object, if there are multiple dipole objects
       self.dipoleId = dipoleId
-      
+
       #Set data of dipole file in variables
       self.setHeadInformation(dipoleFile)
 
@@ -59,7 +58,7 @@ class Dipole:
       ##############################################################
       #dipoleFile ist the head information of the dipole file as dictionary
       dipoleFile = self.readDipoleHeader(fileName)
-      
+
       #ID for the dipole object
       self.dipoleId = dipoleId
 
@@ -86,7 +85,7 @@ class Dipole:
           if len(line_array) == 4:
             (key, [val1, val2]) = (line_array[1],[line_array[3],line_array[2]])
             dipole[key] = [val1, val2]
-    
+
     #Check units of Dipole File
     if dipole.get('DX')[-1] != 'a0':
       err.err(1,'Unit of DX unknown!')
@@ -108,7 +107,7 @@ class Dipole:
       err.err(1,'Unit of LASEREND unknown!')
     elif dipole.get('DIP0')[-1] != 'dip_ry':
       err.err(1,'unit of DIP0 unknown!')
-    
+
     for k, v in dipole.items():
       if ',' in v[0]:
         dipole[k] = np.array([float(i) for i in v[0].split(',')]) #modifiziere v[0]: dort steht der value drinnen, d. h. wenn etwas Komma seperiertes ist dann aendere den value zu einer numpy list
@@ -135,7 +134,7 @@ class Dipole:
       err.err(1,'There are no atoms in dipole file!')
     #number of atom types
     self.ntypes = int(dipoleFile.get('NTYPES',[0])[0])
-    if self.ntypes == 0: 
+    if self.ntypes == 0:
       err.err(1,'There are no atom types in dipole file!')
     #array of number of atoms per type
     self.atomspertype = dipoleFile.get('ATOMSPERTYPE','empty')
@@ -159,8 +158,7 @@ class Dipole:
       err.errr(1, 'There is no time step in dipole file!')
     #boost energy of boost calculation in rydberg
     self.boostenergy = dipoleFile.get('BOOSTENERGY',[0.])[0]
-    #k-vector of boost excitation 
+    #k-vector of boost excitation
     self.kvec = dipoleFile.get('BOOSTKVEC','empty')
     if 'empty' in str(self.kvec):
       err.err(1, 'There was no k-vector in dipole file!')
-

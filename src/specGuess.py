@@ -43,17 +43,17 @@ class Guess:
 #-----------------------------------------------------------------------------#
   #Head-Routine for making Guess
   def giveGuess(self,config,calcFlag='no'):
-    #Make an list for the guess, 
+    #Make an list for the guess,
     # - if three files are fitted (calcFlag=='no'), then the list contains the
     #   guess for the x-, y- and z-direction
     # - if only one file is fitted (calcFlag=='trace'), then the list only contains
     #   one guess.
-    
+
     #Make guess or read guess out of config
     if config.fit_guess:
       self.guess = self.makeGuess(config,calcFlag)
     else:
-      #In object config.excitations are the names, energies, osciStrengths, phases and transdips of 
+      #In object config.excitations are the names, energies, osciStrengths, phases and transdips of
       #all the excitations saved
       self.guess = np.zeros((len(config.excitations.energies),1+len(self.osci)))
       self.guess[:,0] = config.excitations.energies
@@ -80,13 +80,13 @@ class Guess:
             self.guess[i,1:] = strength
           else:
             self.guess[i,1:] = config.excitations.osciStrengths[i]
-  
-  
+
+
   #Routine for making guess out of pade-Approximation
   def makeGuess(self,config,calcFlag='no'):
     # 1) Create Pade-Approximation depending on all three files should be fitted or just the trace
     padeSum = self.createPade(config,calcFlag)
-    
+
     # 2) look for peaks in the Pade Approximation (padeSum)
     w = self.searchPeaks(padeSum,calcFlag)
 
@@ -95,7 +95,7 @@ class Guess:
     f = self.searchAmplitude(w)
 
     return np.column_stack([w,f])
-  
+
   #Routine for creating padeSum, which is the Pade-Approximation from which the fit is made of
   def createPade(self,config,calcFlag):
     if calcFlag == 'no':
@@ -136,17 +136,17 @@ class Guess:
         index_smallest_diff = abs_diff.argmin()
         #f as oscillator strength of imaginary part (third column of osci)
         f_temp[i] = np.append(f_temp[i],self.osci[i][index_smallest_diff,2])
-    
+
     f = np.empty((len(w),0))
     for i in range(len(self.osci)):
       f = np.column_stack([f,f_temp[i]])
-    
+
     #calculate values for guess of fit-function
     for i in range(len(f[0,:])):
       f[:,i] = f[:,i]*w[:]/self.propTime
 
     return f
-    
+
 
   #Routine for finding maximum peak in PadeOsci
   def findMaxPeak(self,padeSum,calcFlag):
@@ -159,4 +159,3 @@ class Guess:
       f_pade = np.sort(padeSum[pos_peaks,1])
 
     return np.amax(f_pade)
-

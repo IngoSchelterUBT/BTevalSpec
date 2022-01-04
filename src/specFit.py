@@ -55,7 +55,11 @@ class Fit:
     #read fit_range
     self.fit_range = config.fit_range
     #read fix booleans, if line should be fixed or not
-    self.fix = config.excitations.fix
+    #if it is not configured than set fix to 0
+    try:
+      self.fix = config.excitations.fix
+    except Exception:
+      self.fix = [False]*len(self.guess[:,0])
     #calculate dw as the frequency step
     self.dw = (self.osci[0][len(self.osci[0][:,0])-1,0]-self.osci[0][0,0]) /\
               float((len(self.osci[0][:,0])-1))
@@ -67,18 +71,18 @@ class Fit:
 #   Methods of the class Fit
 #-----------------------------------------------------------------------------#
   def makeFit(self,config,calcFlag='no'):
-    #Make an list for the guess, 
+    #Make an list for the guess,
     # - if three files are fitted (calcFlag=='no'), then the list contains the
     #   guess for the x-, y- and z-direction
     # - if only one file is fitted (calcFlag=='trace'), then the list only contains
     #   one guess.
-    
+
     # 1.) Make multifit or make single fit for trace
     #     The following routine call calculates the fit of the trace, as well!
     for i in range(self.fit_max_iter):
       if i+1 == self.fit_max_iter:
         print('Maximum number of iterations for fit exceeded for file ' + str(self.fitId+1))
-      
+
       #Calculate the multifit (or in case of trace singlefit)
       self.fit_result = self.makeMultifit()
 
@@ -88,7 +92,7 @@ class Fit:
       if calcFlag == 'trace':
         print('Trace is fitted without iteration!')
         break
-      
+
       #stop if error criterium is fullfilled, else add a new line at maximum deviation
       #between fit and raw data
       if self.fit_relerr < self.fit_relerr_crit:
@@ -101,7 +105,7 @@ class Fit:
 
 
     # 2.) Plot the result of the fit, the raw data and deviation
-    self.plotFit(calcFlag)
+    #self.plotFit(calcFlag)
 
   #Routine for multifit
   def makeMultifit(self):
@@ -113,7 +117,7 @@ class Fit:
       for i in range(len(self.guess[:,0])):
         fit_params.add('w_%i' % (i+1+off), vary=not self.fix[i], value=self.guess[i,0])
         fit_params.add('f_%i' % (i+1+off), vary=not self.fix[i], value=self.guess[i,j+1])
-      
+
     #Make constraint that 'w_1' must equal 'w_(1+off)'
     for j in range(1,len(self.guess[0,1:])):
       off = int(j*len(self.guess[:,0]))
@@ -150,7 +154,7 @@ class Fit:
         f[i] = out.params['f_%i' % (i+1+off)]
 
       fit_result = np.column_stack([fit_result,f])
-        
+
     return fit_result
 
   #Routine for whole fit-function
@@ -164,9 +168,9 @@ class Fit:
       for i in range(len(self.guess[:,0])):
         s += f[i+off]/w[i+off]*\
              np.sinc(self.propTime*(x[k]-w[i+off])/np.pi)*self.propTime
-      
+
       sinc = np.append(sinc,s)
-    
+
     return sinc
 
 
@@ -182,7 +186,7 @@ class Fit:
       for i in range(len(self.guess[:,0])):
         w = np.append(w,params['w_%i' % (i+1+off)])
         f = np.append(f,params['f_%i' % (i+1+off)])
-    
+
     #make residual per data set
     resid = data - self.fit_sinc(w, f, x)
 
@@ -191,7 +195,7 @@ class Fit:
 
   #Routine for calculation the relative error between fit and raw data (in case
   #of multifit the minimum error is returned)
-  #absolute error is defined as err(dat,fit) = sqrt( [int(data-fit)^2 dw] / [fit-range] ) 
+  #absolute error is defined as err(dat,fit) = sqrt( [int(data-fit)^2 dw] / [fit-range] )
   #(integrals over fit range)
   def calcFitRelErr(self):
     rel_error = np.array([])
@@ -218,7 +222,7 @@ class Fit:
 
     #Frequency of maximum deviation between fit and raw data
     w_max = self.osci[int(np.argmax(max_dev))][int(max_index[np.argmax(max_dev)]),0]
-    
+
     #find corresponding amplitude(s) to the frequency
     f_max = np.array([])
     for i in range(len(self.osci)):
@@ -229,6 +233,8 @@ class Fit:
     newLine = np.concatenate([[w_max],f_max])
     self.guess = np.vstack((self.guess,newLine))
     self.guess = self.guess[self.guess[:,0].argsort()]
+    #also append a new fix boolean to the List
+    self.fix.append(False)
 
 #-----------------------------------------------------------------------------#
 #   Methods for Making Plot
@@ -264,7 +270,7 @@ class Fit:
         ax.label_outer()
 
       fig.suptitle("Fit of dipole file " + str(self.fitId + 1))
-      
+
       plt.show(block=False)
 
     elif calcFlag == 'trace':
@@ -285,7 +291,7 @@ class Fit:
       plt.ylabel('$S(\hbar \omega)$')
       fig.suptitle("Fit of trace")
       plt.show(block=False)
-                    
+
 
 
   #Function for plotting the fit-results
@@ -295,5 +301,3 @@ class Fit:
       s += f[i]/w[i]*np.sinc(self.propTime*(x-w[i])/np.pi)*self.propTime
 
     return s
-      
-

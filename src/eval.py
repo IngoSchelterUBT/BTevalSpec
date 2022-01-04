@@ -11,10 +11,10 @@ import matplotlib
 #matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
+import concurrent.futures
 
 #only for tests
 from pprint import pprint
-
 
 #Import own Modules
 import config
@@ -31,7 +31,8 @@ import handleTrace
 #------------------------------------------------------------------------------#
 def main():
   #write template config
-  inout.writeEmptyConfig()
+  if not os.path.isfile('eval.yaml'):
+    inout.writeEmptyConfig()
   #Inizialize the object containing all the configuration information in eval.yaml
   conf = config.Config()
   #Inizialize a list of objects containing all configurations of all dipole files
@@ -56,12 +57,16 @@ def main():
     ft = [None]*len(conf.dipoleFiles)
     if conf.numDipoleFiles == 3: ft.append(None)
     if conf.fourier: inout.cleanFT() #delete Osci and PW folder
-    for i in range(len(ft)):
-      if i == 3:
-        calcFlag = 'trace'
-      else:
-        calcFlag = 'no'
-      ft[i] = fourier.FT(conf,dip[i],i,calcFlag)
+    future = ft #create a future object list
+    with concurrent.futures.ThreadPoolExecutor() as executer:
+      for i in range(len(ft)):
+        if i == 3:
+          calcFlag = 'trace'
+        else:
+          calcFlag = 'no'
+        future[i] = executer.submit(fourier.FT, conf, dip[i], i, calcFlag)
+        ft[i] = future[i].result()
+        #ft[i] = fourier.FT(conf,dip[i],i,calcFlag)
 
   #Do Pade Approximation of the dipole moment file(s)
   pade = []
@@ -69,37 +74,58 @@ def main():
     pade = [None]*len(conf.dipoleFiles)
     if conf.numDipoleFiles == 3: pade.append(None)
     if conf.pade: inout.cleanPade() #delete PADE folder
-    for i in range(len(pade)):
-      if i == 3:
-        calcFlag = 'trace'
-      else:
-        calcFlag = 'no'
-      pade[i] = padeApprox.Pade(conf,dip[i],i,calcFlag)
+    future = pade #create a future object list
+    with concurrent.futures.ThreadPoolExecutor() as executer:
+        for i in range(len(pade)):
+          if i == 3:
+            calcFlag = 'trace'
+          else:
+            calcFlag = 'no'
+          future[i] = executer.submit(padeApprox.Pade, conf, dip[i], i, calcFlag)
+          pade[i] = future[i].result()
+          #pade[i] = padeApprox.Pade(conf,dip[i],i,calcFlag)
   elif not conf.pade and conf.fit and not conf.fit_guess:
     #construct dummy pade list
     for i in range(conf.numDipoleFiles+1):
       pade.append(0)
-      
+
 
   #Do Guess for fit of the spectrum
   if conf.fit:
     guess = [None]*len(conf.dipoleFiles)
     if conf.numDipoleFiles == 3: guess.append(None)
-    for i in range(len(guess)):
-      if i == 3:
-        calcFlag = 'trace'
-      else:
-        calcFlag = 'no'
-      guess[i] = specGuess.Guess(conf,ft[i],pade[i],i,calcFlag)
+    future = guess #create a future object list
+    with concurrent.futures.ThreadPoolExecutor() as executer:
+        for i in range(len(guess)):
+          if i == 3:
+            calcFlag = 'trace'
+          else:
+            calcFlag = 'no'
+          future[i] = executer.submit(specGuess.Guess, conf, ft[i], pade[i], i, calcFlag)
+          guess[i] = future[i].result()
+          #guess[i] = specGuess.Guess(conf,ft[i],pade[i],i,calcFlag)
 
   #Do Fit of the spectrum
   if conf.fit:
     fit = [None]*len(conf.dipoleFiles)
-    for i, fileName in enumerate(conf.dipoleFiles):
-      fit[i] = specFit.Fit(conf,ft[i],guess[i],i)
+    future = fit
+    with concurrent.futures.ThreadPoolExecutor() as executer:
+        for i, fileName in enumerate(conf.dipoleFiles):
+          future[i] = executer.submit(specFit.Fit, conf, ft[i], guess[i], i)
+          fit[i] = future[i].result()
     if conf.numDipoleFiles == 3:
-      handleTrace.guessTrace(guess[3], fit) 
+      handleTrace.guessTrace(guess[3], fit)
       fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
+
+    #plotting the results has to be unparalleled (problem with starting
+    #matplotlib gui)
+    for i, f in enumerate(fit):
+      if i == 3:
+        calcFlag = 'trace'
+      else:
+        calcFlag = 'no'
+      f.plotFit(calcFlag)
+
     #write excitation lines
     inout.writeExcitations(conf,fit)
     input("Press [enter] to end and close all plots!")

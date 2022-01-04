@@ -14,7 +14,6 @@ import util
 import f90_tools.mathtools as mathtools
 
 class Pade:
-  
   def __init__(self,config,dipole,Id,calcFlag='no'):
     #Save all the information needed for the fit, either from dipole files or from reading the fourier transformed dipole moment files
     #if ft should be transformed than the values for the fourier transformation are also needed
@@ -46,7 +45,7 @@ class Pade:
 #-----------------------------------------------------------------------------#
   #Routine for calculation the fourier transformation and the PW
   def calcPade(self,config,dipole):
-    time = dipole.dipData[:,0] 
+    time = dipole.dipData[:,0]
     func = dipole.dipData[:,1:]
 
     #Get number of frequencies
@@ -69,7 +68,7 @@ class Pade:
 
 
 
-      
+
   #Routine for calculation the frequencies in Pade
   def getPadeFreq(self,pade_wmax,pade_dw):
     w0 = 0.
@@ -94,14 +93,14 @@ class Pade:
     t_stop = time[m]
     t_prop = t_stop - t_start
     dt = t_prop/m
-    
+
     #Thin: Remove every 2nd line from the file starting at line 2
     if config.pade_thin > 0:
       for i in range(config.pade_thin):
         time = np.delete(time, np.arange(0, time.size, 2))
         func = np.delete(func, np.arange(0, func.size, 2))
         dt = 2.*dt
-        
+
     #Remove DC component of the dipole moment
     dip = dip - np.sum(dip)/(m+1)
 
@@ -122,7 +121,7 @@ class Pade:
 
     #Solve G*b=d eq~(34) in [1] (resulting b are stored in d-array)
     b = np.linalg.solve(G,d) #is the solution of the LGS
-    
+
     #Calculate a-coefficients eq~(35) in [1]
     a = np.zeros(n)
     a0 = dip[0]
