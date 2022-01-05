@@ -5,7 +5,7 @@ block_cipher = None
 
 
 a = Analysis(['eval.py'],
-             pathex=['/usr/local/lib/python3.9/site-packages'],
+             pathex=[],
              binaries=[],
              datas=[],
              hiddenimports=[],
