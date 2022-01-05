@@ -7,7 +7,7 @@ DIPOLE:
 EXCIT: laser_profile.dat
 OPT:
   FitSpectrum:
-    fit: true
+    fit: false
     fit_guess: false
     guess_thres: 0.1
     fit_relerr_crit: 0.1 #this is only for the single fits NOT trace
@@ -21,7 +21,7 @@ OPT:
     smooth: 0
     window: 0
   PadeApprox:
-    pade: false
+    pade: true
     pade_dw: 1.0e-05
     pade_smooth: 1.0e-07
     pade_thin: 0

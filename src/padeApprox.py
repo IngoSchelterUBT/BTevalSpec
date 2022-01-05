@@ -7,11 +7,11 @@
 
 import os
 import numpy as np
+import numba as nb
 #import own modules
 import errorHandler as err
 import util
-#import f90 module
-import f90_tools.mathtools as mathtools
+import mathtools
 
 class Pade:
   def __init__(self,config,dipole,Id,calcFlag='no'):
@@ -107,33 +107,14 @@ class Pade:
     #Get decay rate of the exponential function and apply to the dipole data
     #eta=-log(decayFraction)/t_prop
     if config.pade_smooth > 0.:
-      for i in range(m+1):
-        dip[i] = dip[i]*np.exp(-config.pade_smooth*(time[i]-t_start))
-
-    #Get matrix G and vector d eq~(33) in [1]
-    b0 = 1.0
-    G = np.zeros((n,n))
-    d = np.zeros(n)
-    for k in range(n):
-      for i in range(n):
-        G[k,i] = dip[n-(i+1)+(k+1)]
-      d[k] = -dip[n+(k+1)]
-
-    #Solve G*b=d eq~(34) in [1] (resulting b are stored in d-array)
-    b = np.linalg.solve(G,d) #is the solution of the LGS
-
-    #Calculate a-coefficients eq~(35) in [1]
-    a = np.zeros(n)
-    a0 = dip[0]
-    for k in range(n):
-      a[k] = b0*dip[k+1]
-      for i in range(k):
-        a[k] = a[k] + b[i]*dip[(k+1)-(i+1)]
-
-    #Pade approximation for all values of w (using fortran)
-    mu = mathtools.padeseries(w, wn, n, dt, a0, b0, a, b)
+      dip = dip*np.exp(-config.pade_smooth*(time-t_start))
+      #for i in range(m+1):
+      #  dip[i] = dip[i]*np.exp(-config.pade_smooth*(time[i]-t_start))
+    
+    mu = mathtools.numba_padeseries(w, wn, m, n, dt, dip)
 
     return mu
+
 
   #Routine for writing the fourier transformations (osci) and pw-spectrums to file
   def writePade(self,calcFlag='no'):
