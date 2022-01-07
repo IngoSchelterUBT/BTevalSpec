@@ -25,6 +25,7 @@ import specGuess
 import specFit
 import inout
 import handleTrace
+import errorHandler as err
 
 #------------------------------------------------------------------------------#
 # Main
@@ -105,6 +106,7 @@ def main():
           future[i] = executer.submit(specGuess.Guess, conf, ft[i], pade[i], i, calcFlag)
           guess[i] = future[i].result()
           #guess[i] = specGuess.Guess(conf,ft[i],pade[i],i,calcFlag)
+
 
   #Do Fit of the spectrum
   if conf.fit:

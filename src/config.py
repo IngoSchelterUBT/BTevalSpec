@@ -79,12 +79,12 @@ class Config:
       self.osciStrengths = np.array([])
       self.phases = np.array([])
       self.amplitudes = [] #amplitudes as list of numpy arrays
-      self.fix = []
+      self.fix = np.array([])
       for i in range(len(excitations)):
         self.names.append(excitations[i].get('name','none'))
         self.energies = np.append(self.energies,excitations[i].get('energy'))
         self.osciStrengths = np.append(self.osciStrengths,excitations[i].get('strength',0.0))
-        self.fix.append(excitations[i].get('fix',False))
+        self.fix = np.append(self.fix,excitations[i].get('fix',False))
         #self.phases = np.append(self.phases,excitations[i].get('phase'))
         for j in range(numDipoleFiles):
           self.amplitudes.append(excitations[i].get('amplitude_file%i' % (j+1),np.array([])))

@@ -59,8 +59,8 @@ class Guess:
       self.guess[:,0] = config.excitations.energies
       #read guess out of config-file
       if calcFlag == 'no':
-        #TODO: - read a1 oder a2 oder a3 as guess for fit
-        #      - for new added line search in Osci for guess of amplitude
+        #- read a1 oder a2 oder a3 as guess for fit
+        #- for new added line search in Osci for guess of amplitude
         for i in range(len(config.excitations.energies)):
           if len(config.excitations.amplitudes[i]) == 0:
             #new added line -> search in Osci for guess of amplitude
@@ -72,8 +72,8 @@ class Guess:
             self.guess[i,1:] = config.excitations.amplitudes[i]
       elif calcFlag == 'trace':
         #read oscillator strength as guess
-        #TODO: - read strength
-        #      - for new added line search in Osci for guess of strength
+        #- read strength
+        #- for new added line search in Osci for guess of strength
         for i in range(len(config.excitations.energies)):
           if config.excitations.osciStrengths[i] == 0.0:
             strength = self.searchAmplitude(np.array([config.excitations.energies[i]]))

@@ -4,6 +4,7 @@ import numpy as np
 import shutil
 import os
 import ruamel.yaml
+import re
 
 #own modules
 import errorHandler as err
@@ -17,7 +18,7 @@ def writeEmptyConfig():
                       'PadeApprox' : {  'pade' : False, 'pade_wmax' : 0.6, 'pade_dw' : 0.00001, 'pade_smooth' : 0.0000001,
                                         'pade_thin' : 0
                                      },
-                      'FitSpectrum' : { 'fit' : False, 'fit_guess' : False, 'fit_relerr_crit' : 1.0e-12, 'fit_max_iter' : 1,'fit_range' : [0.1, 0.6], 'guess_thres' : 0.1},
+                      'FitSpectrum' : { 'fit' : False, 'fit_guess' : False, 'fit_relerr_crit' : 0.1, 'fit_max_iter' : 10,'fit_range' : [0.1, 0.6], 'guess_thres' : 0.1},
                     },
             'SPEC' : { 'nex' : 2,
                        'excitations' : [{'name' : 'S1', 'fix' : False, 'energy' : 0.2, 'strength' : 0.1, 'phase' : 0.05,
@@ -39,7 +40,6 @@ def readConfig():
 
 #Routine for writing excitation information
 #fit is a list of all fits (x-, y- and z-direction and trace)
-#TODO: Add a fix boolean
 #TODO: Change boolean guess=True to guess=False
 def writeExcitations(conf,fit): #attention conf is the object!!
   #read yaml file again
@@ -57,14 +57,20 @@ def writeExcitations(conf,fit): #attention conf is the object!!
     for i in range(len(fit[3].fit_result[:,0])):
       #create empty dictionary
       exc = {}
-      if conf.fit_guess or conf.excitations.names[i] == 'none':
+      try:
+        name_none = conf.excitations.names[i] == 'none'
+        name_S = re.match(r"S[0-9]+",conf.excitations.names[i])
+      except Exception:
+        name_none = True
+        name_S = False
+      if conf.fit_guess or name_none or name_S:
         exc['name'] = 'S%i' % (i+1)
       else:
-        exc['name'] = conf.excitations.names[i]
+        exc['name'] = str(conf.excitations.names[i])
       if conf.fit_guess:
         exc['fix'] = False
       else:
-        exc['fix'] = conf.excitations.fix[i]
+        exc['fix'] = bool(fit[3].fix[i])
       exc['energy'] = float(fit[3].fit_result[i,0])
       exc['strength'] = float(fit[3].fit_result[i,1])
       for j in range(3):
@@ -79,16 +85,23 @@ def writeExcitations(conf,fit): #attention conf is the object!!
     config['SPEC']['nex'] = len(fit[0].fit_result[:,0])
     for i in range(len(fit[0].fit_result[:,0])):
       exc = {}
-      if conf.fit_guess or conf.excitations.names[i] == 'none':
+      try:
+        name_none = conf.excitations.names[i] == 'none'
+        name_S = re.match(r"S[0-9]+",conf.excitations.names[i])
+      except Exception:
+        name_none = True
+        name_S = False
+      if conf.fit_guess or name_none or name_S:
         exc['name'] = 'S%i' % (i+1)
       else:
-        exc['name'] = conf.excitations.names[i]
+        exc['name'] = str(conf.excitations.names[i])
       if conf.fit_guess:
         exc['fix'] = False
       else:
-        exc['fix'] = conf.excitations.fix[i]
+        exc['fix'] = bool(fit[0].fix[i])
       exc['name'] = 'S%i' % (i+1)
       exc['energy'] = float(fit[0].fit_result[i,0])
+      exc['strength'] = float(fit[0].osciStrength[i])
       exc['amplitudes_file1'] = np.ndarray.tolist(fit[0].fit_result[i,1:])
       excitations.append(exc)
 

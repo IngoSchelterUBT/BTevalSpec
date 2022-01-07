@@ -20,6 +20,7 @@ from pprint import pprint
 # The Class consists of the following variables:
 # - fitId: Id of the file that is fitted (starting with 0).
 # - propTime: Propagation time of the BTDFT calculation.
+# - kvec: k-vector of excitation
 # - fit_relerr_crit: relative error criterium for fit read out of eval.yaml
 # - fit_max_iter: Maxiumum number of iterations of the fit. Per iteration one
 #   additional line is added in the spectrum.
@@ -33,7 +34,8 @@ from pprint import pprint
 # - fit_relerr: Relative error between fit and data.
 # - osci_range: Range of fitted spectrum of cutted osci file.
 # - fit_result: Result of fitted spectrum. First column energies, then
-#   amplitudes: 1 column for trace, 3 columns for multifit)
+#   amplitudes: 1 column for trace (equals oscillator strength), 3 columns for multifit)
+# - osciStrength: For multifit calculated oscillator strength
 # - lineId (added in handleTrace.py): Only for multifit. Labels which line in
 #   the multifit contains to which line in the fit of the trace.
 #------------------------------------------------------------------------------#
@@ -44,6 +46,8 @@ class Fit:
     self.fitId = Id
     #read propagation time out of fourierTransform
     self.propTime = ft.propTime
+    #read k-Vector out of ft
+    self.kvec = ft.kvec
     #read relative error criterium out of config file
     self.fit_relerr_crit = config.fit_relerr_crit
     #read maximum of fit iterations out of config file
@@ -57,9 +61,12 @@ class Fit:
     #read fix booleans, if line should be fixed or not
     #if it is not configured than set fix to 0
     try:
-      self.fix = config.excitations.fix
+      if calcFlag == 'no':
+        self.fix = config.excitations.fix
+      elif calcFlag == 'trace':
+        self.fix = guess.fix
     except Exception:
-      self.fix = [False]*len(self.guess[:,0])
+      self.fix = np.full(len(self.guess[:,0]),False)
     #calculate dw as the frequency step
     self.dw = (self.osci[0][len(self.osci[0][:,0])-1,0]-self.osci[0][0,0]) /\
               float((len(self.osci[0][:,0])-1))
@@ -92,6 +99,8 @@ class Fit:
       if calcFlag == 'trace':
         print('Trace is fitted without iteration!')
         break
+      elif calcFlag == 'no':
+        self.osciStrength = self.calcOsciStrength()
 
       #stop if error criterium is fullfilled, else add a new line at maximum deviation
       #between fit and raw data
@@ -103,6 +112,10 @@ class Fit:
         #maxiumum deviation between fit and raw data
         self.addNewLine()
 
+    #sort fit_result after energies and fix corresponding to it
+    arginds = self.fit_result[:,0].argsort()
+    self.fit_result = self.fit_result[arginds]
+    self.fix = self.fix[arginds]
 
     # 2.) Plot the result of the fit, the raw data and deviation (is done later, not parallel)
     #self.plotFit(calcFlag)
@@ -234,7 +247,21 @@ class Fit:
     self.guess = np.vstack((self.guess,newLine))
     self.guess = self.guess[self.guess[:,0].argsort()]
     #also append a new fix boolean to the List
-    self.fix.append(False)
+    self.fix = np.append(self.fix,False)
+
+  #Routine for calculating oscillator stregth for multifit
+  def calcOsciStrength(self):
+    e_k = self.kvec/(np.linalg.norm(self.kvec))
+
+    #f is a numpy array for oscillator strength of every excitation line
+    f = np.array([])
+    for i in range(len(self.fit_result[:,0])):
+      e_i = self.fit_result[i,1:]/(np.linalg.norm(self.fit_result[i,1:]))
+      f_i = self.fit_result[i,1]/(np.vdot(e_k,e_i)*self.fit_result[i,1])
+      f = np.append(f,f_i)
+    
+    return f
+
 
 #-----------------------------------------------------------------------------#
 #   Methods for Making Plot
