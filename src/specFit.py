@@ -257,7 +257,7 @@ class Fit:
     f = np.array([])
     for i in range(len(self.fit_result[:,0])):
       e_i = self.fit_result[i,1:]/(np.linalg.norm(self.fit_result[i,1:]))
-      f_i = self.fit_result[i,1]/(np.vdot(e_k,e_i)*self.fit_result[i,1])
+      f_i = self.fit_result[i,1]/(np.vdot(e_k,e_i)*e_i[0])
       f = np.append(f,f_i)
     
     return f
