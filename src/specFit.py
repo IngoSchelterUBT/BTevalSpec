@@ -51,7 +51,10 @@ class Fit:
     #read relative error criterium out of config file
     self.fit_relerr_crit = config.fit_relerr_crit
     #read maximum of fit iterations out of config file
-    self.fit_max_iter = config.fit_max_iter
+    if config.fit_guess:
+      self.fit_max_iter = config.fit_max_iter
+    else:
+      self.fit_max_iter = 1
     #read osci files out of guess
     self.osci = guess.osci
     #read guess out of guess-object
@@ -113,9 +116,9 @@ class Fit:
         self.addNewLine()
 
     #sort fit_result after energies and fix corresponding to it
-    arginds = self.fit_result[:,0].argsort()
-    self.fit_result = self.fit_result[arginds]
-    self.fix = self.fix[arginds]
+    #arginds = self.fit_result[:,0].argsort()
+    #self.fit_result = self.fit_result[arginds]
+    #self.fix = self.fix[arginds]
 
     # 2.) Plot the result of the fit, the raw data and deviation (is done later, not parallel)
     #self.plotFit(calcFlag)
@@ -245,7 +248,7 @@ class Fit:
 
     newLine = np.concatenate([[w_max],f_max])
     self.guess = np.vstack((self.guess,newLine))
-    self.guess = self.guess[self.guess[:,0].argsort()]
+    #self.guess = self.guess[self.guess[:,0].argsort()]
     #also append a new fix boolean to the List
     self.fix = np.append(self.fix,False)
 

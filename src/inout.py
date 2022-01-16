@@ -58,19 +58,13 @@ def writeExcitations(conf,fit): #attention conf is the object!!
       #create empty dictionary
       exc = {}
       try:
-        name_none = conf.excitations.names[i] == 'none'
-        name_S = re.match(r"S[0-9]+",conf.excitations.names[i])
-      except Exception:
-        name_none = True
-        name_S = False
-      if conf.fit_guess or name_none or name_S:
-        exc['name'] = 'S%i' % (i+1)
-      else:
         exc['name'] = str(conf.excitations.names[i])
-      if conf.fit_guess:
+      except Exception:
+        exc['name'] = 'S'
+      try:
+        exc['fix'] = boole(fit[3].fix[i])
+      except Exception:
         exc['fix'] = False
-      else:
-        exc['fix'] = bool(fit[3].fix[i])
       exc['energy'] = float(fit[3].fit_result[i,0])
       exc['strength'] = float(fit[3].fit_result[i,1])
       for j in range(3):
@@ -86,24 +80,19 @@ def writeExcitations(conf,fit): #attention conf is the object!!
     for i in range(len(fit[0].fit_result[:,0])):
       exc = {}
       try:
-        name_none = conf.excitations.names[i] == 'none'
-        name_S = re.match(r"S[0-9]+",conf.excitations.names[i])
-      except Exception:
-        name_none = True
-        name_S = False
-      if conf.fit_guess or name_none or name_S:
-        exc['name'] = 'S%i' % (i+1)
-      else:
         exc['name'] = str(conf.excitations.names[i])
-      if conf.fit_guess:
-        exc['fix'] = False
-      else:
+      except Exception:
+        exc['name'] = 'S'
+      try:
         exc['fix'] = bool(fit[0].fix[i])
-      exc['name'] = 'S%i' % (i+1)
+      except Exception:
+        exc['fix'] = False
       exc['energy'] = float(fit[0].fit_result[i,0])
       exc['strength'] = float(fit[0].osciStrength[i])
       exc['amplitudes_file1'] = np.ndarray.tolist(fit[0].fit_result[i,1:])
       excitations.append(exc)
+
+  excitations = sorted(excitations, key=lambda x: x['energy'])
 
   config['SPEC']['excitations'] = excitations
 
