@@ -1,5 +1,4 @@
-#File for calculating or reading the Guess for the spectrum fit
-
+#Import Libraries
 import numpy as np
 from scipy import signal
 import matplotlib
@@ -12,6 +11,21 @@ import errorHandler as err
 
 #TODO: Delete making guess for trace! In this case only create self.guess = [] this is
 #      handeled after the fit of the 3 directions.
+
+#==============================================================================#
+# Class Fit
+#==============================================================================#
+# The Class consists of the following variables:
+# - guessId: Id of the Guess (starting with 0).
+# - fit_range: Range which should be fitted.
+# - propTime: Propagation time of the BTDFT calculation.
+# - osci: Fourier transformation of dipole file (only for fit range).
+# - padeOsci: Pade Approximation of dipole file (only for fit range).
+# - guessThres: Relative threshold, when peak should be identified as 
+#               excitation line
+# - guess: Guess for fitting spectrum (energy | x-amp | y-amp | z-amp) for
+#          trace (energy | oscistrength)
+#------------------------------------------------------------------------------#
 
 class Guess:
   def __init__(self,config,ft,pade,Id,calcFlag='no'):

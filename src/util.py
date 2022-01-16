@@ -1,3 +1,5 @@
+#Routines which are needed in a lot of modules
+
 #import own modules
 import errorHandler as err
 

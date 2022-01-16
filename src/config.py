@@ -6,6 +6,12 @@ import inout
 
 #TODO: make errors for a false configuration!!
 
+#==============================================================================#
+# Class Config
+#==============================================================================#
+# For a description of the variables see eval.yaml of comments below
+#------------------------------------------------------------------------------#
+
 class Config:
   def __init__(self):
     #------------------------------------------------------------#
@@ -54,6 +60,8 @@ class Config:
     self.fit_guess = configFile.get('OPT').get('FitSpectrum').get('fit_guess',False)
     #criterium for fit, i.e. absolute deviation between raw data and fit
     self.fit_relerr_crit = configFile.get('OPT').get('FitSpectrum').get('fit_relerr_crit',0.1)
+    #criterium for line spacing as realtive spacing between the lines
+    self.fit_relspacing_lines = configFile.get('OPT').get('FitSpectrum').get('fit_relspacing_lines',0.01)
     #maximum numer of iterations for reaching the desired absolute deviation between raw data and fit
     self.fit_max_iter = configFile.get('OPT').get('FitSpectrum').get('fit_max_iter',1)
     #range of fit in spectrum

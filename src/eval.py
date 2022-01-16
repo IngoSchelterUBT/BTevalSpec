@@ -117,7 +117,7 @@ def main():
           future[i] = executer.submit(specFit.Fit, conf, ft[i], guess[i], i)
           fit[i] = future[i].result()
     if conf.numDipoleFiles == 3:
-      handleTrace.guessTrace(guess[3], fit)
+      handleTrace.guessTrace(conf, guess[3], fit)
       fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
 
     #plotting the results has to be unparalleled (problem with starting

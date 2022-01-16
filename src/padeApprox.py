@@ -1,17 +1,26 @@
 #[1] A. Bruner, D. LaMaster, K. Lopata, "Accelerated Broadband Spectra Using i
 #Transition Dipole Decomposition and Pade Approximants", JCTC 12, 3741-3750 (2016)
 
-
-
-#File for calculation the fourier transformation of the input data (dipole file(s))
-
+#Import Libraries
 import os
 import numpy as np
 import numba as nb
+
 #import own modules
 import errorHandler as err
 import util
 import mathtools
+
+#==============================================================================#
+# Class Pade
+#==============================================================================#
+# The Class consists of the following variables:
+# - padeId: Id of Pade Approximation (equals 3 for trace)
+# - propTime: Propagation time of calculation
+# - kvec: k-vector of excitation at beginning of calculation
+# - padeOsci: List of Pade Approximations for x-, y- and z-direction of dipole
+#             moment (energy | padeApprox)
+#------------------------------------------------------------------------------#
 
 class Pade:
   def __init__(self,config,dipole,Id,calcFlag='no'):

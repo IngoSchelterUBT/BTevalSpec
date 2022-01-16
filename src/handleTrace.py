@@ -18,7 +18,7 @@ import util
 #   in the fit range is saved there)
 # - list of fit objects for fits of dipole moments with boost in x-, y- and
 #   z-direction
-def guessTrace(guessTrace, fit):
+def guessTrace(config, guessTrace, fit):
   #calculate relative error between the excitaion energies of the fits with boost
   #in x-, y- and z-direction
   w_trace = fit[0].fit_result[:,0]
@@ -26,7 +26,7 @@ def guessTrace(guessTrace, fit):
   for i in range(1,len(fit)):
     for j in range(len(fit[i].fit_result[:,0])):
       err = np.abs(w_trace - fit[i].fit_result[j,0])/((w_trace + fit[i].fit_result[j,0])/2.)
-      if np.any(err < 0.01): #0.01 equals a relative error of 1.0 %
+      if np.any(err < config.fit_relspacing_lines): #default relspacing_lines: 0.01 equals a relative error of 1.0 %
         continue
       else:
         print('line added:')
@@ -43,7 +43,7 @@ def guessTrace(guessTrace, fit):
     fit[i].lineId = np.full(len(fit[i].fit_result[:,0]),-1,dtype=np.int32)
     for j, value in enumerate(w_trace):
       err = np.abs(value - fit[i].fit_result[:,0])/((value + fit[i].fit_result[:,0])/2.) 
-      indices = np.argwhere(err < 0.01) #0.01 equals a relative error of 1.0 %
+      indices = np.argwhere(err < config.fit_relspacing_lines) #default relspacing_lines: 0.01 equals a relative error of 1.0 %
       fit[i].lineId[indices] = j
 
       

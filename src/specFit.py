@@ -1,5 +1,4 @@
-#File for calculation and plot of fit
-
+#Import Libraries
 import numpy as np
 from lmfit import Parameters, minimize, report_fit
 import matplotlib
