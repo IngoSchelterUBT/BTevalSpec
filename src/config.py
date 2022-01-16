@@ -81,7 +81,7 @@ class Config:
       self.amplitudes = [] #amplitudes as list of numpy arrays
       self.fix = np.array([])
       for i in range(len(excitations)):
-        self.names.append(excitations[i].get('name','none'))
+        self.names.append(excitations[i].get('name','S'))
         self.energies = np.append(self.energies,excitations[i].get('energy'))
         self.osciStrengths = np.append(self.osciStrengths,excitations[i].get('strength',0.0))
         self.fix = np.append(self.fix,excitations[i].get('fix',False))
