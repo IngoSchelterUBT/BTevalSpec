@@ -1,6 +1,9 @@
 #[1] A. Bruner, D. LaMaster, K. Lopata, "Accelerated Broadband Spectra Using i
 #Transition Dipole Decomposition and Pade Approximants", JCTC 12, 3741-3750 (2016)
 
+#Mathtools module for calculating for loops fast
+
+#Import Libraries
 import numpy as np
 import numba as nb
 

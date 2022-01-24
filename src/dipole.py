@@ -1,9 +1,27 @@
-#This contains the Data class where all the information for the calculation is stored
+#Import Libraries
 import numpy as np
 
 #own module
 import errorHandler as err
 import inout
+
+#==============================================================================#
+# Class Dipole
+#==============================================================================#
+# The Class consists of the following variables:
+# - dipoleId: Id of dipole file (equals 3 for trace)
+# - dipData: Matrix of dipole moment data (time | x | y | z) for trace
+#            (time | trace), for guess (time | x+y+z)
+# - kvec: k-vector of excitation
+# - natoms: Number of atoms of molecule
+# - ntypes: Number of types of atoms of molecule
+# - atomspertype: Number of atoms per type
+# - nelec: Number of valence electrons [total, spin-up, spin-down]
+# - dxyz: Grid spacing
+# - t_start: Starttime of propagation
+# - dt: Time step of propagation
+# - boostenergy: Energy of boost excitation in Ry
+#------------------------------------------------------------------------------#
 
 class Dipole:
   def __init__(self,fileName,dipoleId,calcFlag='no'):
@@ -88,25 +106,25 @@ class Dipole:
 
     #Check units of Dipole File
     if dipole.get('DX')[-1] != 'a0':
-      err.err(1,'Unit of DX unknown!')
+      err.warning(1,'Unit of DX unknown!')
     elif dipole.get('T_START')[-1] != 't_ry':
-      err.err(1,'Unit of T_START unknown!')
+      err.warning(1,'Unit of T_START unknown!')
     elif dipole.get('DT')[-1] != 't_ry':
-      err.err(1,'Unit of DT unknown!')
+      err.warning(1,'Unit of DT unknown!')
     elif dipole.get('BOOSTENERGY')[-1] != 'Ry':
-      err.err(1,'Unit of BOOSTENERGY unknown!')
+      err.warning(1,'Unit of BOOSTENERGY unknown!')
     elif dipole.get('LASERFREQ')[-1] != 'Ry':
-      err.err(1,'Unit of LASERFREQ unknown!')
+      err.warning(1,'Unit of LASERFREQ unknown!')
     elif dipole.get('LASERINT')[-1] != 'W/cm^2':
-      err.err(1,'Unit of LASERINT unknown!')
+      err.warning(1,'Unit of LASERINT unknown!')
     elif dipole.get('LASEREFIELD')[-1] != 'E_ry':
-      err.err(1,'Unit of LASEREFIELD unknown!')
+      err.warning(1,'Unit of LASEREFIELD unknown!')
     elif dipole.get('LASERSTART')[-1] != 't_ry':
-      err.err(1,'Unit of LASERSTART unknown!')
+      err.warning(1,'Unit of LASERSTART unknown!')
     elif dipole.get('LASEREND')[-1] != 't_ry':
-      err.err(1,'Unit of LASEREND unknown!')
+      err.warning(1,'Unit of LASEREND unknown!')
     elif dipole.get('DIP0')[-1] != 'dip_ry':
-      err.err(1,'unit of DIP0 unknown!')
+      err.warning(1,'unit of DIP0 unknown!')
 
     for k, v in dipole.items():
       if ',' in v[0]:
@@ -131,15 +149,15 @@ class Dipole:
     #number of atoms
     self.natoms = int(dipoleFile.get('NATOMS',[0])[0])
     if self.natoms == 0:
-      err.err(1,'There are no atoms in dipole file!')
+      err.warning(1,'There are no atoms in dipole file!')
     #number of atom types
     self.ntypes = int(dipoleFile.get('NTYPES',[0])[0])
     if self.ntypes == 0:
-      err.err(1,'There are no atom types in dipole file!')
+      err.warning(1,'There are no atom types in dipole file!')
     #array of number of atoms per type
     self.atomspertype = dipoleFile.get('ATOMSPERTYPE','empty')
     if 'empty' in str(self.atomspertype):
-      err.err(1,'There are no atomtypes in dipole file!')
+      err.warning(1,'There are no atomtypes in dipole file!')
     #total number of electrons, electrons for spin-up and spin-down (1., 2. and 3. position)
     self.nelec = dipoleFile.get('NELEC','empty')
     if 'empty' in str(self.nelec):
@@ -149,13 +167,13 @@ class Dipole:
     #spacing of the used grid in bohr
     self.dxyz = dipoleFile.get('DX',[0.])[0]
     if self.dxyz == 0.:
-      err.err(1, 'There is no grid spacing in dipole file!')
+      err.warning(1, 'There is no grid spacing in dipole file!')
     #start time of propagation in rydberg units
     self.t_start = dipoleFile.get('T_START',[0.])[0]
     #length of time step in propagation
     self.dt = dipoleFile.get('DT',[0.])[0]
     if self.dt == 0.:
-      err.err(1, 'There is no time step in dipole file!')
+      err.warning(1, 'There is no time step in dipole file!')
     #boost energy of boost calculation in rydberg
     self.boostenergy = dipoleFile.get('BOOSTENERGY',[0.])[0]
     #k-vector of boost excitation

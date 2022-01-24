@@ -1,5 +1,4 @@
-#File for calculation the fourier transformation of the input data (dipole file(s))
-
+#Import Libraries
 import yaml
 import os
 import numpy as np
@@ -9,6 +8,18 @@ from scipy import signal
 #own modules
 import errorHandler as err
 import util
+
+#==============================================================================#
+# Class FT
+#==============================================================================#
+# The Class consists of the following variables:
+# - ftId: Id of fourier transformation (3 for trace)
+# - propTime: Propagation time of calculation
+# - kvec: Vector of boost excitation
+# - osci: List of fourier transformation for x-, y- and z-component of dipole
+#         moment (freq | realFT | imagFT)
+# - pw: List of power spectrum for x-, y- and z-component of dipole moment
+#------------------------------------------------------------------------------#
 
 class FT:
   def __init__(self,config,dipole,Id,calcFlag='no'):
