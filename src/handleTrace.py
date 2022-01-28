@@ -29,9 +29,9 @@ def guessTrace(config, guessTrace, fit):
       if np.any(err < config.fit_relspacing_lines): #default relspacing_lines: 0.01 equals a relative error of 1.0 %
         continue
       else:
-        print('line added:')
-        print(fit[i].fit_result[j,0])
-        print(i)
+        #print('line added:')
+        #print(fit[i].fit_result[j,0])
+        #print(i)
         w_trace = np.append(w_trace, fit[i].fit_result[j,0])
         fix = np.append(fix, fit[i].fix[j])
 

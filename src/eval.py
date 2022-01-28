@@ -45,7 +45,7 @@ def main():
       dip[i] = dipole.Dipole(fileName,i)
     if conf.numDipoleFiles == 3:
       dip.append(dipole.Dipole(conf.dipoleFiles,3,calcFlag='trace'))
-  elif not conf.pade and not conf.fourier and (conf.fit or conf.fit_guess):
+  else:
     #Construct dummy dip list. In this case the dipole moment is not needed
     #to be read.
     for i in range(conf.numDipoleFiles+1):
@@ -55,7 +55,7 @@ def main():
   #Do Fourier Transformation of the dipole moment file(s) of if only fit is true
   #than read the Fourier Transformation
   ft = []
-  if conf.fourier or conf.fit:
+  if conf.fourier or conf.fit or conf.plot_result:
     ft = [None]*len(conf.dipoleFiles)
     if conf.numDipoleFiles == 3: ft.append(None)
     if conf.fourier: inout.cleanFT() #delete Osci and PW folder
@@ -86,14 +86,14 @@ def main():
           future[i] = executer.submit(padeApprox.Pade, conf, dip[i], i, calcFlag)
           pade[i] = future[i].result()
           #pade[i] = padeApprox.Pade(conf,dip[i],i,calcFlag)
-  elif not conf.pade and conf.fit and not conf.fit_guess:
+  else:
     #construct dummy pade list
     for i in range(conf.numDipoleFiles+1):
       pade.append(0)
 
 
   #Do Guess for fit of the spectrum
-  if conf.fit:
+  if conf.fit or conf.plot_result:
     guess = [None]*len(conf.dipoleFiles)
     if conf.numDipoleFiles == 3: guess.append(None)
     future = guess #create a future object list
@@ -109,7 +109,7 @@ def main():
 
 
   #Do Fit of the spectrum
-  if conf.fit:
+  if conf.fit or conf.plot_result:
     fit = [None]*len(conf.dipoleFiles)
     future = fit
     with concurrent.futures.ThreadPoolExecutor() as executer:
@@ -117,8 +117,11 @@ def main():
           future[i] = executer.submit(specFit.Fit, conf, ft[i], guess[i], i)
           fit[i] = future[i].result()
     if conf.numDipoleFiles == 3:
-      handleTrace.guessTrace(conf, guess[3], fit)
+      if conf.fit: handleTrace.guessTrace(conf, guess[3], fit)
       fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
+    
+    #write excitation lines
+    if conf.fit: inout.writeExcitations(conf,fit)
 
     #plotting the results has to be unparalleled (problem with starting
     #matplotlib gui)
@@ -129,8 +132,6 @@ def main():
         calcFlag = 'no'
       f.plotFit(calcFlag)
 
-    #write excitation lines
-    inout.writeExcitations(conf,fit)
     input("Press [enter] to end and close all plots!")
 
 #------------------------------------------------------------------------------#

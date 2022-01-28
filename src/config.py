@@ -58,6 +58,8 @@ class Config:
     self.fit = configFile.get('OPT').get('FitSpectrum').get('fit',False)
     #boolean if guess for fit out of Pade approximation should be done (or read out of config file if False)
     self.fit_guess = configFile.get('OPT').get('FitSpectrum').get('fit_guess',False)
+    #bollean if the fit result should be plotted without fitting again
+    self.plot_result = configFile.get('OPT').get('FitSpectrum').get('plot_result',False)
     #criterium for fit, i.e. absolute deviation between raw data and fit
     self.fit_relerr_crit = configFile.get('OPT').get('FitSpectrum').get('fit_relerr_crit',0.1)
     #criterium for line spacing as realtive spacing between the lines
@@ -91,8 +93,14 @@ class Config:
       for i in range(len(excitations)):
         self.names.append(excitations[i].get('name','S'))
         self.energies = np.append(self.energies,excitations[i].get('energy'))
-        self.osciStrengths = np.append(self.osciStrengths,excitations[i].get('strength',0.0))
+        self.osciStrengths = np.append(self.osciStrengths,excitations[i].get('strength',None))
         self.fix = np.append(self.fix,excitations[i].get('fix',False))
         #self.phases = np.append(self.phases,excitations[i].get('phase'))
-        for j in range(numDipoleFiles):
-          self.amplitudes.append(excitations[i].get('amplitude_file%i' % (j+1),np.array([])))
+
+      for j in range(numDipoleFiles):
+        amp = np.zeros((len(excitations),3))
+        for i in range(len(excitations)):
+          amp[i,:] = excitations[i].get('amplitude_file%i' % (j+1),np.array([np.nan, np.nan, np.nan]))
+          
+        self.amplitudes.append(amp)
+

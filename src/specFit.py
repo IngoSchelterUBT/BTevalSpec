@@ -74,7 +74,11 @@ class Fit:
               float((len(self.osci[0][:,0])-1))
 
     #run actuel fit
-    self.makeFit(config,calcFlag) #saves fit results in self.fit_result
+    if config.plot_result:
+      self.fit_result = self.guess
+    else:
+      self.makeFit(config,calcFlag) #saves fit results in self.fit_result
+    print(self.fit_result)
 
 #-----------------------------------------------------------------------------#
 #   Methods of the class Fit

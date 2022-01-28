@@ -17,7 +17,7 @@ import util
 # - propTime: Propagation time of calculation
 # - kvec: Vector of boost excitation
 # - osci: List of fourier transformation for x-, y- and z-component of dipole
-#         moment (freq |Â realFT | imagFT)
+#         moment (freq  realFT | imagFT)
 # - pw: List of power spectrum for x-, y- and z-component of dipole moment
 #------------------------------------------------------------------------------#
 
@@ -42,7 +42,7 @@ class FT:
 
       #write fourier transformation and pw-spectrum
       self.writeFT(calcFlag)
-    elif not config.fourier and config.fit:
+    else:
       #read fourier transformation out of Osci files, PW-Spectrum ist not needed
       self.readOsci(calcFlag)
 

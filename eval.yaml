@@ -1,28 +1,117 @@
-DESCRIPTION: '>'
-DIPOLE:
-#- dipole_k100.dat
-#- dipole_k010.dat
-#- dipole_k001.dat
-- dipole.dat
-EXCIT: laser_profile.dat
+DESCRIPTION:                      # Description of evaluation 
+DIPOLE:                           # List of dipole moment files
+- dipole_k100.dat
+- dipole_k010.dat
+- dipole_k001.dat
+EXCIT: laser_profile.dat          # Profile of excitation
 OPT:
-  FitSpectrum:
-    fit: true
-    fit_guess: true
-    guess_thres: 0.1
-    fit_relerr_crit: 0.05 #this is only for the single fits NOT trace
-    fit_max_iter: 10
-    fit_range:
-    - 0.2
-    - 0.35
   FourierTransform:
-    fourier: true
-    min_pw: 17
-    smooth: 0
-    window: 0
+    fourier: false                 # Turn fourier transformation on/off
+    min_pw: 17                    # Min. length of fourier transform vector (2^n). Can increase sampling rate.
+    smooth: 0                     # Artificial decay rate
+    window: 0                     # Kaiser-Bessel windowing parameter (>0)
   PadeApprox:
-    pade: true
-    pade_dw: 1.0e-05
-    pade_smooth: 1.0e-07
-    pade_thin: 0
-    pade_wmax: 0.6
+    pade: false                    # Turn Pade Approximation on/off
+    pade_wmax: 0.6                # Maximum energy for Pade Approximation in Ry
+    pade_dw: 1.0e-05              # Step of Pade Approximation
+    pade_smooth: 1.0e-07          # Smooth for Pade Approximation
+    pade_thin: 0                  # Only keep every 2^n data point
+  FitSpectrum:
+    fit: false                     # Turn fit on/off
+    fit_guess: false               # Turn guess for fit via Pade Approximation on/off
+    plot_result: true            # If True: The fit results are plotted without fitting again
+    guess_thres: 0.1              # Relative height of line in Pade Approximation compared to highest line 
+                                  #   which should be identified as a line for fitting (only relevent, if 
+                                  #   fit_guess == True).
+    fit_relerr_crit: 0.1         # Criterium for relative error between fit and data (only relevant, if 
+                                  #   fit_guess == True).
+    fit_max_iter: 10              # Maximum numer of iterations used to reach relative error between fit and 
+                                  #   data (only relevant, if fit_guess == True)
+    fit_relspacing_lines: 0.01    # Threshold for relative error between two lines which should be identified 
+                                  #   as one in fit of trace (only relevant, if number of dipole files == 3).
+    fit_range:                    # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.35
+SPEC:
+  nex: 5
+  excitations:
+  - name: S
+    fix: false
+    energy: 0.22603462244553796
+    strength: 0.01666731572426612
+    amplitude_file1:
+    - 0.0031929561886534295
+    - 0.0003810826905007814
+    - 0.0063718072689241
+    amplitude_file2:
+    - 0.0003814491621201539
+    - 5.337514091243891e-05
+    - 0.0008015436573052133
+    amplitude_file3:
+    - 0.006380059927096923
+    - 0.0008013115959625473
+    - 0.013416401481184118
+  - name: S
+    fix: false
+    energy: 0.2432177981241189
+    strength: 0.27928123333817906
+    amplitude_file1:
+    - 0.09987594453383751
+    - 0.003649033882887098
+    - 0.13384569418045228
+    amplitude_file2:
+    - 0.003651726332937059
+    - 0.00012980511207988791
+    - 0.004878680703741013
+    amplitude_file3:
+    - 0.1338017236586671
+    - 0.004867161614083103
+    - 0.17925209639235598
+  - name: S
+    fix: false
+    energy: 0.24817071695691217
+    strength: 0.004042307487222026
+    amplitude_file1:
+    - 0.001307499211308708
+    - 0.00047598964557461087
+    - -0.0003764605209656559
+    amplitude_file2:
+    - 0.00045973706816759423
+    - 0.0002137742435059204
+    - -0.0005733655200413389
+    amplitude_file3:
+    - -0.00038259866564698783
+    - -0.0005497780340135734
+    - 0.002551004740557478
+  - name: S
+    fix: false
+    energy: 0.28812024864470803
+    strength: 0.11202250333295814
+    amplitude_file1:
+    - 0.07099031593454444
+    - 0.0005408243702441703
+    - -0.05316856584431239
+    amplitude_file2:
+    - 0.0005772909559015649
+    - -1.66594919062185e-05
+    - -0.00038687579530473647
+    amplitude_file3:
+    - -0.05320276497734624
+    - -0.0003593567992692117
+    - 0.041040590670322494
+  - name: S
+    fix: false
+    energy: 0.33349589193352525
+    strength: 0.0014181245860811278
+    amplitude_file1:
+    - 0.0005255014642576494
+    - 6.185388384653192e-05
+    - 0.0009801811814582867
+    amplitude_file2:
+    - 6.162704614684859e-05
+    - -4.557491663325996e-06
+    - 6.749775556577678e-05
+    amplitude_file3:
+    - 0.0009506987078723009
+    - 6.238769984183754e-05
+    - 0.0012973041952790132
