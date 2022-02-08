@@ -23,6 +23,7 @@ import fourierTransform as fourier
 import padeApprox
 import specGuess
 import specFit
+import spectrum
 import inout
 import handleTrace
 import errorHandler as err
@@ -132,6 +133,10 @@ def main():
         calcFlag = 'no'
       f.plotFit(calcFlag)
 
+    #create object spectrum
+    spec = spectrum.Spectrum(conf,fit)
+    #write excitation lines
+    inout.writeExcitations(spec)
     input("Press [enter] to end and close all plots!")
 
 #------------------------------------------------------------------------------#
