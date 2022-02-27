@@ -17,9 +17,11 @@ OPT:
     pade_smooth: 1.0e-07          # Smooth for Pade Approximation
     pade_thin: 0                  # Only keep every 2^n data point
   FitSpectrum:
-    fit: false                     # Turn fit on/off
+    fit: true                     # Turn fit on/off
     fit_guess: false               # Turn guess for fit via Pade Approximation on/off
-    plot_result: true            # If True: The fit results are plotted without fitting again
+    plot_result: false            # If True: The fit results are plotted without fitting again
+    gnuplot_spectrum: true       # If True: A gnuplot script for plotting the resulting spectrum is created.
+    dat_spectrum: true
     guess_thres: 0.1              # Relative height of line in Pade Approximation compared to highest line 
                                   #   which should be identified as a line for fitting (only relevent, if 
                                   #   fit_guess == True).
@@ -32,3 +34,118 @@ OPT:
     fit_range:                    # Range of spectrum which should be fitted in Ry
     - 0.10
     - 0.35
+SPEC:
+  nex: 7
+  excitations:
+  - name: S
+    fix: false
+    energy: 0.2259951836201931
+    strength: 0.016679419524174198
+    amplitude_file1:
+    - 0.003226382239660056
+    - 0.00038831458716717405
+    - 0.00652841863443154
+    amplitude_file2:
+    - 0.00039160867864940934
+    - 4.837879464340722e-05
+    - 0.0008155297454151915
+    amplitude_file3:
+    - 0.0065154701538724154
+    - 0.0008085448957461707
+    - 0.01354204590654166
+  - name: S
+    fix: false
+    energy: 0.2432196317128414
+    strength: 0.27974417998403334
+    amplitude_file1:
+    - 0.09998251468996197
+    - 0.0036573373710232404
+    - 0.13398228758805542
+    amplitude_file2:
+    - 0.003658680055222298
+    - 0.00012791536670947999
+    - 0.00488744622578721
+    amplitude_file3:
+    - 0.13395630565562738
+    - 0.004883959616654405
+    - 0.17949069179735222
+  - name: S
+    fix: false
+    energy: 0.24825646068787896
+    strength: 0.0034937473623454078
+    amplitude_file1:
+    - 0.00112502528651065
+    - 0.0004563620995985849
+    - -0.000751391945127803
+    amplitude_file2:
+    - 0.0004369529278746753
+    - 0.0002220886653100873
+    - -0.000601181837634677
+    amplitude_file3:
+    - -0.0007599671450478857
+    - -0.000577821561645218
+    - 0.0020741993028293893
+  - name: S
+    fix: false
+    energy: 0.28812853484268325
+    strength: 0.11158985873526993
+    amplitude_file1:
+    - 0.07086070851807022
+    - 0.00051638016333297
+    - -0.05361839279565123
+    amplitude_file2:
+    - 0.0005502837000246519
+    - -2.8273375135918702e-06
+    - -0.00041636184142910073
+    amplitude_file3:
+    - -0.05363636097897687
+    - -0.00038843534518327033
+    - 0.04058748933646685
+  - name: S
+    fix: false
+    energy: 0.3553641750763505
+    strength: 0.01867908074225572
+    amplitude_file1:
+    - 2.4951782999262764
+    - 0.6598440122061741
+    - 9.273395604984604
+    amplitude_file2:
+    - -0.5703725057981444
+    - 0.1923564059531622
+    - 0.23342369672033256
+    amplitude_file3:
+    - 11.437933823299732
+    - 0.4919747647009286
+    - 10.55555674168747
+  - name: S
+    fix: false
+    energy: 4.715422186843155
+    strength: -11187.745432423866
+    amplitude_file1:
+    - 13.246299472043185
+    - 2.385837459972675
+    - 36.14023359160931
+    amplitude_file2:
+    - 2.255962511195293
+    - -0.8359401489302395
+    - 0.5801387242082515
+    amplitude_file3:
+    - 40.86266058523273
+    - 2.3051148914129254
+    - 43.020006289009835
+  - name: S
+    fix: false
+    energy: 7.539260463066363
+    strength: 28727.49684155919
+    amplitude_file1:
+    - 0.0
+    - 0.0
+    - 0.0
+    amplitude_file2:
+    - 0.0
+    - 0.0
+    - 0.0
+    amplitude_file3:
+    - 0.0
+    - 0.0
+    - 0.0

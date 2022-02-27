@@ -121,9 +121,6 @@ def main():
       if conf.fit: handleTrace.guessTrace(conf, guess[3], fit)
       fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
     
-    #write excitation lines
-    if conf.fit: inout.writeExcitations(conf,fit)
-
     #plotting the results has to be unparalleled (problem with starting
     #matplotlib gui)
     for i, f in enumerate(fit):
@@ -136,7 +133,7 @@ def main():
     #create object spectrum
     spec = spectrum.Spectrum(conf,fit)
     #write excitation lines
-    inout.writeExcitations(spec)
+    if conf.fit: inout.writeExcitations(spec)
     input("Press [enter] to end and close all plots!")
 
 #------------------------------------------------------------------------------#

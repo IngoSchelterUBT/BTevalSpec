@@ -52,6 +52,8 @@ def writeEmptyConfig():
       fit: True                   # Turn fit on/off
       fit_guess: True             # Turn guess for fit via Pade Approximation on/off
       plot_result: False          # If True: The fit results are plotted without fitting again
+      gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.
+      dat_spectrum: False         # If True: A .dat file for the spectrum is created
       guess_thres: 0.1            # Relative height of line in Pade Approximation compared to highest line 
                                   #   which should be identified as a line for fitting (only relevent, if 
                                   #   fit_guess == True).
@@ -78,7 +80,7 @@ def readConfig():
 
 #Routine for writing excitation information
 #fit is a list of all fits (x-, y- and z-direction and trace)
-def writeExcitations(conf,fit): #attention conf is the object!!
+def writeExcitations(spectrum): #attention conf is the object!!
   #read yaml file again
   yaml = ruamel.yaml.YAML()
   config, ind, bsi = ruamel.yaml.util.load_yaml_guess_indent(open('eval.yaml'))

@@ -58,8 +58,12 @@ class Config:
     self.fit = configFile.get('OPT').get('FitSpectrum').get('fit',False)
     #boolean if guess for fit out of Pade approximation should be done (or read out of config file if False)
     self.fit_guess = configFile.get('OPT').get('FitSpectrum').get('fit_guess',False)
-    #bollean if the fit result should be plotted without fitting again
+    #boolean if the fit result should be plotted without fitting again
     self.plot_result = configFile.get('OPT').get('FitSpectrum').get('plot_result',False)
+    #boolean if a script for plotting the spectum in Gnuplot should be written
+    self.gnuplot_spectrum = configFile.get('OPT').get('FitSpectrum').get('gnuplot_spectrum',False)
+    #boolean if .dat file is created for the excitation lines
+    self.dat_spectrum = configFile.get('OPT').get('FitSpectrum').get('dat_spectrum',False)
     #criterium for fit, i.e. absolute deviation between raw data and fit
     self.fit_relerr_crit = configFile.get('OPT').get('FitSpectrum').get('fit_relerr_crit',0.1)
     #criterium for line spacing as realtive spacing between the lines
