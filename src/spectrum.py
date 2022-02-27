@@ -18,6 +18,8 @@ class Spectrum:
 #-----------------------------------------------------------------------------#
 #   Methods of the class Fit
 #-----------------------------------------------------------------------------#
+
+#Routine for making list of dictionaries for excitations
   def createExcDict(self,conf,fit):
     excitations = []
     if len(fit) == 4:
