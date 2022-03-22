@@ -82,6 +82,8 @@ class Spectrum:
 
     sp = open('spectrum.plt','w')
     sp.write('reset')
+    sp.write('#set term epslatex standalone size 3.3in,10cm')
+    sp.write("'#set output 'spectrum.tex'")
     sp.write('\nset sample 1000')
     sp.write('\nset xrange [' + str(np.floor(np.amin(w)*ev)) + ':' + str(np.ceil(np.amax(w)*ev)) + ']')
     sp.write("\nset xlabel 'Energy (eV)'")
