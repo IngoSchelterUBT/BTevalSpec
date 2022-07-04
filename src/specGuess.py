@@ -71,6 +71,7 @@ class Guess:
       #all the excitations saved
       self.guess = np.zeros((len(config.excitations.energies),1+len(self.osci)))
       self.guess[:,0] = config.excitations.energies
+      self.osciStrengths = config.excitations.osciStrengths
       #read guess out of config-file
       if calcFlag == 'no':
         #- read a1 oder a2 oder a3 as guess for fit
