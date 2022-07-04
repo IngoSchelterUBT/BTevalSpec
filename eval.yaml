@@ -1,31 +1,151 @@
-DESCRIPTION: '>'
-DIPOLE:
+DESCRIPTION:                      # Description of evaluation 
+DIPOLE:                           # List of dipole moment files
 - dipole_k100.dat
 - dipole_k010.dat
 - dipole_k001.dat
-EXCIT: laser_profile.dat
+EXCIT: laser_profile.dat          # Profile of excitation
 OPT:
-  FitSpectrum:
-    fit: true
-    fit_guess: false
   FourierTransform:
-    fourier: true
-    min_pw: 17
-    smooth: 0
-    window: 0
+    fourier: false                 # Turn fourier transformation on/off
+    min_pw: 17                    # Min. length of fourier transform vector (2^n). Can increase sampling rate.
+    smooth: 0                     # Artificial decay rate
+    window: 0                     # Kaiser-Bessel windowing parameter (>0)
   PadeApprox:
-    pade: true
-    pade_dw: 1.0e-05
-    pade_smooth: 1.0e-07
-    pade_thin: 0
-    pade_wmax: 0.6
+    pade: false                    # Turn Pade Approximation on/off
+    pade_wmax: 0.6                # Maximum energy for Pade Approximation in Ry
+    pade_dw: 1.0e-05              # Step of Pade Approximation
+    pade_smooth: 1.0e-07          # Smooth for Pade Approximation
+    pade_thin: 0                  # Only keep every 2^n data point
+  FitSpectrum:
+    fit: true                     # Turn fit on/off
+    fit_guess: false               # Turn guess for fit via Pade Approximation on/off
+    plot_result: false            # If True: The fit results are plotted without fitting again
+    gnuplot_spectrum: true       # If True: A gnuplot script for plotting the resulting spectrum is created.
+    dat_spectrum: true
+    guess_thres: 0.1              # Relative height of line in Pade Approximation compared to highest line 
+                                  #   which should be identified as a line for fitting (only relevent, if 
+                                  #   fit_guess == True).
+    fit_relerr_crit: 0.1         # Criterium for relative error between fit and data (only relevant, if 
+                                  #   fit_guess == True).
+    fit_max_iter: 10              # Maximum numer of iterations used to reach relative error between fit and 
+                                  #   data (only relevant, if fit_guess == True)
+    fit_relspacing_lines: 0.01    # Threshold for relative error between two lines which should be identified 
+                                  #   as one in fit of trace (only relevant, if number of dipole files == 3).
+    fit_range:                    # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.35
 SPEC:
+  nex: 7
   excitations:
-    energies:
-    - 0
-    - 0.2
-    - 0.5
-    strenghts:
-    - 0
-    - 0.2
-    - 0.4
+  - name: S
+    fix: false
+    energy: 0.22602672335797466
+    strength: 0.016714530515883907
+    amplitude_file1:
+    - 0.0032246396444148336
+    - 0.0003884269034461477
+    - 0.0065285367637062065
+    amplitude_file2:
+    - 0.0003913493106423114
+    - 4.7800941002915844e-05
+    - 0.0008153883254632348
+    amplitude_file3:
+    - 0.006519222480669911
+    - 0.0008082790806628956
+    - 0.013535097819967876
+  - name: S
+    fix: false
+    energy: 0.24321840384066531
+    strength: 0.279347385704451
+    amplitude_file1:
+    - 0.09998548075385637
+    - 0.0036573122705138112
+    - 0.13398004802096256
+    amplitude_file2:
+    - 0.0036591220375548354
+    - 0.0001283100009695254
+    - 0.004887147231680227
+    amplitude_file3:
+    - 0.13395603318727536
+    - 0.0048837079651299475
+    - 0.17949660944250753
+  - name: S
+    fix: false
+    energy: 0.2481873454609313
+    strength: 0.0038954563210598482
+    amplitude_file1:
+    - 0.0011248517656963673
+    - 0.00045672705088175154
+    - -0.0007472938229642475
+    amplitude_file2:
+    - 0.0004367507054447901
+    - 0.0002221789028374024
+    - -0.0006006197438592179
+    amplitude_file3:
+    - -0.000760984658915575
+    - -0.0005777065928060176
+    - 0.002076531265738084
+  - name: S
+    fix: false
+    energy: 0.2881213411332013
+    strength: 0.11190774956181075
+    amplitude_file1:
+    - 0.0708609961526687
+    - 0.0005165603469788166
+    - -0.05361628794111959
+    amplitude_file2:
+    - 0.0005501255519974646
+    - -2.166850121310793e-06
+    - -0.00041557669725499595
+    amplitude_file3:
+    - -0.05364648216924436
+    - -0.000388416256873894
+    - 0.04059589717824582
+  - name: S
+    fix: false
+    energy: 0.34894863899743406
+    strength: 0.0025686380580015344
+    amplitude_file1:
+    - 0.018913220050130495
+    - -3.987391588002236e-05
+    - -0.011506592431803762
+    amplitude_file2:
+    - -0.00017952783529063786
+    - -0.0009322843613652454
+    - -0.001081583784085918
+    amplitude_file3:
+    - -0.014253661745375778
+    - 0.00015717337490129036
+    - 0.010632515177839055
+  - name: S
+    fix: false
+    energy: 149.92181052654146
+    strength: 3650.0056227432747
+    amplitude_file1:
+    - 1282.1045607833425
+    - 280.0915624581711
+    - 4148.8395270497285
+    amplitude_file2:
+    - 270.31729958473176
+    - -69.51285743024583
+    - -22.688136031967986
+    amplitude_file3:
+    - -4915.090818774731
+    - -248.14018105863147
+    - -4998.6244707613005
+  - name: S
+    fix: false
+    energy: 240.8076405080726
+    strength: 49707.240954214845
+    amplitude_file1:
+    - 3184.2023288785804
+    - 713.0707456866835
+    - 10518.241043816373
+    amplitude_file2:
+    - 685.2516084571729
+    - -173.05418474734333
+    - -84.22368172586457
+    amplitude_file3:
+    - -12516.8727513557
+    - -622.2544291435291
+    - -12645.971860646696

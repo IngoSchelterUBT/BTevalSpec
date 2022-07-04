@@ -1,0 +1,12 @@
+src/__pycache__/
+src/build/
+src/dist/
+Osci
+PW
+spectrum
+spectrum_3
+dipole.dat
+dipole_k100.dat
+dipole_k010.dat
+dipole_k001.dat
+PADE

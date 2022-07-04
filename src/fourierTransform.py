@@ -1,16 +1,28 @@
-#File for calculation the fourier transformation of the input data (dipole file(s))
-
+#Import Libraries
 import yaml
-import os, glob
+import os
 import numpy as np
 from scipy.fft import fft,fftfreq
 from scipy import signal
 
+#own modules
 import errorHandler as err
+import util
+
+#==============================================================================#
+# Class FT
+#==============================================================================#
+# The Class consists of the following variables:
+# - ftId: Id of fourier transformation (3 for trace)
+# - propTime: Propagation time of calculation
+# - kvec: Vector of boost excitation
+# - osci: List of fourier transformation for x-, y- and z-component of dipole
+#         moment (freq  realFT | imagFT)
+# - pw: List of power spectrum for x-, y- and z-component of dipole moment
+#------------------------------------------------------------------------------#
 
 class FT:
-  
-  def __init__(self,config,dipole,Id,trace=False):
+  def __init__(self,config,dipole,Id,calcFlag='no'):
     #Save all the information needed for the fit, either from dipole files or from reading the fourier transformed dipole moment files
     #if ft should be transformed than the values for the fourier transformation are also needed
 
@@ -29,11 +41,10 @@ class FT:
       self.calcFT(config,dipole)
 
       #write fourier transformation and pw-spectrum
-      self.writeFT(trace)
-    elif not config.fourier and config.fit:
-      #read propagation time and k-vector out of head Osci files
+      self.writeFT(calcFlag)
+    else:
       #read fourier transformation out of Osci files, PW-Spectrum ist not needed
-      self.readOsci(trace)
+      self.readOsci(calcFlag)
 
 
 
@@ -42,7 +53,7 @@ class FT:
 #-----------------------------------------------------------------------------#
   #Routine for calculation the fourier transformation and the PW
   def calcFT(self,config,dipole):
-    time = dipole.dipData[:,0] 
+    time = dipole.dipData[:,0]
     func = dipole.dipData[:,1:]
 
     #calculating lenght of ft array as a power of 2
@@ -57,7 +68,7 @@ class FT:
     #frequencies
     freq = self.getFreq(2**pw2,dipole.dt,False)
     freqPw = self.getFreq(2**(pw2-1)+1,dipole.dt,True)
-    
+
     #smooth the signal if smooth parameter is greater than 0.
     if config.smooth > 0.:
       for i in range(func.shape[1]):
@@ -73,7 +84,7 @@ class FT:
     #dipole moments
     #variable to transform Ry to Osci
     Ry2Osci = np.sqrt(dipole.nelec[0])/np.sqrt(dipole.boostenergy)/np.sqrt(2)/3.
-    
+
     #Do fourier transformation for x-, y- and z-dipole moment
     for i in range(len(func[0,:])):
       ft = self.fft(func[:,i],2**pw2,dipole.dt)
@@ -84,7 +95,7 @@ class FT:
 
     #calculate the pw spectrum
     self.pw = []
-    
+
     for i in range(func.shape[1]):
       powerSpec = self.pwSpec((self.osci[i][:,1]+1j*self.osci[i][:,2])/dipole.dt/Ry2Osci,
                               2**pw2,dipole.dt)
@@ -93,8 +104,8 @@ class FT:
 
 
     #output of osci and pw with the header cosisting the propagation time and the kvector
-      
-      
+
+
 
 
   #Routine for calculating the fourier transformation of the time
@@ -140,9 +151,9 @@ class FT:
     return pw
 
   #Routine for writing the fourier transformations (osci) and pw-spectrums to file
-  def writeFT(self,trace=False):
+  def writeFT(self,calcFlag='no'):
     #make Header
-    head = self.makeHeader(trace)
+    head = self.makeHeader(calcFlag)
     headOsci = head + '\n' + 'Energy (Ry) | real part of FT | imag part of FT'
     #create folder Osci, if it does not exist or delete all 'Osci_Id'-files in directory
     if not os.path.exists('Osci'):
@@ -152,17 +163,17 @@ class FT:
     if not os.path.exists('PW'):
       os.makedirs('PW')
 
-    if not trace:
+    if calcFlag == 'no':
       #Osci
       #Save all the Osci-files in directory
       for i in range(len(self.osci)):
-        np.savetxt('Osci/Osci_' + str(self.ftId) + self.getDir(i),self.osci[i],header=headOsci)
+        np.savetxt('Osci/Osci_' + str(self.ftId + 1) + util.getDir(i),self.osci[i],header=headOsci)
 
       #PW
       #Save all the PW-files in directory
       for i in range(len(self.pw)):
-        np.savetxt('PW/PW_' + str(self.ftId) + self.getDir(i),self.pw[i],header=headPW)
-    else:
+        np.savetxt('PW/PW_' + str(self.ftId + 1) + util.getDir(i),self.pw[i],header=headPW)
+    elif calcFlag == 'trace':
       #Osci
       #Save the trace Osci-file in directory
       for i in range(len(self.osci)): #is only one osci
@@ -172,50 +183,50 @@ class FT:
       #Save the trace PW-file in directory
       for i in range(len(self.pw)): #is only one pw
         np.savetxt('PW/PW',self.pw[i],header=headPW)
-      
+
 
   #Routine for making header as yaml-dictionary
-  def makeHeader(self,trace):
-    if not trace:
+  def makeHeader(self,calcFlag):
+    if calcFlag == 'no':
       #Save head information as dictionary
       headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec.astype(str).tolist()}
-    else:
+    elif calcFlag == 'trace':
       headDict = {'PropTime(Ry)' : str(self.propTime), 'kVec' : self.kvec}
 
-    
+
     headDictStr = yaml.dump(headDict)
-    
+
     head = str()
     for i, line in enumerate(headDictStr.splitlines()):
       if i == 0:
         head += ('!BT ' + line)
       else:
         head += ('\n' + '!BT ' + line)
-    
+
     return head
 
 
 
   #Routine for reading the osci-files
-  def readOsci(self,trace=False):
+  def readOsci(self,calcFlag='no'):
     #Read head of Osci-file in x-direction
-    self.readHeaderOsci(trace)
+    self.readHeaderOsci(calcFlag)
 
     #Read the fourier transformation itself
     self.osci = []
 
-    if not trace:
+    if calcFlag == 'no':
       for i in range(3):
-        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId) + self.getDir(i)))
-    else:
+        self.osci.append(np.loadtxt('Osci/Osci_' + str(self.ftId + 1) + util.getDir(i)))
+    elif calcFlag == 'trace':
       self.osci.append(np.loadtxt('Osci/Osci'))
 
   #Routine for reading header information in osci-files with ftId (only x-direction)
-  def readHeaderOsci(self,trace=False):
+  def readHeaderOsci(self,calcFlag='no'):
     try:
-      if not trace:
-        OsciFile = open('Osci/Osci_' + str(self.ftId) + 'x','r')
-      else:
+      if calcFlag == 'no':
+        OsciFile = open('Osci/Osci_' + str(self.ftId + 1) + 'x','r')
+      elif calcFlag == 'trace':
         OsciFile = open('Osci/Osci')
     except:
       err.err(1,('You are trying to do a fit (with no Fourier Trafo) but there' +
@@ -225,7 +236,7 @@ class FT:
       l = line.split()
       if l[1] == '!BT':
         head += (str(line))
-    
+
     headYaml = str()
     for i, line in enumerate(head.splitlines()):
       if i == 0:
@@ -235,21 +246,10 @@ class FT:
 
     headDict = yaml.load(headYaml,Loader=yaml.FullLoader)
 
-    self.propTime = headDict.get('PropTime(Ry)',0.)
+    self.propTime = float(headDict.get('PropTime(Ry)',0.))
     if self.propTime == 0.:
       err(1,'There is no PropTime in Osci file!')
-    self.kvec = headDict.get('kVec',0)
-    if self.kvec == 0:
+    self.kvec = headDict.get('kVec',-1)
+    if self.kvec == -1:
       err(1,'There is no kvec in Osci file!')
     self.kvec = np.array(self.kvec,dtype=float)
-
-  #Get direction
-  def getDir(self,i):
-    if i == 0:
-      return 'x'
-    elif i == 1:
-      return 'y'
-    elif i == 2:
-      return 'z'
-    else:
-      err.err(1,'There can not be more directions than x, y and z!')

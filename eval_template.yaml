@@ -1,15 +1,22 @@
 DESCRIPTION: '>'
 DIPOLE:
-- dipole_k100.dat
-- dipole_k010.dat
-- dipole_k001.dat
+#- dipole_k100.dat
+#- dipole_k010.dat
+#- dipole_k001.dat
+- dipole.dat
 EXCIT: laser_profile.dat
 OPT:
   FitSpectrum:
-    fit: false
+    fit: true
     fit_guess: false
+    guess_thres: 0.1
+    fit_relerr_crit: 0.1 #this is only for the single fits NOT trace
+    fit_max_iter: 30
+    fit_range:
+    - 0.2
+    - 0.35
   FourierTransform:
-    fourier: true
+    fourier: false
     min_pw: 17
     smooth: 0
     window: 0
@@ -20,12 +27,61 @@ OPT:
     pade_thin: 0
     pade_wmax: 0.6
 SPEC:
+  nex: 8
   excitations:
-    energies:
-    - 0
-    - 0.2
-    - 0.5
-    strenghts:
-    - 0
-    - 0.2
-    - 0.4
+  - name: S1
+    fix: false
+    energy: 0.2305184755040197
+    amplitudes_file1:
+    - 0.005106378852719367
+    - 0.0019510720669610002
+    - 0.015929659042891123
+  - name: S2
+    fix: false
+    energy: 0.24359423902521476
+    amplitudes_file1:
+    - 0.0434008476150915
+    - -0.00011273213699512926
+    - 0.043289099026472794
+  - name: S3
+    fix: false
+    energy: 0.2516981373695945
+    amplitudes_file1:
+    - 0.026405087411874466
+    - 0.0015815860010799617
+    - 0.0008832603391098822
+  - name: S4
+    fix: false
+    energy: 0.280365998183592
+    amplitudes_file1:
+    - 0.07992609307601393
+    - 0.0006615178673014838
+    - 0.02094416443295658
+  - name: S5
+    fix: false
+    energy: 0.28525897283079305
+    amplitudes_file1:
+    - 0.24390379245470847
+    - -0.012032052987833499
+    - -0.045947974640136495
+  - name: S6
+    fix: false
+    energy: 0.29548399832903366
+    amplitudes_file1:
+    - 0.05744555792637464
+    - -0.001330631217492255
+    - -0.037840197788136416
+  - name: S7
+    fix: false
+    energy: 0.3334250004696935
+    amplitudes_file1:
+    - 0.050598667752192204
+    - 0.0041581967500716
+    - -0.015037372197026413
+  - name: S8
+    fix: false
+    energy: 0.3158274677425553
+    amplitudes_file1:
+    - 0.0158478513176244
+    - -0.002283285752277302
+    - -0.013052544239155068
