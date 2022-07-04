@@ -82,8 +82,8 @@ class Spectrum:
 
     sp = open('spectrum.plt','w')
     sp.write('reset')
-    sp.write('#set term epslatex standalone size 3.3in,10cm')
-    sp.write("'#set output 'spectrum.tex'")
+    sp.write('\n#set term epslatex standalone size 3.3in,10cm')
+    sp.write("\n#set output 'spectrum.tex'")
     sp.write('\nset sample 1000')
     sp.write('\nset xrange [' + str(np.floor(np.amin(w)*ev)) + ':' + str(np.ceil(np.amax(w)*ev)) + ']')
     sp.write("\nset xlabel 'Energy (eV)'")
@@ -135,6 +135,7 @@ class Spectrum:
   def writeDatFile(self):
     ev = 13.605693122994
     w = np.array([d['energy'] for d in self.excs['SPEC']['excitations']])
+    w = w*ev
     f = np.array([d['strength'] for d in self.excs['SPEC']['excitations']])
 
     np.savetxt('spectrum.dat', np.column_stack([w,f]),header='Energy (eV) | Oscillator strength')
