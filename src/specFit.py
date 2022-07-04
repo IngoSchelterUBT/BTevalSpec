@@ -76,6 +76,7 @@ class Fit:
     #run actuel fit
     if config.plot_result:
       self.fit_result = self.guess
+      self.osciStrength = guess.osciStrengths
     else:
       self.makeFit(config,calcFlag) #saves fit results in self.fit_result
     print(self.fit_result)
