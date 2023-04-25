@@ -32,9 +32,9 @@ def writeEmptyConfig():
   data_str = """\
   DESCRIPTION:                    # Description of evaluation 
   DIPOLE:                         # List of dipole moment files
-    - dipole_k100.dat
-    - dipole_k010.dat
-    - dipole_k001.dat
+    - [dipole_calc1_area1.dat, dipole_calc1_area2, ...]
+    - [dipole_calc2_area1.dat, dipole_calc2_area2, ...]
+    ...
   EXCIT: laser_profile.dat        # Profile of excitation
   OPT:
     FourierTransform:
