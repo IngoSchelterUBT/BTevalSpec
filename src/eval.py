@@ -7,9 +7,9 @@ import re
 import sys
 import os.path
 import getopt
-import matplotlib
-matplotlib.use("Qt5Agg")
-import matplotlib.pyplot as plt
+#import matplotlib
+#matplotlib.use("Qt5Agg")
+#import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import concurrent.futures
 
@@ -53,11 +53,8 @@ def main():
     #dipg= []
     for icalc in range(len(conf.files)):                #Go through calculations
         dip.append([])
-        if conf.fourier or conf.pade:
-            for iarea in range(len(conf.files[icalc])): #Go through areas
-                dip[icalc].append(dipole.Dipole(conf.files[icalc][iarea]))
-        else: #No nead to read in this case
-            dip[icalc].append([None]*len(conf.files[icalc]))
+        for iarea in range(len(conf.files[icalc])): #Go through areas
+            dip[icalc].append(dipole.Dipole(conf.files[icalc][iarea]))
 #        dipg.append(dipole.sum(dip[icalc]))
 #    if conf.numDipoleCalc==3.and.conf.numDipoleArea==1: #Assume boost in x/y/z directions
 #        trace   = dipole.trace([dip[0][0],dip[1][0],dip[2][0])
@@ -66,15 +63,20 @@ def main():
     # Fourier transform
     # If only fit is true, then read the Fourier Transformation instead
     #--------------------------------------------------------------------------#
-    if conf.fourier or conf.fit or conf.plot_result:
-        if conf.fourier: inout.cleanFT() #delete Osci and PW folder
+    if conf.fourier:
+        inout.cleanFT() #delete Osci and PW folder
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(conf.files)):            #Go through calculations
                 for iarea in range(len(conf.files[icalc])): #Go through areas
                     if conf.fourier:
-                        executer.submit(dip[icalc][iarea].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True)) #, conf, dip[i], i, calcFlag)
+                        executer.submit(dip[icalc][iarea].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
 #                executer.submit(dipg[icalc].ft)
 #            executer.submit(trace.ft)
+    elif conf.fit or conf.plot_results:
+        for icalc in range(len(conf.files)):            #Go through calculations
+            for iarea in range(len(conf.files[icalc])): #Go through areas
+                dip[icalc][iarea].readSpectra()
+        
 
     #--------------------------------------------------------------------------#
     # Write spectra

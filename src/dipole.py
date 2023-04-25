@@ -190,10 +190,32 @@ class Dipole:
     def writeSpectra(self):
         #FT
         headFT = 'Energy (Ry) | real part of FT | imag part of FT'
-        for i in range(len(self.ft)):
-            np.savetxt(os.path.splitext(self.dipname)[0]+'_ft_'+str(i)+'.dat',np.column_stack((fftshift(self.freq),np.real(fftshift(self.ft[i])),np.imag(fftshift(self.ft[i])))),header=headFT)
+        for i in range(len(self.dat)):
+            fname = os.path.splitext(self.dipname)[0]+'_ft_'+str(i)+'.dat'
+            np.savetxt(fname,np.column_stack((fftshift(self.freq),np.real(fftshift(self.ft[i])),np.imag(fftshift(self.ft[i])))),header=headFT)
 
         #PW
         headPW = 'Energy (Ry) | Power Spectrum'
-        for i in range(len(self.pw)):
-            np.savetxt(os.path.splitext(self.dipname)[0]+'_pw_'+str(i)+'.dat',np.column_stack((self.freq[:len(self.freq)//2],self.pw[i])),header=headPW)
+        for i in range(len(self.dat)):
+            fname = os.path.splitext(self.dipname)[0]+'_pw_'+str(i)+'.dat'
+            np.savetxt(fname,np.column_stack((self.freq[:len(self.freq)//2],self.pw[i])),header=headPW)
+
+    #----------------------------------------------------------------------------#
+    # Read spectra
+    #----------------------------------------------------------------------------#
+    def readSpectra(self):
+        #FT
+        self.ft = []
+        for i in range(len(self.dat)):
+            fname = os.path.splitext(self.dipname)[0]+'_ft_'+str(i)+'.dat'
+            tmp = np.transpose(np.loadtxt(fname))
+            self.ft.append(fftshift(tmp[1]) + 1.j*fftshift(tmp[2]))
+            if i==0: self.freq = fftshift(tmp[0])
+        self.ft = np.array(self.ft)
+
+        #PW
+        self.pw = []
+        for i in range(len(self.dat)):
+            fname = os.path.splitext(self.dipname)[0]+'_pw_'+str(i)+'.dat'
+            self.pw.append(np.transpose(np.loadtxt(fname))[1])
+        self.pw = np.array(self.pw)
