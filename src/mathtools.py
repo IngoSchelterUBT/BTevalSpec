@@ -10,7 +10,7 @@ import numba as nb
 
 #Routine for calculating the PADE-series
 @nb.njit
-def numba_padeseries(w, wn, m, n, dt, dip):
+def numba_padeseries(w, m, n, dt, dip):
   #Get matrix G and vector d eq~(33) in [1]
   b0 = 1.0
   G = np.zeros((n,n))
@@ -31,6 +31,7 @@ def numba_padeseries(w, wn, m, n, dt, dip):
     for i in range(k):
       a[k] = a[k] + b[i]*dip[(k+1)-(i+1)]
  
+  wn = len(w)
   z = np.full(n,0.0+0.0j)
   p = np.full(wn,0.0+0.0j)
   q = np.full(wn,0.0+0.0j)

@@ -19,11 +19,9 @@ from pprint import pprint
 #Import own Modules
 import config
 import dipole
-import fourierTransform as fourier
-import padeApprox
-import specGuess
-import specFit
-import spectrum
+#import specGuess
+#import specFit
+#import spectrum
 import inout
 import handleTrace
 import errorHandler as err
@@ -61,50 +59,42 @@ def main():
 
     #--------------------------------------------------------------------------#
     # Fourier transform
-    # If only fit is true, then read the Fourier Transformation instead
     #--------------------------------------------------------------------------#
     if conf.fourier:
-        inout.cleanFT() #delete Osci and PW folder
         with concurrent.futures.ThreadPoolExecutor() as executer:
-            for icalc in range(len(conf.files)):            #Go through calculations
-                for iarea in range(len(conf.files[icalc])): #Go through areas
-                    if conf.fourier:
-                        executer.submit(dip[icalc][iarea].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
-#                executer.submit(dipg[icalc].ft)
-#            executer.submit(trace.ft)
+            for icalc in range(len(dip)):
+                for iarea in range(len(dip[icalc])):
+                    executer.submit(dip[icalc][iarea].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
+#                executer.submit(dipg[icalc].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
+#            executer.submit(trace.ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
     elif conf.fit or conf.plot_results:
-        for icalc in range(len(conf.files)):            #Go through calculations
-            for iarea in range(len(conf.files[icalc])): #Go through areas
-                dip[icalc][iarea].readSpectra()
+        for icalc in range(len(dip)):
+            for iarea in range(len(dip[icalc])):
+                dip[icalc][iarea].readSpectra(what=["ft","pw"])
         
+    #--------------------------------------------------------------------------#
+    # Pade approxiimation
+    #--------------------------------------------------------------------------#
+    pade = []
+    if conf.pade:
+        with concurrent.futures.ThreadPoolExecutor() as executer:
+            for icalc in range(len(dip)):
+                for iarea in range(len(dip[icalc])):
+                    executer.submit(dip[icalc][iarea].pade(conf.pade_wmax,conf.pade_dw,thin=conf.pade_thin,smooth=conf.pade_smooth))
+#                executer.submit(dipg[icalc].pade)
+#            executer.submit(trace.pade)
+    elif conf.fit_guess:
+        for icalc in range(len(dip)):
+            for iarea in range(len(dip[icalc])):
+                dip[icalc][iarea].readSpectra(what=["pade"])
 
     #--------------------------------------------------------------------------#
     # Write spectra
     #--------------------------------------------------------------------------#
-    for icalc in range(len(conf.files)):            #Go through calculations
-        for iarea in range(len(conf.files[icalc])): #Go through areas
-            dip[icalc][iarea].writeSpectra()
-
-#    #Do Pade Approximation of the dipole moment file(s)
-#    pade = []
-#    if conf.pade or conf.fit_guess:
-#        pade = [None]*len(conf.files)
-#        if conf.numDipoleFiles == 3: pade.append(None)
-#        if conf.pade: inout.cleanPade() #delete PADE folder
-#        future = pade #create a future object list
-#        with concurrent.futures.ThreadPoolExecutor() as executer:
-#                for i in range(len(pade)):
-#                    if i == 3:
-#                        calcFlag = 'trace'
-#                    else:
-#                        calcFlag = 'no'
-#                    future[i] = executer.submit(padeApprox.Pade, conf, dip[i], i, calcFlag)
-#                    pade[i] = future[i].result()
-#                    #pade[i] = padeApprox.Pade(conf,dip[i],i,calcFlag)
-#    else:
-#        #construct dummy pade list
-#        for i in range(conf.numDipoleFiles+1):
-#            pade.append(0)
+    for icalc in range(len(dip)):
+        for iarea in range(len(dip[icalc])):
+            if conf.fourier: dip[icalc][iarea].writeSpectra(what=["ft","pw"])
+            if conf.pade   : dip[icalc][iarea].writeSpectra(what=["pade"]   )
 #
 #
 #    #Do Guess for fit of the spectrum
