@@ -22,13 +22,8 @@ import dipole
 #import specGuess
 #import specFit
 #import spectrum
-import inout
 import handleTrace
 import errorHandler as err
-
-#------------------------------------------------------------------------------#
-# Read dipole files
-#------------------------------------------------------------------------------#
 
 #------------------------------------------------------------------------------#
 # Main
@@ -36,54 +31,51 @@ import errorHandler as err
 def main():
 
     #--------------------------------------------------------------------------#
+    # In Future:
+    # Process command-line arguments
+    #--------------------------------------------------------------------------#
+    ifile = "eval.yaml"
+
+    #--------------------------------------------------------------------------#
     # Read configuration from eval.yaml
     #--------------------------------------------------------------------------#
-    if not os.path.isfile('eval.yaml'):
-        inout.writeEmptyConfig()
-        err.err(1,'There was no eval.yaml file, now a template is created!')
-    conf = config.Config()
+    if not os.path.isfile(ifile):
+        config.writeTemplate(ifile)
+        err.err(1,'There was no '+ifile+' file, now a template is created!')
+    conf = config.Config(ifile)
 
     #--------------------------------------------------------------------------#
     # Read dipole moments into dip[ncalc][narea] list:
     #--------------------------------------------------------------------------#
-    #Initialize a list of objects containing all configurations of all dipole files
     dip = []
-    #dipg= []
-    for icalc in range(len(conf.files)):                #Go through calculations
+    for icalc in range(len(conf.dipfiles)):
         dip.append([])
-        for iarea in range(len(conf.files[icalc])): #Go through areas
-            dip[icalc].append(dipole.Dipole(conf.files[icalc][iarea]))
-#        dipg.append(dipole.sum(dip[icalc]))
-#    if conf.numDipoleCalc==3.and.conf.numDipoleArea==1: #Assume boost in x/y/z directions
-#        trace   = dipole.trace([dip[0][0],dip[1][0],dip[2][0])
+        for iarea in range(len(conf.dipfiles[icalc])):
+            dip[icalc].append(dipole.Dipole(conf.dipfiles[icalc][iarea]))
 
     #--------------------------------------------------------------------------#
     # Fourier transform
     #--------------------------------------------------------------------------#
-    if conf.fourier:
+    if conf.opt["FT"]["calc"]:
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
-                    executer.submit(dip[icalc][iarea].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
-#                executer.submit(dipg[icalc].ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
-#            executer.submit(trace.ft(minpw=conf.minpw,window=conf.window,smooth=conf.smooth,rmDC=True))
-    elif conf.fit or conf.plot_results:
+                    executer.submit(dip[icalc][iarea].ft(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True))
+    elif conf.opt["Fit"]["calc"] or conf.opt["Fit"]["plot_results"]:
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["ft","pw"])
         
     #--------------------------------------------------------------------------#
-    # Pade approxiimation
+    # Pade approximation
     #--------------------------------------------------------------------------#
     pade = []
-    if conf.pade:
+    if conf.opt["Pade"]["calc"]:
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
-                    executer.submit(dip[icalc][iarea].pade(conf.pade_wmax,conf.pade_dw,thin=conf.pade_thin,smooth=conf.pade_smooth))
-#                executer.submit(dipg[icalc].pade)
-#            executer.submit(trace.pade)
-    elif conf.fit_guess:
+                    executer.submit(dip[icalc][iarea].pade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"]))
+    elif conf.opt["Fit"]["guess"]:
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["pade"])
@@ -93,25 +85,22 @@ def main():
     #--------------------------------------------------------------------------#
     for icalc in range(len(dip)):
         for iarea in range(len(dip[icalc])):
-            if conf.fourier: dip[icalc][iarea].writeSpectra(what=["ft","pw"])
-            if conf.pade   : dip[icalc][iarea].writeSpectra(what=["pade"]   )
-#
-#
-#    #Do Guess for fit of the spectrum
+            if conf.opt["FT"  ]["calc"]: dip[icalc][iarea].writeSpectra(what=["ft","pw"])
+            if conf.opt["Pade"]["calc"]: dip[icalc][iarea].writeSpectra(what=["pade"]   )
+
+#    #--------------------------------------------------------------------------#
+#    # Create initial guess for the spectrum fit
+#    #--------------------------------------------------------------------------#
+#    guess  = []
+#    future = []
 #    if conf.fit or conf.plot_result:
-#        guess = [None]*len(conf.files)
-#        if conf.numDipoleFiles == 3: guess.append(None)
-#        future = guess #create a future object list
 #        with concurrent.futures.ThreadPoolExecutor() as executer:
-#                for i in range(len(guess)):
-#                    if i == 3:
-#                        calcFlag = 'trace'
-#                    else:
-#                        calcFlag = 'no'
-#                    future[i] = executer.submit(specGuess.Guess, conf, ft[i], pade[i], i, calcFlag)
-#                    guess[i] = future[i].result()
-#                    #guess[i] = specGuess.Guess(conf,ft[i],pade[i],i,calcFlag)
-#
+#            for icalc in range(len(dip)):
+#                guess.append([])
+#                future.append([])
+#                for iarea in range(len(dip[icalc])):
+#                    future[i].append(executer.submit(specGuess.Guess,dip[icalc][iarea].ft, dip[icalc][iarea].pade,...))
+#                    guess[i].append(future[i].result())
 #
 #    #Do Fit of the spectrum
 #    if conf.fit or conf.plot_result:

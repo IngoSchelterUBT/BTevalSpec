@@ -57,7 +57,7 @@ class Guess:
 #-----------------------------------------------------------------------------#
   #Head-Routine for making Guess
   def giveGuess(self,config,calcFlag='no'):
-    #Make an list for the guess,
+    #Make a list for the guess,
     # - if three files are fitted (calcFlag=='no'), then the list contains the
     #   guess for the x-, y- and z-direction
     # - if only one file is fitted (calcFlag=='trace'), then the list only contains
