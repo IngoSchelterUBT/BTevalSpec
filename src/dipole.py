@@ -8,6 +8,7 @@ from scipy import signal
 #own module
 import errorHandler as err
 import mathtools
+import util
 
 #==============================================================================#
 # Class Dipole
@@ -16,6 +17,7 @@ import mathtools
 #
 # General
 # - dipname     file name of input dipole file
+# - descript    description list for each component, e.g., "['x','y','z']"
 # Time-dependent data
 # - time        numpy array containing the time axis
 # - dat         contains dipole moment(s)
@@ -26,42 +28,63 @@ import mathtools
 # - pw          Power spectrum of dat
 # - pade...
 # Further components
-# - kvec:       k-vector of excitation
-# - natoms      Number of atoms of molecule
-# - ntypes      Number of types of atoms of molecule
-# - atomspertype Number of atoms per type
-# - nelec       Number of valence electrons [total, spin-up, spin-down]
-# - dxyz        Grid spacing
-# - t_start     Start time of propagation
+# - meta        Meta-information dictionary
+# - nelec       Number of valence electrons
+# - tprop       Free propagation time
 # - dt          Time step of propagation
-# - t_prop      Propagation time
-# - boostenergy Energy of boost excitation in Ry
+# - ext         "boost" or "laser"
+# - efield      electric field strength in Ry (boost: from boost energy)
+# - epol        electric field polarization vector
+# - t0          End-time of laser (or 0. in case of boost)
+#               excitation period is removed from the dipole moment
 #------------------------------------------------------------------------------#
 class Dipole:
     #--------------------------------------------------------------------------#
     # Read Diople-File for creating dipole object
     #--------------------------------------------------------------------------#
-    def __init__(self,fname): #,dipoleId,calcFlag='no'):
+    def __init__(self,fname,descript=[]):
 
         #Read and interpred meta data
         self.dipname = fname
-        self.setHeadInformation(self.readDipoleHeader(fname))
+        self.meta    = self.readDipoleHeader(fname)
+        self.nelec   = sum(self.meta.get('NELEC',[0.,0.])) #number of electrons
+        if self.meta.get("BOOSTMASK","no") != "no":
+            self.ext    = "boost"
+            energy      = self.meta.get('BOOSTENERGY',[0.])[0] # En = N*hbar^2*k^2/2/m => k = sqrt(2*m*En/N/hbar^2) -> Ry: k=sqrt(En/N)
+            self.efield = math.sqrt(energy/self.nelec/2.) # identify hbar*k*1 = e*E*H(omega) => E = hbar*k/e -> Ry: E=k/sqrt(2) = sqrt(En/2/N)
+            self.epol   = self.meta.get('BOOSTKVEC','empty') #k-vector of boost excitation
+            self.t0     = 0.
+        elif self.meta.get("EXCITATION","no") == "laser_mono":
+            if self.meta.get("NLASER",1) > 1: err(1,"More than one laser not supported")
+            self.ext    = "laser"
+            self.efield =  self.meta.get('LASEREFIELD',[0.])[0]
+            self.epol   = [self.meta.get('LASERPOLX','empty')[0],self.meta.get('LASERPOLY','empty')[0],self.meta.get('LASERPOLZ','empty')[0]]
+            self.t0     = self.meta.get('LASEREND',0.)
+        else:
+            err(1,"Unknown excitation")
 
         #Read data dipole moment for dipole file
-        dat         = np.transpose(np.loadtxt(fname,comments='#'))
-        self.time   = dat[0]
-        self.dat    = dat[1:]
-        self.t_prop = self.dt * (len(dat[0])-1)
+        dat = np.transpose(np.loadtxt(fname,comments='#'))
+        if len(descript)==0:
+            self.descript = [i for i in range(len(dat)-1)]
+        elif len(descript)==len(dat)-1:
+            self.descript = descript
+        else:
+            err(1,"Invalid length of description list")
+        self.time  = np.array([dat[0][i] for i in range(len(dat[0])) if dat[0][i]>=self.t0])
+        self.tprop = self.time[-1]-self.time[0]
+        self.dt    = self.tprop/(len(self.time)-1)
+        self.dat   = []
+        for j in range(1,len(dat)):
+            self.dat.append(np.array([dat[j][i] for i in range(len(dat[0])) if dat[0][i]>=self.t0]))
 
-    #--------------------------------------------------------------------------#
-    # Routine checks if it is a float in a String
-    #--------------------------------------------------------------------------#
-    def isfloat(self,value):
-        try:
-            float(value)
-            return True
-        except ValueError:
-            return False
+        #Init derived components that are not initially computed
+        self.ft       = []
+        self.pw       = []
+        self.freq     = []
+        self.pade     = []
+        self.freqPade = []
+
 
     #--------------------------------------------------------------------------#
     # Read header information of the dipole file and returns it as dictionary
@@ -104,56 +127,15 @@ class Dipole:
             for k, v in meta.items():
                     if ',' in v[0]:
                             meta[k] = np.array([float(i) for i in v[0].split(',')]) #modifiziere v[0]: dort steht der value drinnen, d. h. wenn etwas Komma seperiertes ist dann aendere den value zu einer numpy list
-                    if self.isfloat(v[0]):
+                    if util.isFloat(v[0]):
                             v[0] = float(v[0])
 
             return meta
 
-    #--------------------------------------------------------------------------#
-    # Sets the information of the header of the dipole file into variables
-    # meta is a dictionary
-    #--------------------------------------------------------------------------#
-    def setHeadInformation(self,meta):
-        #Data of dipole file
-        #number of atoms
-        self.natoms = int(meta.get('NATOMS',[0])[0])
-        if self.natoms == 0:
-            err.warning(1,'There are no atoms in dipole file!')
-        #number of atom types
-        self.ntypes = int(meta.get('NTYPES',[0])[0])
-        if self.ntypes == 0:
-            err.warning(1,'There are no atom types in dipole file!')
-        #array of number of atoms per type
-        self.atomspertype = meta.get('ATOMSPERTYPE','empty')
-        if 'empty' in str(self.atomspertype):
-            err.warning(1,'There are no atomtypes in dipole file!')
-        #total number of electrons, electrons for spin-up and spin-down (1., 2. and 3. position)
-        self.nelec = meta.get('NELEC','empty')
-        if 'empty' in str(self.nelec):
-            err.err(1, 'There are no electrons in spin-up and spin-down in dipole file!')
-        totelec = sum(self.nelec)
-        self.nelec = np.insert(self.nelec, 0, totelec, axis=0)
-        #spacing of the used grid in bohr
-        self.dxyz = meta.get('DX',[0.])[0]
-        if self.dxyz == 0.:
-            err.warning(1, 'There is no grid spacing in dipole file!')
-        #start time of propagation in rydberg units
-        self.t_start = meta.get('T_START',[0.])[0]
-        #length of time step in propagation
-        self.dt = meta.get('DT',[0.])[0]
-        if self.dt == 0.:
-            err.warning(1, 'There is no time step in dipole file!')
-        #boost energy of boost calculation in rydberg
-        self.boostenergy = meta.get('BOOSTENERGY',[0.])[0]
-        #k-vector of boost excitation
-        self.kvec = meta.get('BOOSTKVEC','empty')
-        if 'empty' in str(self.kvec):
-            err.err(1, 'There was no k-vector in dipole file!')
-
     #----------------------------------------------------------------------------#
     # Compute Fourier transform and power spectrum
     #----------------------------------------------------------------------------#
-    def ft(self,minpw=0,smooth=0.,window=0.,rmDC=True):
+    def getFt(self,minpw=0,smooth=0.,window=0.,rmDC=True):
 
         # Frequencies
         pw = math.ceil(math.log2(len(self.time)))
@@ -170,25 +152,26 @@ class Dipole:
         # Smoothing
         if smooth>0.:
             for i in range(tfunc.shape[0]):
-                tfunc[i] *= np.exp(-smooth*(self.time-self.t_start))
+                tfunc[i] *= np.exp(-smooth*(self.time-self.time[0]))
         # Windowing
         if window>0.:
             for i in range(tfunc.shape[0]):
                 tfunc[i] *= signal.windows.kaiser(len(tfunc[i]),window)
 
         # Fourier transform
-        self.ft = [] #np.zeros((len(self.dat),Nf   ),dtype=complex)
-        self.pw = [] #np.zeros((len(self.dat),Nf//2),dtype=float  )
+        self.ft = []
+        self.pw = []
         for i in range(len(tfunc)):
-            self.ft.append(self.dt*fft(tfunc[i],n=Nf ))
+            tmp = self.dt*fft(tfunc[i],n=Nf )
+            self.ft.append([np.real(tmp),np.imag(tmp)])
             self.pw.append(np.zeros(Nf//2,dtype=float))
             for j in range(len(self.pw[i])):
-                self.pw[i][j] = np.abs(self.ft[i][j])*np.abs(self.ft[i][j]) + np.abs(self.ft[i][-j])*np.abs(self.ft[i][-j])
+                self.pw[i][j] = np.abs(tmp[j])*np.abs(tmp[j]) + np.abs(tmp[-j])*np.abs(tmp[-j])
 
     #----------------------------------------------------------------------------#
     # Compute Pade approximation
     #----------------------------------------------------------------------------#
-    def pade(self,wmax,dw,thin=0,smooth=0.,window=0.,rmDC=True):
+    def getPade(self,wmax,dw,thin=0,smooth=0.,window=0.,rmDC=True):
 
         # Frequencies
         wmax          = np.ceil(wmax/dw)*dw
@@ -206,7 +189,7 @@ class Dipole:
         # Smoothing
         if smooth>0.:
             for i in range(tfunc.shape[0]):
-                tfunc[i] *= np.exp(-smooth*(self.time-self.t_start))
+                tfunc[i] *= np.exp(-smooth*(self.time-self.time[0]))
         # Windowing
         if window>0.:
             for i in range(tfunc.shape[0]):
@@ -222,9 +205,10 @@ class Dipole:
         # Pade approximation
         m = ((len(time)-1)//2)*2 #ensure even m
         n = m//2
-        self.pade = [] #np.zeros((len(tfunc),Nf),dtype=complex)
+        self.pade = []
         for i in range(len(tfunc)):
-            self.pade.append(self.dt*mathtools.numba_padeseries(self.freqPade,m,n,dt,tfunc[i]))
+            tmp = self.dt*mathtools.numba_padeseries(self.freqPade,m,n,dt,tfunc[i])
+            self.pade.append([np.real(tmp),np.imag(tmp)])
 
     #----------------------------------------------------------------------------#
     # Write spectra
@@ -235,8 +219,8 @@ class Dipole:
             head = 'Energy (Ry) | real(FT) | imag(FT)'
             try:
                 for i in range(len(self.ft)):
-                    fname = os.path.splitext(self.dipname)[0]+'_ft_'+str(i)+'.dat'
-                    np.savetxt(fname,np.column_stack((fftshift(self.freq),np.real(fftshift(self.ft[i])),np.imag(fftshift(self.ft[i])))),header=head)
+                    fname = os.path.splitext(self.dipname)[0]+'_ft_'+self.descript[i]+'.dat'
+                    np.savetxt(fname,np.column_stack((fftshift(self.freq),fftshift(self.ft[i][0]),fftshift(self.ft[i][1]))),header=head)
             except:
                 err.warn("No FT data to write")
 
@@ -245,7 +229,7 @@ class Dipole:
             head = 'Energy (Ry) | Power Spectrum'
             try:
                 for i in range(len(self.pw)):
-                    fname = os.path.splitext(self.dipname)[0]+'_pw_'+str(i)+'.dat'
+                    fname = os.path.splitext(self.dipname)[0]+'_pw_'+self.descript[i]+'.dat'
                     np.savetxt(fname,np.column_stack((self.freq[:len(self.freq)//2],self.pw[i])),header=head)
                     
             except:
@@ -256,8 +240,8 @@ class Dipole:
             head = 'Energy (Ry) | real(Pade) | imag(Pade) '
             try:
                 for i in range(len(self.pade)):
-                    fname = os.path.splitext(self.dipname)[0]+'_pade_'+str(i)+'.dat'
-                    np.savetxt(fname,np.column_stack((self.freqPade,np.real(self.pade[i]),np.imag(self.pade[i]))),header=head)
+                    fname = os.path.splitext(self.dipname)[0]+'_pade_'+self.descript[i]+'.dat'
+                    np.savetxt(fname,np.column_stack((self.freqPade,self.pade[i][0],self.pade[i][1])),header=head)
             except:
                 err.warn("No Pade data to write")
 
@@ -266,35 +250,35 @@ class Dipole:
     #----------------------------------------------------------------------------#
     def readSpectra(self,what=["ft","pw","pade"]):
         #FT
-        self.ft = []
         if "ft" in what:
             try:
+                self.ft = []
                 for i in range(len(self.dat)):
-                    fname = os.path.splitext(self.dipname)[0]+'_ft_'+str(i)+'.dat'
-                    tmp = np.transpose(np.loadtxt(fname))
-                    self.ft.append(fftshift(tmp[1]) + 1.j*fftshift(tmp[2]))
+                    fname = os.path.splitext(self.dipname)[0]+'_ft_'+self.descript[i]+'.dat'
+                    tmp   = np.transpose(np.loadtxt(fname))
+                    self.ft.append([fftshift(tmp[1]),fftshift(tmp[2])])
                     if i==0: self.freq = fftshift(tmp[0])
             except:
-                err.warn("No FT files to read")
+                err.err("No FT files to read")
 
         #PW
         if "pw" in what:
             try:
                 self.pw = []
                 for i in range(len(self.dat)):
-                    fname = os.path.splitext(self.dipname)[0]+'_pw_'+str(i)+'.dat'
+                    fname = os.path.splitext(self.dipname)[0]+'_pw_'+self.descript[i]+'.dat'
                     self.pw.append(np.transpose(np.loadtxt(fname))[1])
             except:
-                err.warn("No PW files to read")
+                err.err("No PW files to read")
 
         #Pade
-        self.pade = []
         if "pade" in what:
             try:
+                self.pade = []
                 for i in range(len(self.dat)):
-                    fname = os.path.splitext(self.dipname)[0]+'_pade_'+str(i)+'.dat'
+                    fname = os.path.splitext(self.dipname)[0]+'_pade_'+self.descript[i]+'.dat'
                     tmp = np.transpose(np.loadtxt(fname))
-                    self.pade.append(tmp[1] + 1.j*tmp[2])
+                    self.pade.append([tmp[1],tmp[2]])
                     if i==0: self.freqPade = tmp[0]
             except:
-                err.warn("No Pade files to read")
+                err.err("No Pade files to read")

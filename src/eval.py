@@ -3,10 +3,10 @@
 # author: Rian Richter
 # Fit of spectrum
 import numpy as np
-import re
+#import re
 import sys
 import os.path
-import getopt
+#import getopt
 #import matplotlib
 #matplotlib.use("Qt5Agg")
 #import matplotlib.pyplot as plt
@@ -14,16 +14,19 @@ from scipy.optimize import curve_fit
 import concurrent.futures
 
 #only for tests
-from pprint import pprint
+#from pprint import pprint
 
 #Import own Modules
+import errorHandler as err
 import config
+import extern
 import dipole
+import excitations
+import fit
 #import specGuess
 #import specFit
 #import spectrum
-import handleTrace
-import errorHandler as err
+#import handleTrace
 
 #------------------------------------------------------------------------------#
 # Main
@@ -42,16 +45,19 @@ def main():
     if not os.path.isfile(ifile):
         config.writeTemplate(ifile)
         err.err(1,'There was no '+ifile+' file, now a template is created!')
-    conf = config.Config(ifile)
+    conf  = config.Config(ifile)
+    excit = excitations.Excitations(ncalc=len(conf.dipfiles),narea=len(conf.dipfiles[0]),ncomp=3,exlist=conf.excit)
 
     #--------------------------------------------------------------------------#
     # Read dipole moments into dip[ncalc][narea] list:
+    # In case of an external excitation with t_end>0:
+    # Move the time frame so that it starts at t_end
     #--------------------------------------------------------------------------#
     dip = []
     for icalc in range(len(conf.dipfiles)):
         dip.append([])
         for iarea in range(len(conf.dipfiles[icalc])):
-            dip[icalc].append(dipole.Dipole(conf.dipfiles[icalc][iarea]))
+            dip[icalc].append(dipole.Dipole(conf.dipfiles[icalc][iarea],["x","y","z"]))
 
     #--------------------------------------------------------------------------#
     # Fourier transform
@@ -60,8 +66,11 @@ def main():
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
-                    executer.submit(dip[icalc][iarea].ft(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True))
-    elif conf.opt["Fit"]["calc"] or conf.opt["Fit"]["plot_results"]:
+                    executer.submit(dip[icalc][iarea].getFt(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True))
+                    #dip[icalc][iarea].getFt(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True)
+                    dip[icalc][iarea].writeSpectra(what=["ft","pw"])
+        conf.opt["FT"]["calc"] = False #Next time: read by default
+    else: #elif conf.opt["Fit"]["calc"] or conf.opt["Fit"]["plot_results"]:
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["ft","pw"])
@@ -69,39 +78,43 @@ def main():
     #--------------------------------------------------------------------------#
     # Pade approximation
     #--------------------------------------------------------------------------#
-    pade = []
     if conf.opt["Pade"]["calc"]:
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
-                    executer.submit(dip[icalc][iarea].pade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"]))
-    elif conf.opt["Fit"]["guess"]:
+                    executer.submit(dip[icalc][iarea].getPade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"]))
+                    #dip[icalc][iarea].getPade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"])
+                    dip[icalc][iarea].writeSpectra(what=["pade"])
+        conf.opt["Pade"]["calc"] = False #Next time: read by default
+    else: #elif conf.opt["Fit"]["guess"]:
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["pade"])
 
     #--------------------------------------------------------------------------#
-    # Write spectra
+    # Read and Fourier transform external excitation
     #--------------------------------------------------------------------------#
-    for icalc in range(len(dip)):
-        for iarea in range(len(dip[icalc])):
-            if conf.opt["FT"  ]["calc"]: dip[icalc][iarea].writeSpectra(what=["ft","pw"])
-            if conf.opt["Pade"]["calc"]: dip[icalc][iarea].writeSpectra(what=["pade"]   )
+    ext = extern.Extern(conf.ext.get("profile",""))
+    #if isinstance(ext,extern.Extern):
+    ext.write()
+
+    #--------------------------------------------------------------------------#
+    # Create initial guess for the spectrum fit
+    #--------------------------------------------------------------------------#
+    dfit  = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
+    if conf.opt["Fit"]["guess"]:
+        excit = dfit.newGuess()
+        conf.opt["Fit"]["guess"] = False #Next time: No new initial guess
+
+#    if conf.opt["Fit"]["calc"] and conf.opt["Fit"]["guess"]: # or conf.opt["Fit"]["plot_result"]:
+#        dfit.guess(init=excit,thres=conf.opt["Fit"]["guess_thres"])
 
 #    #--------------------------------------------------------------------------#
-#    # Create initial guess for the spectrum fit
+#    # Fit
 #    #--------------------------------------------------------------------------#
-#    guess  = []
-#    future = []
-#    if conf.fit or conf.plot_result:
-#        with concurrent.futures.ThreadPoolExecutor() as executer:
-#            for icalc in range(len(dip)):
-#                guess.append([])
-#                future.append([])
-#                for iarea in range(len(dip[icalc])):
-#                    future[i].append(executer.submit(specGuess.Guess,dip[icalc][iarea].ft, dip[icalc][iarea].pade,...))
-#                    guess[i].append(future[i].result())
-#
+#    if conf.opt["Fit"]["calc"]:
+#        fit.fit(init=excit,crit=conf.opt["Fit"]["relerr_crit"],maxIter=conf.opt["Fit"]["max_iter"])
+
 #    #Do Fit of the spectrum
 #    if conf.fit or conf.plot_result:
 #        fit = [None]*len(conf.files)
@@ -128,6 +141,12 @@ def main():
 #        #write excitation lines
 #        if conf.fit: inout.writeExcitations(spec)
 #        input("Press [enter] to end and close all plots!")
+
+    #--------------------------------------------------------------------------#
+    # Update configuration file
+    #--------------------------------------------------------------------------#
+    conf.excit = [excit.exlist[i].todict() for i in range(len(excit.exlist))]
+    conf.write(ifile)
 
 #------------------------------------------------------------------------------#
 # Call main

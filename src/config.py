@@ -1,14 +1,13 @@
 #==============================================================================#
-# Load modules
+# Configuration
 #==============================================================================#
 #intrinsic
 import numpy as np
 import ruamel.yaml
+import sys
 
 #custom
-import inout
 import errorHandler as err
-import excitations
 
 #==============================================================================#
 # Class Config
@@ -17,21 +16,27 @@ class Config:
     def __init__(self,ifile):
         yaml = ruamel.yaml.YAML()
         with open(ifile) as fh:
-            conf = yaml.load(fh)
-        self.descript = conf.get("DESCRIPTION","")
-        self.dipfiles = conf.get("DIPOLE"     ,[])
-        self.extfile  = conf.get("EXCIT"      ,"")
-        self.opt      = conf.get("OPT"        ,{})
-        self.excit    = conf.get("SPEC"       ,[])
+            self.conf = yaml.load(fh)
+        self.descript = self.conf.get("DESCRIPTION","")
+        self.dipfiles = self.conf.get("DIPOLE"     ,[])
+        self.ext      = self.conf.get("EXT"        ,{})
+        self.opt      = self.conf.get("OPT"        ,{})
+        self.excit    = self.conf.get("SPEC"       ,[])
+        tmp, self.ind, self.bsi = ruamel.yaml.util.load_yaml_guess_indent(open(ifile))
 
-    #==========================================================================#
+    #--------------------------------------------------------------------------#
     # Write configuration
-    #==========================================================================#
+    #--------------------------------------------------------------------------#
     def write(self,ofile):
         yaml = ruamel.yaml.YAML()
-        conf = {"DESCRIPTION": self.descript, "DIPOLE": self.dipfiles, "EXCIT": self.extfiles, "OPT": self.opt, "SPEC": self.excit}
+        self.conf["DESCRIPTION"] = self.descript
+        self.conf["DIPOLE"     ] = self.dipfiles
+        self.conf["EXT"        ] = self.ext
+        self.conf["OPT"        ] = self.opt
+        self.conf["SPEC"       ] = self.excit
+        yaml.indent(mapping=self.ind,sequence=self.ind,offset=self.bsi)
         with open(ofile,'w') as fh:
-            yaml.dump(conf,fh)
+            yaml.dump(self.conf,fh)
 
 #==========================================================================#
 # Write configuration template
@@ -39,10 +44,11 @@ class Config:
 def writeTemplate(ofile):
     conf = """\
     DESCRIPTION:                    # Description of evaluation 
-    DIPOLE:                         # List of dipole moment files
+    DIPOLE:                         # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
       - [dipole_calc1_area1.dat, dipole_calc1_area2]
       - [dipole_calc2_area1.dat, dipole_calc2_area2]
-    EXCIT: laser_profile.dat        # Profile of excitation
+    EXT:
+      profile: laser_profile.dat  # Profile of excitation
     OPT:
       FT:
         calc: True                  # Turn fourier transformation on/off
@@ -74,12 +80,13 @@ def writeTemplate(ofile):
           - 0.10
           - 0.40
     SPEC:
-      - name:     "Dummy"
-        energy:   0.
-        strength: 0.
-        dipole:   [0.,0.,0.]
-        phase:    0.
-        fix:      False
+      - name:     "S1"                    #Identifier
+        fix:      False                   #Set to true if the excitation shall be unchanged in a restart run
+        energy:   0.                      #Energy [Ry]            can be changed manually to help fit
+        phase:    0.                      #Phase (==0. for boost) can be changed manually to help fit
+        dipoles:  [[0.,0.,0.],[0.,0.,0.]] #Areas' transition-dipole contributions
+        dipole:   [0.,0.,0.]              #Total Transition dipole
+        strength: 0.                      #Oscillator strength
     """
     yaml = ruamel.yaml.YAML()
     code = yaml.load(conf)

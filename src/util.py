@@ -1,9 +1,11 @@
-#Routines which are needed in a lot of modules
-
-#import own modules
+#==============================================================================#
+# Utilities
+#==============================================================================#
 import errorHandler as err
 
-#Get direction
+#--------------------------------------------------------------------------#
+# Convert index to direction
+#--------------------------------------------------------------------------#
 def getDir(i):
   if i == 0:
     return 'x'
@@ -13,3 +15,13 @@ def getDir(i):
     return 'z'
   else:
     err.err(1,'There can not be more directions than x, y and z!')
+
+#--------------------------------------------------------------------------#
+# Routine checks if input can be converted into float
+#--------------------------------------------------------------------------#
+def isFloat(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
