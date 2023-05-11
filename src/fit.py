@@ -2,9 +2,10 @@
 # Fitting Class
 #==============================================================================#
 #intrinsic
+import os
 import numpy as np
 import math
-from lmfit import Parameters, minimize, report_fit
+from lmfit import Parameters, minimize, fit_report
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 #own
@@ -51,91 +52,289 @@ class Fit:
         self.fiterr = self.getError(self.ft,self.fitf)
         self.minerr = np.amin   (self.fiterr)
         self.maxerr = np.amax   (self.fiterr)
-        self.averr  = np.average(self.fiterr)
+        self.avgerr = np.average(self.fiterr)
+        self.breakMinimization = False
+        self.runningError = 1000000.
 
+    #--------------------------------------------------------------------------#
+    # Get the spectral line function
+    #--------------------------------------------------------------------------#
+    def lineFunc(self,T,w):
+        sinc  = np.sinc(w*T/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
+        cosc  = (1.-math.cos(w*T))/(w*T) if abs(w)>0. else 0.
+        return T*(cosc + 1.j*sinc)
 
     #--------------------------------------------------------------------------#
     # Get the fit function for a given set of frequencies and excitations
     #--------------------------------------------------------------------------#
     def getFitFunc(self,excit):
         f  = []
-        T  = self.dip[0][0].tprop
-        Ef = self.dip[0][0].efield
-        Ep = self.dip[0][0].epol
-        for icalc in range(excit.ncalc):
+        for icalc in range(self.ncalc):
             f.append([])
-            for iarea in range(excit.narea):
+            for iarea in range(self.narea):
                 f[icalc].append([])
-                for n in range(excit.ncomp):
+                for n in range(self.ncomp):
                     fr = np.zeros(self.Nf,dtype=float)
                     fi = np.zeros(self.Nf,dtype=float)
                     f[icalc][iarea].append([fr,fi])
+        T  = self.dip[0][0].tprop
+        Ef = self.dip[0][0].efield
         for ex in excit.exlist:
-            Hw = self.ext.getVal([excit.exlist.energy])
-            for icalc in range(excit.ncalc):
-                for iarea in range(excit.narea):
-                    for n in range(excit.ncomp):
+            Hw = self.ext.getVal([ex.energy])
+            for icalc in range(self.ncalc):
+                Ep = self.dip[icalc][0].epol #Polarization can differ between calculations
+                for iarea in range(self.narea):
+                    mua= ex.dipoles[iarea]
+                    mu = ex.dipole
+                    for n in range(self.ncomp):
+                        ampl   = Ef*np.abs(np.dot(Ep,mu))*np.abs(Hw[0])*mua[n]
                         for i in range(self.Nf):
                             wm     = self.freq[i]-ex.energy
                             wp     = self.freq[i]+ex.energy
-                            mu     = ex.dipoles[iarea]
-
-                            ampl   = -Ef*np.dot(Ep,mu)*Hw*mu[n] #a_j = -k.mu_j/e*1 mu_j = -E.mu_j/hbar H(w) mu_j -> Ry: -|E|e_E.mu_j H(w) mu_j
                             tmp    = ampl*(\
-                                np.exp(+1.0j*ex.phase)*(math.cos(wm*T)-1.+1.j*math.sin(wm*T))/wm -\
-                                np.exp(-1.0j*ex.phase)*(math.cos(wp*T)-1.+1.j*math.sin(wp*T))/wp )
+                                np.exp(-1.0j*ex.phase)*self.lineFunc(T,wm) -\
+                                np.exp(+1.0j*ex.phase)*self.lineFunc(T,wp) )
                             f[icalc][iarea][n][0][i] += np.real(tmp)
                             f[icalc][iarea][n][1][i] += np.imag(tmp)
         return f
 
+
     #--------------------------------------------------------------------------#
     # Errors dat vs. fit functions
     #--------------------------------------------------------------------------#
-    def getError(self,dat,fit):
-        e  = []
-        for icalc in range(len(dat)):
+    def getError(self,dat,fit,relative=True):
+        e = []
+        a = 0.
+        for icalc in range(self.ncalc):
             e.append([])
-            for iarea in range(len(dat[icalc])):
+            for iarea in range(self.narea):
                 e[icalc].append([])
-                for n in range(len(dat[icalc][iarea])):
-                    er = np.linalg.norm([dat[icalc][iarea][0][i]-fit[icalc][iarea][0][i] for i in range(len(dat[icalc][iarea][0]))])
-                    ei = np.linalg.norm([dat[icalc][iarea][1][i]-fit[icalc][iarea][1][i] for i in range(len(dat[icalc][iarea][1]))])
-                    e[icalc][iarea].append([er,ei])
+                for icomp in range(self.ncomp):
+                    er = np.linalg.norm([dat[icalc][iarea][icomp][0][i]-fit[icalc][iarea][icomp][0][i] for i in range(len(dat[icalc][iarea][icomp][0]))])
+                    ei = np.linalg.norm([dat[icalc][iarea][icomp][1][i]-fit[icalc][iarea][icomp][1][i] for i in range(len(dat[icalc][iarea][icomp][1]))])
+                    a += np.linalg.norm([dat[icalc][iarea][icomp][0][i]                                for i in range(len(dat[icalc][iarea][icomp][0]))])
+                    a += np.linalg.norm([dat[icalc][iarea][icomp][1][i]                                for i in range(len(dat[icalc][iarea][icomp][1]))])
+                    e[icalc][iarea].append([er   ,ei   ])
+        if relative:
+            for icalc in range(self.ncalc):
+                for iarea in range(self.narea):
+                    for icomp in range(self.ncomp):
+                        for rc in range(2):
+                            e[icalc][iarea][icomp][rc] /= a
         return e
 
     #--------------------------------------------------------------------------#
-    # Make an initial guess
+    # Make an initial guess based on the sum of the Pade power spectra and the FT spectra
     #--------------------------------------------------------------------------#
     def newGuess(self,hf=0.05):
-        excit = excitations.Excitations(ncalc=self.ncalc,narea=self.narea,ncomp=self.ncomp)
+        # Init empty excitation object and arrays
+        self.excit = excitations.Excitations(narea=self.narea,ncomp=self.ncomp)
         fdat  = self.pade
-        f     = np.zeros(len(self.freq),dtype=float)
+        f     = np.zeros(len(self.freqPade),dtype=float)
+        # Sum up squared Pade spectra
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for n in range(self.ncomp):
                     for rc in range(2):
-                        for i in range(self.Nf):
+                        for i in range(self.NfPade):
                             f[i] += fdat[icalc][iarea][n][rc][i]**2
-        peaks = self.findPeaks(np.sqrt(f),dbg=2,hf=hf)
-        if self.exttype=="boost":
-            phi = 0.
-        else:
-            phi = 0.1 #Todo: Make a better guess based on the external field
+        # Search most prominent peaks
+        peaks = self.findPeaks(self.freqPade,np.sqrt(f),dbg=2,hf=hf)
+        # For each peak
         for ipeak in range(len(peaks)):
-            excit.add(energy=self.freqPade[peaks[ipeak]],phase=phi)
+            #Get energy and guess phase and dipoles based on the FT
+            energy  = self.freqPade[peaks[ipeak]]
+            phase, dipoles = self.guessExcit(energy)
+            #Add excitation to list
+            self.excit.add(energy=energy,phase=phase,dipoles=dipoles)
 
-        return excit
+    #--------------------------------------------------------------------------#
+    # Guess phase and dipole moments of an excitation at an approx. energy
+    #--------------------------------------------------------------------------#
+    def guessExcit(self,energy):
+        # Get the excitation strength/phase at that energy
+        Hw    = self.ext.getVal([energy])[0]
+        # Set some abbreviations (only the polarization may differ between different calculations)
+        t0    = self.dip[0][0].t0
+        # Approx. phase: phi = phi_ext - t0*energy (the latter because dipole moment time frame is shifted by t0=excitation period)
+        phase = (np.angle(Hw) - energy*t0)%(2.*math.pi)
+        # Get the closest index in the FT array
+        dw  = (self.freq[-1]-self.freq[0])/(len(self.freq)-1)
+        idx = int(np.rint((energy-self.freq[0])/dw))
+        # Find the calculation for which the excitation's peak is largest
+        ampl        = [[[self.ft[icalc][iarea][icomp][0][idx]+1.0j*self.ft[icalc][iarea][icomp][1][idx] for icomp in range(self.ncomp)] for iarea in range(self.narea)] for icalc in range(self.ncalc)]
+        jcalc       = np.argmax([np.linalg.norm([sum([ampl[icalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)]) for icalc in range(self.ncalc)]) #Use this calculation for the dipole-moment guess
+        # Approx. dipole directions
+        T       = self.dip[    0][0].tprop
+        Ef      = self.dip[    0][0].efield
+        Ep      = self.dip[jcalc][0].epol
+        heightArea  = [[np.imag(np.exp(-1.0j*phase)*     ampl[jcalc][iarea][icomp]) for iarea in range(self.narea)]   for icomp in range(self.ncomp)] #Rotate the height by e^-i*phi and take its imag part to get the line heights (with sign)
+        height      = [ np.imag(np.exp(-1.0j*phase)*sum([ampl[jcalc][iarea][icomp]  for iarea in range(self.narea)])) for icomp in range(self.ncomp)]
+        dipdir      = height/np.linalg.norm(height) # Direction of the dipole moment
+        eped        = np.dot(dipdir,Ep) # Scalar product e_pol.e_mu
+        # Approx. dipoles
+        dipabs  = math.sqrt(np.linalg.norm(height)/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        dipoles = []
+        for iarea in range(self.narea):
+            dipoles.append([])
+            for icomp in range(self.ncomp):
+                dipoles[iarea].append(heightArea[icomp][iarea]/(T*Ef*eped*np.abs(Hw)*dipabs)) # hightarea[icomp] = T*Ef*eped*abs(Hw)*abs(mu)*mu[icomp] -> solve for mu[icomp]
 
+        return phase, dipoles
+            
     #--------------------------------------------------------------------------#
     # Search for the highest peak in the given function
     #--------------------------------------------------------------------------#
-    def findPeaks(self,f,dbg=0,hf=0.05,mw=100):
-        dw = (self.freqPade[-1]-self.freqPade[0])/(len(self.freqPade)-1)
-        pos, prop = find_peaks(f,height=0.05*np.amax(f),width=(0.,100))
+    def findPeaks(self,freq,f,dbg=0,hf=0.05,mw=100):
+        dw = (freq[-1]-freq[0])/(len(freq)-1)
+        pos, prop = find_peaks(f,height=hf*np.amax(f),width=(0.,100))
       
         if dbg>1:
-            plt.plot(f)
-            plt.plot(pos, f[pos], "x")
+            plt.plot(freq,f)
+            plt.plot(freq[pos], f[pos], "x")
             plt.show()
 
         return pos
+
+    #--------------------------------------------------------------------------#
+    # Fit objective
+    #--------------------------------------------------------------------------#
+    def fitObj(self,params,dbg=0):
+        self.excit.updateFromParam(params)
+        ffit = np.array(self.getFitFunc(self.excit)).flatten()
+        fdat = np.array(self.ft).flatten()
+        if self.breakMinimization==True:
+            obj  = np.zeros(len(ffit),dtype=float)
+        else:
+            obj  = np.subtract(fdat,ffit)
+        return obj
+
+    #--------------------------------------------------------------------------#
+    # Fit inter - is called in every minimizer iteration
+    #--------------------------------------------------------------------------#
+    def fitInter(self,params,iter,resid,dbg=0,breakmod=5):
+        currentError = np.sum(np.abs(resid))
+        if iter==-1:
+            self.bestParams   = params
+            self.bestError    = currentError
+            self.runningError = currentError
+        else:
+            if currentError<self.bestError:
+                self.bestError  = currentError
+                self.bestParams = params
+        if dbg>0: print("DEBUG: Objective Norm: ", iter, currentError)
+        if iter%(breakmod*len(params.valuesdict()))==0 and iter>0:
+            if abs(currentError/self.runningError)>0.99:
+                print("WARNING: Minimization stuck; abort and fall back to best parameter set")
+                self.breakMinimization = True
+            if iter>-1: self.runningError = currentError
+        return
+
+    #--------------------------------------------------------------------------#
+    # Fit Atomic
+    #--------------------------------------------------------------------------#
+    def fitAtomic(self,dbg=0):
+        params = self.excit.toParams()
+        fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"dbg":dbg})
+        if self.breakMinimization: #If minimization stuck and was force-aborted, reset the parameters to the best ones reached
+            params = self.bestParams
+            self.breakMinimization = False
+        if dbg>0: print(fit_report(fitres))
+        self.excit.updateFromParam(fitres.params)
+
+    #--------------------------------------------------------------------------#
+    # Add new excitation
+    #--------------------------------------------------------------------------#
+    def addEx(self):
+        maxval = 0.
+        maxen  = 0.
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                for icomp in range(self.ncomp):
+                    for rc in range(2):
+                        fdat   = self.ft  [icalc][iarea][icomp][rc]
+                        ffit   = self.fitf[icalc][iarea][icomp][rc]
+                        r      = np.abs(np.subtract(fdat,ffit))
+                        maxpos = np.argmax(r)
+                        if r[maxpos]>maxval:
+                            maxval = r[maxpos]
+                            maxen  = self.freq[maxpos]
+        phase, dipoles = self.guessExcit(maxen)
+        self.excit.add(energy=maxen,phase=phase,dipoles=dipoles)
+        self.excit.print()
+
+    #--------------------------------------------------------------------------#
+    # Fit Wrapper
+    #--------------------------------------------------------------------------#
+    def fit(self,dbg=0,maxit=10,tol=0.05,skipfirst=False):
+        self.update(0,dbg=dbg)
+        if not skipfirst:
+            self.fitAtomic(dbg=dbg)   # Fit existing excitations
+        for it in range(1,maxit+1):
+            self.excit.fix()          # Temporarily fix all existing excitations
+            self.addEx()              # Add new excitation
+            self.fitAtomic(dbg=dbg)   # Fit new excitation alone
+            self.update(it+1,dbg=dbg) # Update some self.components
+            self.excit.release()      # Release all temporarily fixed excitations
+            self.fitAtomic(dbg=dbg)   # Fit all non-permanently fixed excitations
+            self.update(it+1,dbg=dbg) # Update some self.components
+            if self.avgerr<tol: break
+        return self.excit
+
+    #--------------------------------------------------------------------------#
+    # Update fitf, fiterr, minerr, maxerr, afgerr based on self.excit and report
+    #--------------------------------------------------------------------------#
+    def update(self,it,dbg=0):
+        self.fitf   = self.getFitFunc(self.excit)
+        self.fiterr = self.getError(self.ft,self.fitf)
+        self.minerr = np.amin   (self.fiterr)
+        self.maxerr = np.amax   (self.fiterr)
+        self.avgerr = np.average(self.fiterr)
+        if dbg>0: self.reportFit(it)
+        if dbg>1: self.plotFitDebug(it)
+
+    #--------------------------------------------------------------------------#
+    # Report fit
+    #--------------------------------------------------------------------------#
+    def reportFit(self,it):
+        print("Fit report: ", it)
+        print("")
+        print("Excitations")
+        self.excit.print()
+        print("")
+        print("Error: Min | Max | Avg")
+        print("  ",self.minerr,self.maxerr,self.avgerr)
+        print("")
+        print("Errors:")
+        for icalc in range(self.ncalc):
+            print("  ",icalc)
+            for iarea in range(self.narea):
+                print("    ",iarea)
+                for icomp in range(self.ncomp):
+                    print("",self.fiterr[icalc][iarea][icomp])
+
+    #--------------------------------------------------------------------------#
+    # Plot fit
+    #--------------------------------------------------------------------------#
+    def plotFitDebug(self,it=0):
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                for icomp in range(self.ncomp):
+                    for rc in range(2):
+                        plt.title(f"it{it} calc{icalc} area{iarea} comp{icomp} rc{rc}")
+                        plt.plot(self.freq,self.ft  [icalc][iarea][icomp][rc],label=f"Dat")
+                        plt.plot(self.freq,self.fitf[icalc][iarea][icomp][rc],label=f"Fit")
+                        plt.show()
+
+    #--------------------------------------------------------------------------#
+    # Write fit functions
+    #--------------------------------------------------------------------------#
+    def writeFit(self):
+        head = 'Energy (Ry) | real(Fitf) | imag(Fitf)'
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                dip   = self.dip[icalc][iarea]
+                dname = dip.dipname
+                for icomp in range(self.ncomp):
+                    fname = os.path.splitext(dname)[0]+'_fit_'+dip.descript[icomp]+'.dat'
+                    np.savetxt(fname,np.column_stack((self.freq,self.fitf[icalc][iarea][icomp][0],self.fitf[icalc][iarea][icomp][1])),header=head)

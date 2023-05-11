@@ -46,7 +46,7 @@ def main():
         config.writeTemplate(ifile)
         err.err(1,'There was no '+ifile+' file, now a template is created!')
     conf  = config.Config(ifile)
-    excit = excitations.Excitations(ncalc=len(conf.dipfiles),narea=len(conf.dipfiles[0]),ncomp=3,exlist=conf.excit)
+    excit = excitations.Excitations(narea=len(conf.dipfiles[0]),ncomp=3,exlist=conf.excit)
 
     #--------------------------------------------------------------------------#
     # Read dipole moments into dip[ncalc][narea] list:
@@ -101,52 +101,23 @@ def main():
     #--------------------------------------------------------------------------#
     # Create initial guess for the spectrum fit
     #--------------------------------------------------------------------------#
-    dfit  = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
+    dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
     if conf.opt["Fit"]["guess"]:
-        excit = dfit.newGuess()
+        dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"])
         conf.opt["Fit"]["guess"] = False #Next time: No new initial guess
 
-#    if conf.opt["Fit"]["calc"] and conf.opt["Fit"]["guess"]: # or conf.opt["Fit"]["plot_result"]:
-#        dfit.guess(init=excit,thres=conf.opt["Fit"]["guess_thres"])
-
-#    #--------------------------------------------------------------------------#
-#    # Fit
-#    #--------------------------------------------------------------------------#
-#    if conf.opt["Fit"]["calc"]:
-#        fit.fit(init=excit,crit=conf.opt["Fit"]["relerr_crit"],maxIter=conf.opt["Fit"]["max_iter"])
-
-#    #Do Fit of the spectrum
-#    if conf.fit or conf.plot_result:
-#        fit = [None]*len(conf.files)
-#        future = fit
-#        with concurrent.futures.ThreadPoolExecutor() as executer:
-#                for i, fileName in enumerate(conf.files):
-#                    future[i] = executer.submit(specFit.Fit, conf, ft[i], guess[i], i)
-#                    fit[i] = future[i].result()
-#        if conf.numDipoleFiles == 3:
-#            if conf.fit: handleTrace.guessTrace(conf, guess[3], fit)
-#            fit.append(specFit.Fit(conf,ft[3],guess[3],3,calcFlag='trace'))
-#        
-#        #plotting the results has to be unparalleled (problem with starting
-#        #matplotlib gui)
-#        for i, f in enumerate(fit):
-#            if i == 3:
-#                calcFlag = 'trace'
-#            else:
-#                calcFlag = 'no'
-#            f.plotFit(calcFlag)
-#
-#        #create object spectrum
-#        spec = spectrum.Spectrum(conf,fit)
-#        #write excitation lines
-#        if conf.fit: inout.writeExcitations(spec)
-#        input("Press [enter] to end and close all plots!")
+    #--------------------------------------------------------------------------#
+    # Fit
+    #--------------------------------------------------------------------------#
+    if conf.opt["Fit"]["calc"]:
+        excit = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxit=conf.opt["Fit"]["max_iter"],skipfirst=conf.opt["Fit"].get("skipfirst",False))
+        dfit.writeFit()
 
     #--------------------------------------------------------------------------#
     # Update configuration file
     #--------------------------------------------------------------------------#
     conf.excit = [excit.exlist[i].todict() for i in range(len(excit.exlist))]
-    conf.write(ifile)
+    conf.write(ifile) 
 
 #------------------------------------------------------------------------------#
 # Call main

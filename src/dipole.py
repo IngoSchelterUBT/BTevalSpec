@@ -48,18 +48,18 @@ class Dipole:
         self.dipname = fname
         self.meta    = self.readDipoleHeader(fname)
         self.nelec   = sum(self.meta.get('NELEC',[0.,0.])) #number of electrons
-        if self.meta.get("BOOSTMASK","no") != "no":
+        if self.meta.get("BOOSTMASK",["no"])[0] != "no":
             self.ext    = "boost"
             energy      = self.meta.get('BOOSTENERGY',[0.])[0] # En = N*hbar^2*k^2/2/m => k = sqrt(2*m*En/N/hbar^2) -> Ry: k=sqrt(En/N)
             self.efield = math.sqrt(energy/self.nelec/2.) # identify hbar*k*1 = e*E*H(omega) => E = hbar*k/e -> Ry: E=k/sqrt(2) = sqrt(En/2/N)
-            self.epol   = self.meta.get('BOOSTKVEC','empty') #k-vector of boost excitation
+            self.epol   = self.meta.get('BOOSTKVEC',['empty']) #k-vector of boost excitation
             self.t0     = 0.
-        elif self.meta.get("EXCITATION","no") == "laser_mono":
-            if self.meta.get("NLASER",1) > 1: err(1,"More than one laser not supported")
+        elif self.meta.get("EXCITATION",["no"])[0] == "laser_mono":
+            if self.meta.get("NLASER",[1])[0] > 1: err(1,"More than one laser not supported")
             self.ext    = "laser"
-            self.efield =  self.meta.get('LASEREFIELD',[0.])[0]
-            self.epol   = [self.meta.get('LASERPOLX','empty')[0],self.meta.get('LASERPOLY','empty')[0],self.meta.get('LASERPOLZ','empty')[0]]
-            self.t0     = self.meta.get('LASEREND',0.)
+            self.efield =  self.meta.get('LASEREFIELD',[0.,""])[0]
+            self.epol   = [self.meta.get('LASERPOLX',['empty'])[0],self.meta.get('LASERPOLY','empty')[0],self.meta.get('LASERPOLZ','empty')[0]]
+            self.t0     = self.meta.get('LASEREND',0.)[0]
         else:
             err(1,"Unknown excitation")
 
