@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 #------------------------------------------------------------------------------#
-# author: Rian Richter
-# Fit of spectrum
+# author: Rian Richter & Ingo Schelter
 import numpy as np
-#import re
 import sys
 import os.path
-#import getopt
 #import matplotlib
 #matplotlib.use("Qt5Agg")
 #import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import concurrent.futures
-
-#only for tests
-#from pprint import pprint
 
 #Import own Modules
 import errorHandler as err
@@ -23,10 +17,6 @@ import extern
 import dipole
 import excitations
 import fit
-#import specGuess
-#import specFit
-#import spectrum
-#import handleTrace
 
 #------------------------------------------------------------------------------#
 # Main

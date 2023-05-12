@@ -8,7 +8,9 @@ import numpy as np
 import numba as nb
 
 
+#------------------------------------------------------------------------------#
 #Routine for calculating the PADE-series
+#------------------------------------------------------------------------------#
 @nb.njit
 def numba_padeseries(w, m, n, dt, dip):
   #Get matrix G and vector d eq~(33) in [1]
@@ -54,3 +56,32 @@ def numba_padeseries(w, m, n, dt, dip):
 
   mu = p/q
   return mu
+
+#------------------------------------------------------------------------------#
+# Return Fit spectrum 
+# T                             Eff. Propagation time
+# w[nf]                         Frequency samples
+# wi[nex]                       Excitation Frequencies
+# p[nex]                        Excitation Phases
+# a[ncalc][narea][ncomp][nex]   Amplitudes
+#------------------------------------------------------------------------------#
+@nb.njit
+def fspectrum(ncalc,narea,ncomp,nf,T,w,wi,p,a):
+    f = np.zeros((ncalc,narea,ncomp,2,nf),dtype=float)
+    for icalc in range(ncalc):
+        for iarea in range(narea):
+            for n in range(ncomp):
+                for i in range(nf):
+                    for iex in range(len(wi)):
+                        wm     = w[i]-wi[iex]
+                        wp     = w[i]+wi[iex]
+                        sincm  = np.sinc(wm*T/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
+                        coscm  = (1.-np.cos(wm*T))/(wm*T) if abs(wm)>0. else 0.
+                        sincp  = np.sinc(wp*T/np.pi)
+                        coscp  = (1.-np.cos(wp*T))/(wp*T) if abs(wp)>0. else 0.
+                        tmp    = a[icalc][iarea][n][iex]*(\
+                            np.exp(-1.0j*p[iex])*T*(coscm + 1.j*sincm) -\
+                            np.exp(+1.0j*p[iex])*T*(coscp + 1.j*sincp) )
+                        f[icalc][iarea][n][0][i] += np.real(tmp)
+                        f[icalc][iarea][n][1][i] += np.imag(tmp)
+    return f

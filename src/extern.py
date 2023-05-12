@@ -1,6 +1,5 @@
 #Import Libraries
 import numpy as np
-import math
 import os
 from scipy.fft import fft,fftfreq,fftshift
 from scipy     import interpolate
@@ -20,7 +19,7 @@ class Extern:
             self.time   = dat[0] # Keep original time frame
             self.ext    = dat[1]
             self.dt     = (self.time[-1]-self.time[0])/(len(self.time)-1)
-            pw          = math.ceil(math.log2(2.*np.pi/self.dt/maxdw))
+            pw          = np.int(np.ceil(np.log2(2.*np.pi/self.dt/maxdw)))
             Nf          = 2**pw
 
             self.freq   = fftfreq(Nf,d=self.dt)*2.*np.pi
@@ -36,18 +35,6 @@ class Extern:
             head = 'Energy (Ry) | real(FT) | imag(FT)'
             fname = os.path.splitext(self.fname)[0]+'_ft.dat'
             np.savetxt(fname,np.column_stack((fftshift(self.freq),np.real(fftshift(self.ft)),np.imag(fftshift(self.ft)))),header=head)
-
-#    #----------------------------------------------------------------------------#
-#    # Return interpolated absolute value and argument for a given list of energies
-#    #----------------------------------------------------------------------------#
-#    def getVal(self,w):
-#        if self.fname!="": #laser
-#            ftabs = [     np.abs(self.ftint(w[i])                         ) for i in range(len(w))]
-#            ftarg = [math.atan(self.ftint(w[i]).imag/self.ftint(w[i]).real) for i in range(len(w))]
-#        else: #boost
-#            ftabs = [1.]*len(w)
-#            ftarg = [0.]*len(w)
-#        return ftabs, ftarg
 
     #----------------------------------------------------------------------------#
     # Return interpolated value

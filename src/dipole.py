@@ -1,6 +1,5 @@
 #Import Libraries
 import numpy as np
-import math
 import os
 from scipy.fft import fft,fftfreq,fftshift
 from scipy import signal
@@ -51,7 +50,7 @@ class Dipole:
         if self.meta.get("BOOSTMASK",["no"])[0] != "no":
             self.ext    = "boost"
             energy      = self.meta.get('BOOSTENERGY',[0.])[0] # En = N*hbar^2*k^2/2/m => k = sqrt(2*m*En/N/hbar^2) -> Ry: k=sqrt(En/N)
-            self.efield = math.sqrt(energy/self.nelec/2.) # identify hbar*k*1 = e*E*H(omega) => E = hbar*k/e -> Ry: E=k/sqrt(2) = sqrt(En/2/N)
+            self.efield = np.sqrt(energy/self.nelec/2.) # identify hbar*k*1 = e*E*H(omega) => E = hbar*k/e -> Ry: E=k/sqrt(2) = sqrt(En/2/N)
             self.epol   = self.meta.get('BOOSTKVEC',['empty']) #k-vector of boost excitation
             self.t0     = 0.
         elif self.meta.get("EXCITATION",["no"])[0] == "laser_mono":
@@ -138,7 +137,7 @@ class Dipole:
     def getFt(self,minpw=0,smooth=0.,window=0.,rmDC=True):
 
         # Frequencies
-        pw = math.ceil(math.log2(len(self.time)))
+        pw = np.ceil(np.log2(len(self.time)))
         if minpw>0: pw = max(pw,minpw)
         Nf = 2**pw
         self.freq = fftfreq(Nf,d=self.dt)*2.*np.pi
