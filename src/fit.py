@@ -50,9 +50,6 @@ class Fit:
                     self.pade    [icalc][iarea].append([tmpr,tmpi])
         self.fitf   = self.getFitFunc(self.excit)
         self.fiterr = self.getError(self.ft,self.fitf)
-        self.minerr = np.amin   (self.fiterr)
-        self.maxerr = np.amax   (self.fiterr)
-        self.avgerr = np.average(self.fiterr)
         self.breakMinimization = False
         self.runningError = 1000000.
 
@@ -68,6 +65,7 @@ class Fit:
     # Get the fit function for a given set of frequencies and excitations
     #--------------------------------------------------------------------------#
     def getFitFunc(self,excit):
+        # Setup new list with zero entries
         f  = []
         for icalc in range(self.ncalc):
             f.append([])
@@ -77,6 +75,7 @@ class Fit:
                     fr = np.zeros(self.Nf,dtype=float)
                     fi = np.zeros(self.Nf,dtype=float)
                     f[icalc][iarea].append([fr,fi])
+        # Setup fit function from the excitation list
         T  = self.dip[0][0].tprop
         Ef = self.dip[0][0].efield
         for ex in excit.exlist:
@@ -102,26 +101,29 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Errors dat vs. fit functions
     #--------------------------------------------------------------------------#
-    def getError(self,dat,fit,relative=True):
-        e = []
-        a = 0.
-        for icalc in range(self.ncalc):
-            e.append([])
-            for iarea in range(self.narea):
-                e[icalc].append([])
-                for icomp in range(self.ncomp):
-                    er = np.linalg.norm([dat[icalc][iarea][icomp][0][i]-fit[icalc][iarea][icomp][0][i] for i in range(len(dat[icalc][iarea][icomp][0]))])
-                    ei = np.linalg.norm([dat[icalc][iarea][icomp][1][i]-fit[icalc][iarea][icomp][1][i] for i in range(len(dat[icalc][iarea][icomp][1]))])
-                    a += np.linalg.norm([dat[icalc][iarea][icomp][0][i]                                for i in range(len(dat[icalc][iarea][icomp][0]))])
-                    a += np.linalg.norm([dat[icalc][iarea][icomp][1][i]                                for i in range(len(dat[icalc][iarea][icomp][1]))])
-                    e[icalc][iarea].append([er   ,ei   ])
-        if relative:
-            for icalc in range(self.ncalc):
-                for iarea in range(self.narea):
-                    for icomp in range(self.ncomp):
-                        for rc in range(2):
-                            e[icalc][iarea][icomp][rc] /= a
-        return e
+    def getError(self,dat,fit): #,relative=True):
+        flatdat = np.array(dat).flatten()
+        flatfit = np.array(fit).flatten()
+        return np.linalg.norm(np.subtract(flatdat,flatfit))/np.linalg.norm(flatdat)
+#        e = []
+#        a = 0.
+#        for icalc in range(self.ncalc):
+#            e.append([])
+#            for iarea in range(self.narea):
+#                e[icalc].append([])
+#                for icomp in range(self.ncomp):
+#                    er = np.linalg.norm([dat[icalc][iarea][icomp][0][i]-fit[icalc][iarea][icomp][0][i] for i in range(len(dat[icalc][iarea][icomp][0]))])
+#                    ei = np.linalg.norm([dat[icalc][iarea][icomp][1][i]-fit[icalc][iarea][icomp][1][i] for i in range(len(dat[icalc][iarea][icomp][1]))])
+#                    a += np.linalg.norm([dat[icalc][iarea][icomp][0][i]                                for i in range(len(dat[icalc][iarea][icomp][0]))])
+#                    a += np.linalg.norm([dat[icalc][iarea][icomp][1][i]                                for i in range(len(dat[icalc][iarea][icomp][1]))])
+#                    e[icalc][iarea].append([er   ,ei   ])
+#        if relative:
+#            for icalc in range(self.ncalc):
+#                for iarea in range(self.narea):
+#                    for icomp in range(self.ncomp):
+#                        for rc in range(2):
+#                            e[icalc][iarea][icomp][rc] /= a
+#        return e
 
     #--------------------------------------------------------------------------#
     # Make an initial guess based on the sum of the Pade power spectra and the FT spectra
@@ -213,6 +215,7 @@ class Fit:
     # Fit inter - is called in every minimizer iteration
     #--------------------------------------------------------------------------#
     def fitInter(self,params,iter,resid,dbg=0,breakmod=5):
+        if self.breakMinimization: return
         currentError = np.sum(np.abs(resid))
         if iter==-1:
             self.bestParams   = params
@@ -228,7 +231,6 @@ class Fit:
                 print("WARNING: Minimization stuck; abort and fall back to best parameter set")
                 self.breakMinimization = True
             if iter>-1: self.runningError = currentError
-        return
 
     #--------------------------------------------------------------------------#
     # Fit Atomic
@@ -287,9 +289,6 @@ class Fit:
     def update(self,it,dbg=0):
         self.fitf   = self.getFitFunc(self.excit)
         self.fiterr = self.getError(self.ft,self.fitf)
-        self.minerr = np.amin   (self.fiterr)
-        self.maxerr = np.amax   (self.fiterr)
-        self.avgerr = np.average(self.fiterr)
         if dbg>0: self.reportFit(it)
         if dbg>1: self.plotFitDebug(it)
 
@@ -297,21 +296,13 @@ class Fit:
     # Report fit
     #--------------------------------------------------------------------------#
     def reportFit(self,it):
+        print("")
         print("Fit report: ", it)
         print("")
         print("Excitations")
         self.excit.print()
         print("")
-        print("Error: Min | Max | Avg")
-        print("  ",self.minerr,self.maxerr,self.avgerr)
-        print("")
-        print("Errors:")
-        for icalc in range(self.ncalc):
-            print("  ",icalc)
-            for iarea in range(self.narea):
-                print("    ",iarea)
-                for icomp in range(self.ncomp):
-                    print("",self.fiterr[icalc][iarea][icomp])
+        print("Error: ",self.fiterr)
 
     #--------------------------------------------------------------------------#
     # Plot fit
