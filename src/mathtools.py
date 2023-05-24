@@ -6,7 +6,7 @@
 #Import Libraries
 import numpy as np
 import numba as nb
-
+from scipy.signal import butter, lfilter, freqz
 
 #------------------------------------------------------------------------------#
 #Routine for calculating the PADE-series
@@ -63,11 +63,13 @@ def numba_padeseries(w, m, n, dt, dip):
 # w[nf]                         Frequency samples
 # wi[nex]                       Excitation Frequencies
 # p[nex]                        Excitation Phases
+# t[nf]                         Time modifier (should be very close to 1.)
 # a[ncalc][narea][ncomp][nex]   Amplitudes
 #------------------------------------------------------------------------------#
 @nb.njit
-def fspectrum(ncalc,narea,ncomp,nf,T,w,wi,p,a):
-    f = np.zeros((ncalc,narea,ncomp,2,nf),dtype=float)
+def fspectrum(ncalc,narea,ncomp,rc,nf,T,w,wi,p,tm,a):
+    nrc = len(rc)
+    f = np.zeros((ncalc,narea,ncomp,nrc,nf),dtype=float)
     for icalc in range(ncalc):
         for iarea in range(narea):
             for n in range(ncomp):
@@ -75,13 +77,27 @@ def fspectrum(ncalc,narea,ncomp,nf,T,w,wi,p,a):
                     for iex in range(len(wi)):
                         wm     = w[i]-wi[iex]
                         wp     = w[i]+wi[iex]
-                        sincm  = np.sinc(wm*T/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
-                        coscm  = (1.-np.cos(wm*T))/(wm*T) if abs(wm)>0. else 0.
-                        sincp  = np.sinc(wp*T/np.pi)
-                        coscp  = (1.-np.cos(wp*T))/(wp*T) if abs(wp)>0. else 0.
+                        t      = T*tm[iex]
+                        sincm  = np.sinc(wm*t/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
+                        coscm  = (1.-np.cos(wm*t))/(wm*t) if abs(wm)>0. else 0.
+                        sincp  = np.sinc(wp*t/np.pi)
+                        coscp  = (1.-np.cos(wp*t))/(wp*t) if abs(wp)>0. else 0.
                         tmp    = a[icalc][iarea][n][iex]*(\
-                            np.exp(-1.0j*p[iex])*T*(coscm + 1.j*sincm) -\
-                            np.exp(+1.0j*p[iex])*T*(coscp + 1.j*sincp) )
-                        f[icalc][iarea][n][0][i] += np.real(tmp)
-                        f[icalc][iarea][n][1][i] += np.imag(tmp)
+                            np.exp(-1.0j*p[iex])*t*(coscm + 1.j*sincm) -\
+                            np.exp(+1.0j*p[iex])*t*(coscp + 1.j*sincp) )
+                        tmp    = [np.real(tmp),np.imag(tmp)]
+                        for irc in range(nrc):
+                            f[icalc][iarea][n][irc][i] += tmp[rc[irc]]
     return f
+
+##------------------------------------------------------------------------------#
+## Butterworth lowpass filter
+##------------------------------------------------------------------------------#
+#def butter_lowpass(cutoff, fs, order=5):
+#    return 
+#
+#def butter_lowpass_filter(data, cutoff, fs, order=5):
+#    b, a = butter(order, cutoff, fs=fs, btype='low', analog=False)
+#    b, a = butter(order, cutoff, fs=fs, btype="low", analog=False)
+#    y = lfilter(b, a, data)
+#    return y

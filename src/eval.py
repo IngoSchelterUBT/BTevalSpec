@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 #------------------------------------------------------------------------------#
 # author: Rian Richter & Ingo Schelter
+#------------------------------------------------------------------------------#
+# Call (in Future)
+#  ./eval.py [opt] cmd arg
+#------------------------------------------------------------------------------#
 import numpy as np
 import sys
 import os.path
@@ -57,7 +61,6 @@ def main():
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
                     executer.submit(dip[icalc][iarea].getFt(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True))
-                    #dip[icalc][iarea].getFt(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True)
                     dip[icalc][iarea].writeSpectra(what=["ft","pw"])
         conf.opt["FT"]["calc"] = False #Next time: read by default
     else: #elif conf.opt["Fit"]["calc"] or conf.opt["Fit"]["plot_results"]:
@@ -69,11 +72,12 @@ def main():
     # Pade approximation
     #--------------------------------------------------------------------------#
     if conf.opt["Pade"]["calc"]:
+        if not conf.opt["Pade"].get("smooth",0.) > 0.: #Choose automatic smoothing
+            conf.opt["Pade"]["smooth"] = float(np.log(100)/dip[0][0].tprop) # e^-s*T=0.01 <=> s=ln(100)/T
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
                     executer.submit(dip[icalc][iarea].getPade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"]))
-                    #dip[icalc][iarea].getPade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"])
                     dip[icalc][iarea].writeSpectra(what=["pade"])
         conf.opt["Pade"]["calc"] = False #Next time: read by default
     else: #elif conf.opt["Fit"]["guess"]:
@@ -100,8 +104,17 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxit=conf.opt["Fit"]["max_iter"],skipfirst=conf.opt["Fit"].get("skipfirst",False))
+        excit = dfit.fit(dbg=0,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False))
+        conf.opt["Fit"]["skipfirst"] = True
         dfit.writeFit()
+
+    #--------------------------------------------------------------------------#
+    # Plot spectrum
+    #--------------------------------------------------------------------------#
+    if conf.opt["Fit"].get("plot_result",False):
+        for iarea in range(excit.narea):
+            for icomp in range(excit.ncomp):
+                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=1./dip[0][0].tprop,jarea=iarea,jcomp=icomp)
 
     #--------------------------------------------------------------------------#
     # Update configuration file

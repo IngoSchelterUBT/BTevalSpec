@@ -62,7 +62,7 @@ class Dipole:
         else:
             err(1,"Unknown excitation")
 
-        #Read data dipole moment for dipole file
+        #Read dipole moment data from dipole file
         dat = np.transpose(np.loadtxt(fname,comments='#'))
         if len(descript)==0:
             self.descript = [i for i in range(len(dat)-1)]
@@ -84,7 +84,6 @@ class Dipole:
         self.pade     = []
         self.freqPade = []
 
-
     #--------------------------------------------------------------------------#
     # Read header information of the dipole file and returns it as dictionary
     #--------------------------------------------------------------------------#
@@ -103,25 +102,25 @@ class Dipole:
 
             #Check units of Dipole File
             if meta.get('DX')[-1] != 'a0':
-                    err.warning(1,'Unit of DX unknown!')
+                    err.warn('Unit of DX unknown!')
             elif meta.get('T_START')[-1] != 't_ry':
-                    err.warning(1,'Unit of T_START unknown!')
+                    err.warn('Unit of T_START unknown!')
             elif meta.get('DT')[-1] != 't_ry':
-                    err.warning(1,'Unit of DT unknown!')
-            elif meta.get('BOOSTENERGY')[-1] != 'Ry':
-                    err.warning(1,'Unit of BOOSTENERGY unknown!')
-            elif meta.get('LASERFREQ')[-1] != 'Ry':
-                    err.warning(1,'Unit of LASERFREQ unknown!')
-            elif meta.get('LASERINT')[-1] != 'W/cm^2':
-                    err.warning(1,'Unit of LASERINT unknown!')
-            elif meta.get('LASEREFIELD')[-1] != 'E_ry':
-                    err.warning(1,'Unit of LASEREFIELD unknown!')
-            elif meta.get('LASERSTART')[-1] != 't_ry':
-                    err.warning(1,'Unit of LASERSTART unknown!')
-            elif meta.get('LASEREND')[-1] != 't_ry':
-                    err.warning(1,'Unit of LASEREND unknown!')
+                    err.warn('Unit of DT unknown!')
+            elif meta.get('BOOSTENERGY',["Ry"])[-1] != 'Ry':
+                    err.warn('Unit of BOOSTENERGY unknown!')
+            elif meta.get('LASERFREQ',["Ry"])[-1] != 'Ry':
+                    err.warn('Unit of LASERFREQ unknown!')
+            elif meta.get('LASERINT',["W/cm^2"])[-1] != 'W/cm^2':
+                    err.warn('Unit of LASERINT unknown!')
+            elif meta.get('LASEREFIELD',["E_ry"])[-1] != 'E_ry':
+                    err.warn('Unit of LASEREFIELD unknown!')
+            elif meta.get('LASERSTART',["t_ry"])[-1] != 't_ry':
+                    err.warn('Unit of LASERSTART unknown!')
+            elif meta.get('LASEREND',["t_ry"])[-1] != 't_ry':
+                    err.warn('Unit of LASEREND unknown!')
             elif meta.get('DIP0')[-1] != 'dip_ry':
-                    err.warning(1,'unit of DIP0 unknown!')
+                    err.warn('unit of DIP0 unknown!')
 
             for k, v in meta.items():
                     if ',' in v[0]:

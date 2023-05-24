@@ -59,7 +59,7 @@ def writeTemplate(ofile):
         calc: True                  # Turn Pade Approximation on/off
         wmax: 0.6                   # Maximum energy for Pade Approximation in Ry
         dw: 1.0e-05                 # Step of Pade Approximation
-        smooth: 1.0e-07             # Smooth for Pade Approximation
+        smooth: 0.                  # Smooth for Pade Approximation (0:auto)
         thin: 0                     # Only keep every 2^n data point
       Fit:
         calc: True                  # Turn fit on/off
@@ -68,12 +68,12 @@ def writeTemplate(ofile):
         plot_result: False          # If True: The fit results are plotted without fitting again
         gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.
         dat_spectrum: False         # If True: A .dat file for the spectrum is created
-        guess_thres: 0.1            # Relative height of line in Pade Approximation compared to highest line 
+        guess_thres: 0.05           # Relative height of line in Pade Approximation compared to highest line 
                                     #   which should be identified as a line for fitting (only relevent, if 
                                     #   fit_guess == True).
         relerr_crit: 0.05           # Criterium for relative error between fit and data (only relevant, if 
                                     #   fit_guess == True).
-        max_iter: 10                # Maximum numer of iterations used to reach relative error between fit and 
+        max_excit: 10               # Maximum numer of iterations used to reach relative error between fit and 
                                     #   data (only relevant, if fit_guess == True)
         relspacing_lines: 0.01      # Threshold for relative error between two lines which should be identified 
                                     #   as one in fit of trace (only relevant, if number of dipole files == 3).

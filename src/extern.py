@@ -41,7 +41,11 @@ class Extern:
     #----------------------------------------------------------------------------#
     def getVal(self,w):
         if self.fname!="": #laser
-            ft = [self.ftint(w[i]) for i in range(len(w))]
+            try:
+                ft = [self.ftint(w[i]) for i in range(len(w))]
+            except ValueError:
+                print("Value Error in extern interpolation (e.g., energy out of range)")
+                raise
         else: #boost
             ft = [1.+0.j]*len(w)
         return ft
