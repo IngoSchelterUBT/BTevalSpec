@@ -265,9 +265,9 @@ class Fit:
         maxen  = self.freq[np.argmax(np.abs(diff))%self.Nf]
         phase, dipoles = self.guessExcit(maxen)
         #######
-        #print(maxen, phase, dipoles)
-        #plt.plot(np.array([self.freq]*3).flatten(),diff)
-        #plt.show()
+        print(maxen, phase, dipoles)
+        plt.plot(np.array([self.freq]*3).flatten(),diff)
+        plt.show()
         #######
         self.excit.add(energy=maxen,phase=phase,dipoles=dipoles)
         if dbg>0: self.excit.print()

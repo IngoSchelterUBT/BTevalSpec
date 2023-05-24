@@ -69,7 +69,7 @@ def numba_padeseries(w, m, n, dt, dip):
 @nb.njit
 def fspectrum(ncalc,narea,ncomp,rc,nf,T,w,wi,p,tm,a):
     nrc = len(rc)
-    f = np.zeros((ncalc,narea,ncomp,nrc,nf),dtype=float)
+    f = np.zeros((ncalc,narea,ncomp,nrc,nf)) #,dtype=float)
     for icalc in range(ncalc):
         for iarea in range(narea):
             for n in range(ncomp):

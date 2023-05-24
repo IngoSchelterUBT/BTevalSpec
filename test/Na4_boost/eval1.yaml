@@ -1,0 +1,218 @@
+DESCRIPTION:                        # Description of evaluation 
+DIPOLE:                             # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
+- [dipole_global1_01.dat]
+OPT:
+  FT:
+    calc: false                     # Turn fourier transformation on/off
+    minpw: 17                       # Min. length of fourier transform vector (2^n). Can increase sampling rate.
+    smooth: 0                       # Artificial decay rate
+    window: 0                       # Kaiser-Bessel windowing parameter (>0)
+  Pade:
+    calc: false                     # Turn Pade Approximation on/off
+    wmax: 0.6                       # Maximum energy for Pade Approximation in Ry
+    dw: 1.0e-05                     # Step of Pade Approximation
+    smooth: 0.004455749593509885    # Smooth for Pade Approximation
+    thin: 0                         # Only keep every 2^n data point
+  Fit:
+    calc: true                      # Turn fit on/off
+    skipfirst: false                # Skip first fit of existing excitations
+    guess: false                    # Turn guess for fit via Pade Approximation on/off
+    plot_result: false              # If True: The fit results are plotted without fitting again
+    gnuplot_spectrum: false         # If True: A gnuplot script for plotting the resulting spectrum is created.
+    dat_spectrum: false             # If True: A .dat file for the spectrum is created
+    guess_thres: 0.1                # Relative height of line in Pade Approximation compared to highest line 
+                                    #   which should be identified as a line for fitting (only relevent, if 
+                                    #   fit_guess == True).
+    relerr_crit: 0.01               # Criterium for relative error between fit and data (only relevant, if 
+                                    #   fit_guess == True).
+    max_excit: 8                    # Maximum numer of iterations used to reach relative error between fit and 
+                                    #   data (only relevant, if fit_guess == True)
+    relspacing_lines: 0.01          # Threshold for relative error between two lines which should be identified 
+                                    #   as one in fit of trace (only relevant, if number of dipole files == 3).
+    range:                          # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.40
+EXT: {}
+SPEC:
+- name: Z1
+  fix: false
+  energy: 0.1318394221533339
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - -0.002048340828511486
+    - 0.033825117396788444
+    - 6.995146366969129
+  dipole:
+  - -0.002048340828511486
+  - 0.033825117396788444
+  - 6.995146366969129
+  strength: 1.0752212641070515
+  strengths:
+  - 1.0752212641070515
+- name: Z2
+  fix: false
+  energy: 0.14229072441947133
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - 0.021706525291479883
+    - -0.05461516596347264
+    - 0.5839107168315638
+  dipole:
+  - 0.021706525291479883
+  - -0.05461516596347264
+  - 0.5839107168315638
+  strength: 0.008167623109423499
+  strengths:
+  - 0.008167623109423499
+- name: Z3
+  fix: false
+  energy: 0.1542578433335092
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - 0.011382982582536626
+    - -0.019658315493390564
+    - 1.7198108452455017
+  dipole:
+  - 0.011382982582536626
+  - -0.019658315493390564
+  - 1.7198108452455017
+  strength: 0.07605593920436005
+  strengths:
+  - 0.07605593920436005
+- name: X1
+  fix: false
+  energy: 0.16476614613722915
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - 2.0991873914766583
+    - 0.045657044704048
+    - -0.03655528988699743
+  dipole:
+  - 2.0991873914766583
+  - 0.045657044704048
+  - -0.03655528988699743
+  strength: 0.12110335246307319
+  strengths:
+  - 0.12110335246307319
+- name: Y2
+  fix: false
+  energy: 0.193406073141619
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - -0.0035979862804635322
+    - 5.31952667297316
+    - -0.008171007291423348
+  dipole:
+  - -0.0035979862804635322
+  - 5.31952667297316
+  - -0.008171007291423348
+  strength: 0.9121495787996153
+  strengths:
+  - 0.9121495787996153
+- name: X2
+  fix: false
+  energy: 0.2182275159122385
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - 4.089445483817882
+    - -0.025381891768656482
+    - -0.003759413761103918
+  dipole:
+  - 4.089445483817882
+  - -0.025381891768656482
+  - -0.003759413761103918
+  strength: 0.6082809306397028
+  strengths:
+  - 0.6082809306397028
+- name: Y3
+  fix: false
+  energy: 0.24264261925814504
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - 0.0030926324123810023
+    - 2.210712256059358
+    - -0.010524837260458346
+  dipole:
+  - 0.0030926324123810023
+  - 2.210712256059358
+  - -0.010524837260458346
+  strength: 0.19764733654036945
+  strengths:
+  - 0.19764733654036945
+- name: X3
+  fix: false
+  energy: 0.2550688901292687
+  phase: 0.0
+  tmod: 1.0
+  dipoles:
+  - - 2.694384069266793
+    - -0.015429631343575485
+    - 0.025078348746120176
+  dipole:
+  - 2.694384069266793
+  - -0.015429631343575485
+  - 0.025078348746120176
+  strength: 0.3086576952970557
+  strengths:
+  - 0.3086576952970557
+- name:   Z4
+  energy: 0.20
+  dipoles:
+  - - 0.00001
+    - 0.00001
+    - 0.01
+- name:   Z5
+  energy: 0.22
+  dipoles:
+  - - 0.00001
+    - 0.00001
+    - 0.01
+- name:   Y1
+  energy: 0.130
+  dipoles:
+  - - 0.00001
+    - 0.01
+    - 0.00001
+- name:   Y4
+  energy: 0.304
+  dipoles:
+  - - 0.00001
+    - 0.01
+    - 0.00001
+- name:   Y5
+  energy: 0.317
+  dipoles:
+  - - 0.00001
+    - 0.01
+    - 0.00001
+- name:   X4
+  energy: 0.300
+  dipoles:
+  - - 0.01
+    - 0.00001
+    - 0.00001
+- name:   X5
+  energy: 0.334
+  dipoles:
+  - - 0.01
+    - 0.00001
+    - 0.00001
+- name:   X6
+  energy: 0.347
+  dipoles:
+  - - 0.01
+    - 0.00001
+    - 0.00001
+- name:   X7
+  energy: 0.385
+  dipoles:
+  - - 0.01
+    - 0.00001
+    - 0.00001
