@@ -2,8 +2,41 @@
 #------------------------------------------------------------------------------#
 # author: Rian Richter & Ingo Schelter
 #------------------------------------------------------------------------------#
-# Call (in Future)
-#  ./eval.py [opt] cmd arg
+# Call
+#
+#  ./eval.py [--debug=<dbg>] [<cmd-opt>] cmd arg
+# 
+# Create a new eval.yaml file
+#  ./eval.py [--ext=<extern profile>] new <dipole files>
+#    Generates a new eval.yaml (or other) file based on the dipole-moment files
+#    Automatically groups the dipole-moment files into calculations and areas.
+# Fourier transform
+#  ./eval.py [--minpw=<pw>] [--smooth=<smooth>] [--window=<window>] ft
+#    Fourier transforms the dipole moment files, writes the transformations, and updates eval.yaml. 
+# Pade approx
+#  ./eval.py [--wmax=<wmax>] [--dw=<dw>] [--smooth=<smooth>] [--thin=<thin>] pade
+#    Pade approximates the dipole moment files, writes the transformations, and updates eval.yaml.
+# Make a new guess based on the pade approximation
+#  ./eval.py [<pade opt>] [--thres=<thres>] guess <lb,rb>
+#    Creates a new guess, sets the plot range, and updates eval.yaml.
+#    Does a prior Pade approximation with the given <pade opt> options if not already done.
+# Remove excitation without fit
+#  ./eval.py rm <exlist>
+#    Remove <exlist> from the list of excitations, where exlist is a comma-separated list of excitation labels, e.g., S1,S2,S3
+# Add excitation without fit
+#  ./eval.py [--label=<label>] add [<energy>]
+#    Add new excitation with given label (optional) at given energy (optional).
+#    Do no fit but guess phase and dipoles moments.
+# Fit
+#  ./eval.py [<ft opt>] [<guess opt>] [--skip] [--range=<lb,rb>] [--imag] fit [<nadd>]
+#    Fit current excitations (if not --skip), add and fit <nadd> excitations one after the other, and update eval.yaml.
+#    --imag: only use imaginary part for fitting; automatically true for boost excitation.
+#    <nadd> defaults to 0.
+#    Does a prior Fourier transform if not already done.
+#    Does a prior Guess if not already done; requires a range option.
+# Plot
+#  ./eval.py plot <measure>
+#    Plots <measure> in {pade, ft, fit, err, spectrum} with excitations
 #------------------------------------------------------------------------------#
 import numpy as np
 import sys
