@@ -257,16 +257,34 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Add new excitation
     #--------------------------------------------------------------------------#
-    def addEx(self,dbg=0):
-        fdat   = self.pw   .flatten()
-        ffit   = self.pwfit.flatten()
-        #diff   = butter_lowpass_filter(np.subtract(fdat,ffit),0.1/self.fwhm,1./self.dw,order=5)
+    def addEx(self,dbg=0,wref=1.):
+        fdat   = self.ft   .flatten()
+        ffit   = self.ftfit.flatten()
         diff   = np.subtract(fdat,ffit)
-        maxen  = self.freq[np.argmax(np.abs(diff))%self.Nf]
+        scal   = np.full(self.ft.shape,1.) #Fill with 1
+        T      = self.tprop
+        T2     = T*T
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                for icomp in range(self.ncomp):
+                    for irc in range(2):
+                        for i in range(self.Nf):
+                            w = self.freq[i]
+                            for iex, ex in enumerate(self.excit.exlist):
+                                dw  = w-ex.energy
+                                dw2 =dw*dw
+                                f   = ex.strength
+                                nmu = np.abs(ex.dipoles[iarea][icomp]/np.linalg.norm(ex.dipole))
+                                scal[icalc][iarea][icomp][irc][i] += wref*T*f*nmu/np.sqrt(T2*dw2+1)
+        maxen  = self.freq[np.argmax(np.abs(diff)/scal.flatten())%self.Nf]
         phase, dipoles = self.guessExcit(maxen)
         #######
         print(maxen, phase, dipoles)
-        plt.plot(np.array([self.freq]*3).flatten(),diff)
+#        plt.plot(np.array([self.freq]*6).flatten(),np.abs(fdat))
+#        plt.plot(np.array([self.freq]*6).flatten(),np.abs(ffit))
+        plt.plot(np.array([self.freq]*6).flatten(),np.abs(diff))
+#        plt.plot(np.array([self.freq]*6).flatten(),scal.flatten())
+        plt.plot(np.array([self.freq]*6).flatten(),np.abs(diff)/scal.flatten())
         plt.show()
         #######
         self.excit.add(energy=maxen,phase=phase,dipoles=dipoles)

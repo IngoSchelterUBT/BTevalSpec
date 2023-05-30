@@ -2,6 +2,19 @@
 #------------------------------------------------------------------------------#
 # author: Rian Richter & Ingo Schelter
 #------------------------------------------------------------------------------#
+#
+# TODO:
+# - Implement command-line-argument handling
+# - After fitting the major lines, those lines' errors may become larger than the remaining small lines in the spectrum.
+#   A line's errors usually behaves like 1/(w-w0) with the same dipole direction as the excitation and oscillation as the rest of the spectrum.
+#   Therefore: To guess the next line, divide the spectrum by a function that suppresses those errors, e.g. something like
+#     1 + w_ref *T*sum_j( f_j mu_j/|mu_j| / sqrt[T^2*(w-w_j)^2 + 1] )
+#    (1)   (2)                  (3)                  (4)              
+#    (1): don't scale the spectrum far away from an excitation
+#    (2): Free parameter to make the second part unitless; w_ref ~ 1 Ry may be good
+#    (3): address excitation's direction and strengths
+#    (4): behaves like 1/|w-wj| for w>>wj but peaks at T at w==wj just like the sinc line function
+#
 # Call
 #
 #  ./eval.py [--debug=<dbg>] [<cmd-opt>] cmd arg
