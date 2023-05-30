@@ -5,15 +5,7 @@
 #
 # TODO:
 # - Implement command-line-argument handling
-# - After fitting the major lines, those lines' errors may become larger than the remaining small lines in the spectrum.
-#   A line's errors usually behaves like 1/(w-w0) with the same dipole direction as the excitation and oscillation as the rest of the spectrum.
-#   Therefore: To guess the next line, divide the spectrum by a function that suppresses those errors, e.g. something like
-#     1 + w_ref *T*sum_j( f_j mu_j/|mu_j| / sqrt[T^2*(w-w_j)^2 + 1] )
-#    (1)   (2)                  (3)                  (4)              
-#    (1): don't scale the spectrum far away from an excitation
-#    (2): Free parameter to make the second part unitless; w_ref ~ 1 Ry may be good
-#    (3): address excitation's direction and strengths
-#    (4): behaves like 1/|w-wj| for w>>wj but peaks at T at w==wj just like the sinc line function
+# - Go through each excitation and warn if there are close excitations with same dipole direction. This could be due to misshaped lines (e.g., non-linear effects due to too strong excitation)
 #
 # Call
 #
@@ -150,7 +142,7 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit = dfit.fit(dbg=0,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False))
+        excit = dfit.fit(dbg=1,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False))
         conf.opt["Fit"]["skipfirst"] = True
         dfit.writeFit()
 
@@ -158,9 +150,10 @@ def main():
     # Plot spectrum
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"].get("plot_result",False):
-        for iarea in range(excit.narea):
-            for icomp in range(excit.ncomp):
-                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=1./dip[0][0].tprop,jarea=iarea,jcomp=icomp)
+#        for iarea in range(excit.narea):
+#            for icomp in range(excit.ncomp):
+#                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
+        excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
 
     #--------------------------------------------------------------------------#
     # Update configuration file

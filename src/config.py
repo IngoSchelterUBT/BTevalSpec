@@ -65,7 +65,7 @@ def writeTemplate(ofile):
         calc: True                  # Turn fit on/off
         skipfirst: true             # Skip first fit of existing excitations
         guess: True                 # Turn guess for fit via Pade Approximation on/off
-        plot_result: False          # If True: The fit results are plotted without fitting again
+        plot_result: True           # If True: The fit results are plotted without fitting again
         gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.
         dat_spectrum: False         # If True: A .dat file for the spectrum is created
         guess_thres: 0.05           # Relative height of line in Pade Approximation compared to highest line 
@@ -84,6 +84,7 @@ def writeTemplate(ofile):
       - name:     "S1"                    #Identifier
         fix:      False                   #Set to true if the excitation shall be unchanged in a restart run
         energy:   0.                      #Energy [Ry]            can be changed manually to help fit
+        erange:   [0.1,0.5]               #Energy fit range
         phase:    0.                      #Phase (==0. for boost) can be changed manually to help fit
         dipoles:  [[0.,0.,0.],[0.,0.,0.]] #Areas' transition-dipole contributions
         dipole:   [0.,0.,0.]              #Total Transition dipole

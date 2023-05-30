@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Defines an excitation
 #==============================================================================#
 class Excitation:
-    def __init__(self,narea=1,ncomp=3,exdict={},name="S",energy="0.01",phase="0.01",tmod=1.,dipoles=None,fix=False):
+    def __init__(self,narea=1,ncomp=3,exdict={},name="S",energy=0.01,erange=0.01,phase=0.01,tmod=1.,dipoles=None,fix=False):
         # Book keeping
         self.narea    = narea
         self.ncomp    = ncomp
@@ -17,6 +17,9 @@ class Excitation:
         self.fix      = exdict.get("fix"      ,   fix      ) #Global fix (by configuration file)
         self.fixtmp   = exdict.get("fix"      ,   fix      ) #Temporary fix (that can be released and is used for generating fit parameters)
         self.energy   = exdict.get("energy"   ,   energy   )
+        if isinstance(erange,float):
+            erange = [self.energy*(1.-erange),self.energy*(1.+erange)]
+        self.erange   = exdict.get("erange"   ,   erange   ) #Energy range [min/max] (usually +/- 1% (i.e., x (1 +/- 0.01)) of the excitation energy)
         self.phase    = exdict.get("phase"    ,   phase    )
         self.tmod     = exdict.get("tmod"     ,   tmod     ) #T_eff = T*tmod (effective time for fitting)
         self.dipoles  = exdict.get("dipoles"  ,   dipoles  )
@@ -33,15 +36,16 @@ class Excitation:
 
     def todict(self):
         exdict = {}
-        exdict["name"     ] = self.name
-        exdict["fix"      ] = self.fix
-        exdict["energy"   ] = float(self.energy) #Explicit casting to float is necesary for ruaml.dump
-        exdict["phase"    ] = float(self.phase)
-        exdict["tmod"     ] = float(self.tmod)
-        exdict["dipoles"  ] = [[float(self.dipoles[i][j]) for j in range(len(self.dipoles[i]))] for i in range(len(self.dipoles))]
-        exdict["dipole"   ] = [ float(self.dipole[i])     for i in range(len(self.dipole))]
-        exdict["strength" ] = float(self.strength)
-        exdict["strengths"] = [float(self.strengths[i])   for i in range(len(self.dipoles))]
+        exdict["name"      ] = self.name
+        exdict["fix"       ] = self.fix
+        exdict["energy"    ] = float(self.energy) #Explicit casting to float is necesary for ruaml.dump
+        exdict["erange"    ] = [float(self.erange[i]) for i in range(2)]
+        exdict["phase"     ] = float(self.phase)
+        exdict["tmod"      ] = float(self.tmod)
+        exdict["dipoles"   ] = [[float(self.dipoles[i][j]) for j in range(len(self.dipoles[i]))] for i in range(len(self.dipoles))]
+        exdict["dipole"    ] = [ float(self.dipole[i])     for i in range(len(self.dipole))]
+        exdict["strength"  ] = float(self.strength)
+        exdict["strengths" ] = [float(self.strengths[i])   for i in range(len(self.dipoles))]
         return exdict
 
     # Updates derived components
@@ -82,12 +86,12 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Add an excitation to the list
     #-------------------------------------------------------------------------
-    def add(self,exdict=None,name="S",energy=0.,phase=0.,tmod=1.,dipoles=None,fix=False,sort=True):
+    def add(self,exdict=None,name="S",energy=0.,erange=0.01,phase=0.,tmod=1.,dipoles=None,fix=False,sort=True):
         #Todo: Check if new excitation matches narea, ncomp
         if isinstance(exdict,dict):
             self.exlist.append(Excitation(narea=self.narea,ncomp=self.ncomp,exdict=exdict))
         else:
-            self.exlist.append(Excitation(narea=self.narea,ncomp=self.ncomp,name=name,energy=energy,phase=phase,tmod=tmod,dipoles=dipoles,fix=fix))
+            self.exlist.append(Excitation(narea=self.narea,ncomp=self.ncomp,name=name,energy=energy,erange=erange,phase=phase,tmod=tmod,dipoles=dipoles,fix=fix))
         if sort: self.sort()
 
     #-------------------------------------------------------------------------
@@ -121,7 +125,7 @@ class Excitations:
     def toParams(self,noEnergy=False,noPhase=False,noTmod=False):
         params = Parameters()
         for iex, ex in enumerate(self.exlist):
-            params.add(f"w{iex}",vary=not ex.fixtmp and not noEnergy,value=ex.energy)
+            params.add(f"w{iex}",vary=not ex.fixtmp and not noEnergy,value=ex.energy,min=ex.erange[0],max=ex.erange[1])
             params.add(f"p{iex}",vary=not ex.fixtmp and not noPhase ,value=ex.phase )
             params.add(f"t{iex}",vary=not ex.fixtmp and not noTmod  ,value=ex.tmod  )
             for iarea in range(self.narea):
@@ -179,6 +183,7 @@ class Excitations:
             print("Ex ",iex)
             print("  Name:     ", ex.name    )
             print("  Energy:   ", ex.energy  )
+            print("  Erange:   ", ex.erange  )
             print("  Phase:    ", ex.phase   )
             print("  Tmod:     ", ex.tmod    )
             print("  Strength: ", ex.strength)
@@ -237,4 +242,26 @@ class Excitations:
         plt.vlines(w0,fmin,f0,colors="k")
         for iex in range(len(self.exlist)):
             plt.text(w0[iex],f0[iex]+0.01*np.amax(f0),l0[iex])
+        plt.show()
+
+    #-------------------------------------------------------------------------
+    # Plot all excitations into panels
+    #-------------------------------------------------------------------------
+    def plotPanels(self,wb,dw,gamma,jex=None):
+        w  = np.arange(wb[0],wb[1],dw)
+        n  = len(w)
+        fig, axs = plt.subplots(self.ncomp,self.narea,squeeze=False,sharex=True,sharey=True)
+        fig.suptitle("Fitted Spectrum")
+        for ax in axs.flat:
+            ax.set(xlabel="Energy [Ry]", ylabel="Oscillator Strength (Peak Height)")
+        for ax in axs.flat:# Hide x labels and tick labels for top plots and y ticks for right plots.
+            ax.label_outer()
+        for iarea in range(self.narea):
+            for icomp in range(self.ncomp):
+                f, w0, f0, l0 = self.lorentz(w,gamma,iarea,icomp,jex)
+                axs[icomp][iarea].plot(w,f)
+                fmin = [0.]*len(f0)
+                axs[icomp][iarea].vlines(w0,fmin,f0,colors="k")
+                for iex in range(len(self.exlist)):
+                    axs[icomp][iarea].text(w0[iex],f0[iex]+0.01*np.amax(f0),l0[iex])
         plt.show()
