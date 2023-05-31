@@ -63,7 +63,7 @@ def writeTemplate(ofile):
         thin: 0                     # Only keep every 2^n data point
       Fit:
         calc: True                  # Turn fit on/off
-        skipfirst: true             # Skip first fit of existing excitations
+        skipfirst: False            # Skip first fit of existing excitations
         guess: True                 # Turn guess for fit via Pade Approximation on/off
         plot_result: True           # If True: The fit results are plotted without fitting again
         gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.

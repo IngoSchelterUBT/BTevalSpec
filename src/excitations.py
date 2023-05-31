@@ -225,43 +225,55 @@ class Excitations:
                 dw  = w[i]-w0[-1]
                 dw2 = dw*dw
                 f[i] += f0[-1]*gw2/(dw2+gw2)
-        return f, w0, f0, l0
+        return f, np.array(w0), np.array(f0), l0
 
     #-------------------------------------------------------------------------
     # Plot excitations
     #-------------------------------------------------------------------------
-    def plot(self,wb,dw,gamma,jarea=None,jcomp=None,jex=None):
+    def plot(self,wb,dw,gamma,jarea=None,jcomp=None,jex=None,units="eV"):
+        if units=="eV":
+            wscal=13.605684958
+        elif units=="Ry":
+            wscal=1.
+        else:
+            err(1,"Unknown units "+units)
         w  = np.arange(wb[0],wb[1],dw)
         n  = len(w)
         f, w0, f0, l0 = self.lorentz(w,gamma,jarea,jcomp,jex)
         plt.title("Fitted Spectrum")
-        plt.xlabel("Energy [Ry]")
+        plt.xlabel("Energy ["+units+"]")
         plt.ylabel("Oscillator Strength (Peak Height)")
-        plt.plot(w,f)
+        plt.plot(w*wscal,f)
         fmin = [0.]*len(f0)
-        plt.vlines(w0,fmin,f0,colors="k")
+        plt.vlines(w0*wscal,fmin,f0,colors="k")
         for iex in range(len(self.exlist)):
-            plt.text(w0[iex],f0[iex]+0.01*np.amax(f0),l0[iex])
+            plt.text(w0[iex]*wscal,f0[iex]+0.01*np.amax(f0),l0[iex])
         plt.show()
 
     #-------------------------------------------------------------------------
     # Plot all excitations into panels
     #-------------------------------------------------------------------------
-    def plotPanels(self,wb,dw,gamma,jex=None):
+    def plotPanels(self,wb,dw,gamma,jex=None,units="eV"):
+        if units=="eV":
+            wscal=13.605684958
+        elif units=="Ry":
+            wscal=1.
+        else:
+            err(1,"Unknown units "+units)
         w  = np.arange(wb[0],wb[1],dw)
         n  = len(w)
         fig, axs = plt.subplots(self.ncomp,self.narea,squeeze=False,sharex=True,sharey=True)
         fig.suptitle("Fitted Spectrum")
         for ax in axs.flat:
-            ax.set(xlabel="Energy [Ry]", ylabel="Oscillator Strength (Peak Height)")
+            ax.set(xlabel="Energy ["+units+"]", ylabel="Oscillator Strength (Peak Height)")
         for ax in axs.flat:# Hide x labels and tick labels for top plots and y ticks for right plots.
             ax.label_outer()
         for iarea in range(self.narea):
             for icomp in range(self.ncomp):
                 f, w0, f0, l0 = self.lorentz(w,gamma,iarea,icomp,jex)
-                axs[icomp][iarea].plot(w,f)
+                axs[icomp][iarea].plot(w*wscal,f)
                 fmin = [0.]*len(f0)
-                axs[icomp][iarea].vlines(w0,fmin,f0,colors="k")
+                axs[icomp][iarea].vlines(w0*wscal,fmin,f0,colors="k")
                 for iex in range(len(self.exlist)):
-                    axs[icomp][iarea].text(w0[iex],f0[iex]+0.01*np.amax(f0),l0[iex])
+                    axs[icomp][iarea].text(w0[iex]*wscal,f0[iex]+0.01*np.amax(f0),l0[iex])
         plt.show()

@@ -76,10 +76,10 @@ class Fit:
     def getFitFunc(self,excit,rc=[0,1]):
         # Setup new array
         nrc = len(rc)
-        f  = np.zeros((self.ncalc,self.narea,self.ncomp,nrc,self.Nf),dtype=float)
+        f   = np.zeros((self.ncalc,self.narea,self.ncomp,nrc,self.Nf),dtype=float)
         # Get relevant excitation measures
-        T  = self.tprop
-        Ef = self.dip[0][0].efield
+        T   = self.tprop
+        Ef  = self.dip[0][0].efield
         nex = len(excit.exlist)
         energy  = np.zeros(nex,dtype=float)
         phase   = np.zeros(nex,dtype=float)
@@ -230,7 +230,7 @@ class Fit:
             if currentError<self.bestError:
                 self.bestError  = currentError
                 self.bestParams = params
-        if dbg>0: print("DEBUG: Objective Norm: ", iter, currentError)
+        if dbg>1: print("DEBUG: Objective Norm: ", iter, currentError)
         if iter%(breakmod*len(params.valuesdict()))==0 and iter>0:
             if abs(currentError/self.runningError)>0.99:
                 print("WARNING: Minimization stuck; abort and fall back to best parameter set",file=sys.stderr)
@@ -258,16 +258,17 @@ class Fit:
     # Add new excitation
     #--------------------------------------------------------------------------#
     def addEx(self,dbg=0,wref=1.):
-        fdat   = self.ft   .flatten()
-        ffit   = self.ftfit.flatten()
+        fdat   = self.ftrc   .flatten()
+        ffit   = self.ftfitrc.flatten()
         diff   = np.subtract(fdat,ffit)
-        scal   = np.full(self.ft.shape,1.) #Fill with 1
+        scal   = np.full(self.ftrc.shape,1.) #Fill with 1
         T      = self.tprop
         T2     = T*T
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
-                    for irc in range(2):
+                    #for irc in range(2):
+                    for irc in range(self.nrc):
                         for i in range(self.Nf):
                             w = self.freq[i]
                             for iex, ex in enumerate(self.excit.exlist):
@@ -280,11 +281,11 @@ class Fit:
         phase, dipoles = self.guessExcit(maxen)
         #######
 #        print(maxen, phase, dipoles)
-#        plt.plot(np.array([self.freq]*6).flatten(),np.abs(fdat))
-#        plt.plot(np.array([self.freq]*6).flatten(),np.abs(ffit))
-#        plt.plot(np.array([self.freq]*6).flatten(),np.abs(diff))
-#        plt.plot(np.array([self.freq]*6).flatten(),scal.flatten())
-#        plt.plot(np.array([self.freq]*6).flatten(),np.abs(diff)/scal.flatten())
+#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(fdat))
+#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(ffit))
+#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(diff))
+#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),scal.flatten())
+#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(diff)/scal.flatten())
 #        plt.show()
         #######
         self.excit.add(energy=maxen,phase=phase,dipoles=dipoles)

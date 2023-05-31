@@ -6,6 +6,8 @@
 # TODO:
 # - Implement command-line-argument handling
 # - Go through each excitation and warn if there are close excitations with same dipole direction. This could be due to misshaped lines (e.g., non-linear effects due to too strong excitation)
+# - Warn if excitations are insignificant (e.g, small oscillator strength, strong correlations between excitations)
+# - Spectrum plot with amplitudes instead of osci strengths if the latter are not significant (e.g., if excitation restricted to an area)
 #
 # Call
 #
