@@ -39,11 +39,14 @@
 #  ./eval.py [--label=<label>] add [<energy>]
 #    Add new excitation with given label (optional) at given energy (optional).
 #    Do no fit but guess phase and dipoles moments.
+# Reset energy range to the standard pi/T interval around the current excitations' energy values
+#  ./eval.py reset
 # Fit
-#  ./eval.py [<ft opt>] [<guess opt>] [--skip] [--range=<lb,rb>] [--imag] fit [<nadd>]
+#  ./eval.py [<ft opt>] [<guess opt>] [--skip] [--range=<lb,rb>] [--imag] fit [<nadd>] [<listOfExcitations>]
 #    Fit current excitations (if not --skip), add and fit <nadd> excitations one after the other, and update eval.yaml.
 #    --imag: only use imaginary part for fitting; automatically true for boost excitation.
-#    <nadd> defaults to 0.
+#    <nadd> defaults to +0
+#    <exs>  Comma-separated list of excitations to fit
 #    Does a prior Fourier transform if not already done.
 #    Does a prior Guess if not already done; requires a range option.
 # Plot

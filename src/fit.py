@@ -286,7 +286,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Add new excitation
     #--------------------------------------------------------------------------#
-    def addEx(self,dbg=0,wref=1.,stdinterval=3.,singleMax=False):
+    def addEx(self,dbg=0,wref=1.,stdinterval=2.,singleMax=False):
         fdat   = self.ftrc   
         ffit   = self.ftfitrc
         scal   = np.full(self.ftrc.shape,1.) #Fill with 1
@@ -319,7 +319,7 @@ class Fit:
         heights  = []
         for i in pos:
             energies.append(self.freq[i])
-            heights .append(self.obj [i])
+            heights .append(     obj [i])
 
         minHeight  = np.amin(heights)
         meanHeight = np.mean(heights) #Mean value
@@ -327,23 +327,29 @@ class Fit:
         baseHeight = meanHeight + stdinterval*stdHeight
         if singleMax:
             maxen  = [energies[argmax(heights)]]
+            maxhei = [heights [argmax(heights)]]
         else:
             maxen  = [energies[i] for i in range(len(energies)) if heights[i]>baseHeight]
+            maxhei = [heights [i] for i in range(len(heights )) if heights[i]>baseHeight]
         piT = np.pi/self.tprop
         for en in maxen:
             phase, dipoles = self.guessExcit(en)
             self.excit.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
         #######
-#        print(maxen, phase, dipoles)
-#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(fdat))
-#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(ffit))
-#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(diff))
-#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),scal.flatten())
-#        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(diff)/scal.flatten())
-#        plt.show()
+        print(maxen,maxhei)
+        #plt.plot(heights.sort(reverse=True))
+        plt.plot(sorted(heights,reverse=True),"x")
+        plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
+        plt.axhline(y=meanHeight+stdinterval*stdHeight,color="r",linestyle=":")
+        plt.show()
+        plt.plot(self.freq,obj)
+        plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
+        plt.axhline(y=meanHeight+stdinterval*stdHeight,color="r",linestyle=":")
+        plt.plot(maxen,maxhei,"x")
+        plt.show()
         #######
-        #iex = self.excit.add(energy=maxen,phase=phase,dipoles=dipoles,erange=piT)
+
         if dbg>0: self.excit.print()
         return len(maxen) #Return number of added excitations
 
@@ -362,7 +368,7 @@ class Fit:
         #Add and fit new excitations
         while len(self.excit.exlist)<maxex:
             self.excit.fix()                   # Temporarily fix all existing excitations
-            nadd = self.addEx(dbg=dbg,stdinterval=3.) # Add new excitations (also return this excitation)
+            nadd = self.addEx(dbg=dbg,stdinterval=2.) # Add new excitations (also return this excitation)
             if nadd==0:
                 nadd = self.addEx(dbg=dbg,singleMax=True) # Add single largest peak as excitation
             try:

@@ -25,7 +25,7 @@ OPT:
                                     #   fit_guess == True).
     relerr_crit: 0.01               # Criterium for relative error between fit and data (only relevant, if 
                                     #   fit_guess == True).
-    max_excit: 8                    # Maximum numer of iterations used to reach relative error between fit and 
+    max_excit: 24                   # Maximum numer of iterations used to reach relative error between fit and 
                                     #   data (only relevant, if fit_guess == True)
     relspacing_lines: 0.01          # Threshold for relative error between two lines which should be identified 
                                     #   as one in fit of trace (only relevant, if number of dipole files == 3).
