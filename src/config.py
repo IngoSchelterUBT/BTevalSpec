@@ -80,6 +80,7 @@ def writeTemplate(ofile):
         range:                      # Range of spectrum which should be fitted in Ry
           - 0.10
           - 0.40
+        significances: False
     SPEC:
       - name:     "S1"                    #Identifier
         fix:      False                   #Set to true if the excitation shall be unchanged in a restart run
@@ -89,6 +90,7 @@ def writeTemplate(ofile):
         dipoles:  [[0.,0.,0.],[0.,0.,0.]] #Areas' transition-dipole contributions
         dipole:   [0.,0.,0.]              #Total Transition dipole
         strength: 0.                      #Oscillator strength
+        signife:  0.                      #Significance
     """
     yaml = ruamel.yaml.YAML()
     code = yaml.load(conf)

@@ -8,6 +8,11 @@
 # - Go through each excitation and warn if there are close excitations with same dipole direction. This could be due to misshaped lines (e.g., non-linear effects due to too strong excitation)
 # - Warn if excitations are insignificant (e.g, small oscillator strength, strong correlations between excitations)
 # - Spectrum plot with amplitudes instead of osci strengths if the latter are not significant (e.g., if excitation restricted to an area)
+# - Print #number of excitations and error after fit into file
+# - If manually adding an excitation:
+#  -> Note this automatically
+#  -> Set skipfirst to false
+#  -> Make a proper guess for the dipole moments and phase
 #
 # Call
 #
@@ -144,24 +149,29 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit = dfit.fit(dbg=1,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False))
+        excit = dfit.fit(dbg=1,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False))
         conf.opt["Fit"]["skipfirst"] = True
-        dfit.writeFit()
-
-    #--------------------------------------------------------------------------#
-    # Plot spectrum
-    #--------------------------------------------------------------------------#
-    if conf.opt["Fit"].get("plot_result",False):
-#        for iarea in range(excit.narea):
-#            for icomp in range(excit.ncomp):
-#                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
-        excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
 
     #--------------------------------------------------------------------------#
     # Update configuration file
     #--------------------------------------------------------------------------#
     conf.excit = [excit.exlist[i].todict() for i in range(len(excit.exlist))]
     conf.write(ifile) 
+
+    #--------------------------------------------------------------------------#
+    # Write Fit files
+    #--------------------------------------------------------------------------#
+    if conf.opt["Fit"]["calc"]: dfit.writeFit()
+
+    #--------------------------------------------------------------------------#
+    # Plot spectrum
+    #--------------------------------------------------------------------------#
+    excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
+    if conf.opt["Fit"].get("plot_result",False):
+#        for iarea in range(excit.narea):
+#            for icomp in range(excit.ncomp):
+#                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
+        excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
 
 #------------------------------------------------------------------------------#
 # Call main

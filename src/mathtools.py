@@ -67,8 +67,9 @@ def numba_padeseries(w, m, n, dt, dip):
 # a[ncalc][narea][ncomp][nex]   Amplitudes
 #------------------------------------------------------------------------------#
 @nb.njit
-def fspectrum(ncalc,narea,ncomp,rc,nf,T,w,wi,p,tm,a):
+def fspectrum(ncalc,narea,ncomp,rc,T,w,wi,p,tm,a):
     nrc = len(rc)
+    nf  = len(w)
     f = np.zeros((ncalc,narea,ncomp,nrc,nf)) #,dtype=float)
     for icalc in range(ncalc):
         for iarea in range(narea):

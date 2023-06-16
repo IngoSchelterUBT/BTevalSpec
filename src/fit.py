@@ -16,8 +16,7 @@ from mathtools import fspectrum #, butter_lowpass_filter
 
 class Fit:
     def __init__(self,dip,ext,excit,fitrange):
-        self.minw     = fitrange[0]
-        self.maxw     = fitrange[1]
+        self.fitrange = fitrange
         self.dip      = dip
         self.ext      = ext
         self.exttype  = self.dip[0][0].ext
@@ -27,9 +26,10 @@ class Fit:
         self.narea    = len(self.dip[0])
         self.ncomp    = len(self.dip[0][0].ft)
         self.excit    = excit
-        self.freq     = np.array([dip[0][0].freq    [i] for i in range(len(dip[0][0].freq    )) if dip[0][0].freq    [i]>=self.minw and dip[0][0].freq    [i]<=self.maxw])
+        self.freq     = np.array([dip[0][0].freq    [i] for i in range(len(dip[0][0].freq    )) if dip[0][0].freq    [i]>=self.fitrange[0] and dip[0][0].freq    [i]<=self.fitrange[1]])
+        self.freqLoc  = np.copy(self.freq)
         self.dw       = (self.freq[-1]-self.freq[0])/(len(self.freq)-1)
-        self.freqPade = np.array([dip[0][0].freqPade[i] for i in range(len(dip[0][0].freqPade)) if dip[0][0].freqPade[i]>=self.minw and dip[0][0].freqPade[i]<=self.maxw])
+        self.freqPade = np.array([dip[0][0].freqPade[i] for i in range(len(dip[0][0].freqPade)) if dip[0][0].freqPade[i]>=self.fitrange[0] and dip[0][0].freqPade[i]<=self.fitrange[1]])
         self.Nf       = len(self.freq)
         self.NfPade   = len(self.freqPade)
         self.rc       = np.array([1]) if self.dip[0][0].ext=="boost" else np.array([0,1]) #Use only imag(rc==1) part if boost excitation or real(rc==0) and imag(rc==1) part else
@@ -52,20 +52,22 @@ class Fit:
                 for n in range(len(d.ft)):
                     self.ft  [icalc][iarea].append([])
                     self.pade[icalc][iarea].append([])
-                    self.pw  [icalc][iarea].append(np.array([d.pw  [n][i] for i in range(len(d.pw  [n]   )) if d.freq    [i]>=self.minw and d.freq    [i]<=self.maxw]))
+                    self.pw  [icalc][iarea].append(np.array([d.pw  [n][i] for i in range(len(d.pw  [n]   )) if d.freq    [i]>=self.fitrange[0] and d.freq    [i]<=self.fitrange[1]]))
                     self.ftrc[icalc][iarea].append([])
                     for irc in range(2):
-                        self.ft  [icalc][iarea][n].append(np.array([d.ft  [n][        irc ][i] for i in range(len(d.ft  [n][        irc ])) if d.freq    [i]>=self.minw and d.freq    [i]<=self.maxw]))
-                        self.pade[icalc][iarea][n].append(np.array([d.pade[n][        irc ][i] for i in range(len(d.pade[n][        irc ])) if d.freqPade[i]>=self.minw and d.freqPade[i]<=self.maxw]))
+                        self.ft  [icalc][iarea][n].append(np.array([d.ft  [n][        irc ][i] for i in range(len(d.ft  [n][        irc ])) if d.freq    [i]>=self.fitrange[0] and d.freq    [i]<=self.fitrange[1]]))
+                        self.pade[icalc][iarea][n].append(np.array([d.pade[n][        irc ][i] for i in range(len(d.pade[n][        irc ])) if d.freqPade[i]>=self.fitrange[0] and d.freqPade[i]<=self.fitrange[1]]))
                     for irc in range(self.nrc):
-                        self.ftrc[icalc][iarea][n].append(np.array([d.ft  [n][self.rc[irc]][i] for i in range(len(d.ft  [n][self.rc[irc]])) if d.freq    [i]>=self.minw and d.freq    [i]<=self.maxw]))
+                        self.ftrc[icalc][iarea][n].append(np.array([d.ft  [n][self.rc[irc]][i] for i in range(len(d.ft  [n][self.rc[irc]])) if d.freq    [i]>=self.fitrange[0] and d.freq    [i]<=self.fitrange[1]]))
         self.ft       = np.array(self.ft  )
         self.pw       = np.array(self.pw  )
         self.ftrc     = np.array(self.ftrc) #Only imag part if boost; used for fit
+        self.ftrcLoc  = np.copy(self.ftrc)
         self.ftfit    = self.getFitFunc(self.excit)
         self.pwfit    = self.getPw(self.ftfit)
         self.ftfitrc  = self.getFitFunc(self.excit,self.rc) #only imag part if boost
         self.ftrcnorm = np.linalg.norm(self.ftrc.flatten()) #Use ftrc as reference
+        self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
         self.fiterr   = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
         self.breakMinimization = False
         self.runningError = 1000000.
@@ -73,10 +75,12 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Get the fit function for a given set of frequencies and excitations
     #--------------------------------------------------------------------------#
-    def getFitFunc(self,excit,rc=[0,1]):
+    def getFitFunc(self,excit,rc=[0,1],freq=None):
         # Setup new array
+        if not isinstance(freq,np.ndarray): freq = self.freq
         nrc = len(rc)
-        f   = np.zeros((self.ncalc,self.narea,self.ncomp,nrc,self.Nf),dtype=float)
+        nf  = len(freq)
+        f   = np.zeros((self.ncalc,self.narea,self.ncomp,nrc,nf),dtype=float)
         # Get relevant excitation measures
         T   = self.tprop
         Ef  = self.dip[0][0].efield
@@ -99,7 +103,7 @@ class Fit:
                 for n in range(self.ncomp):
                     for iex, ex in enumerate(excit.exlist):
                         ampl[icalc][iarea][n][iex] = Ef*np.abs(np.dot(Ep,ex.dipole))*np.abs(Hw[iex])*ex.dipoles[iarea][n]
-        return fspectrum(self.ncalc,self.narea,self.ncomp,np.array(rc),self.Nf,T,self.freq,energy,phase,tmod,ampl)
+        return fspectrum(self.ncalc,self.narea,self.ncomp,np.array(rc),T,freq,energy,phase,tmod,ampl)
 
     #--------------------------------------------------------------------------#
     # Compute Power spectrum from FT
@@ -150,7 +154,8 @@ class Fit:
             energy  = self.freqPade[peaks[ipeak]]
             phase, dipoles = self.guessExcit(energy)
             #Add excitation to list
-            self.excit.add(energy=energy,phase=phase,dipoles=dipoles)
+            piT = np.pi/self.tprop
+            self.excit.add(energy=energy,phase=phase,dipoles=dipoles,erange=piT)
 
     #--------------------------------------------------------------------------#
     # Guess phase and dipole moments of an excitation at an approx. energy
@@ -203,13 +208,14 @@ class Fit:
     # Fit objective
     # nfree is not used here but required since fitInter needs it
     #--------------------------------------------------------------------------#
-    def fitObj(self,params,dbg=0,nfree=0):
-        self.excit.updateFromParam(params)
+    def fitObj(self,params,excit=None,dbg=0,breakmod=None,nfree=0):
+        if not isinstance(excit,excitations.Excitations): excit = self.excit
+        excit.updateFromParam(params)
         try:
-            ffit = self.getFitFunc(self.excit,self.rc).flatten()
+            ffit = self.getFitFunc(excit,self.rc,freq=self.freqLoc).flatten()
         except:
             raise
-        fdat = self.ftrc.flatten()
+        fdat = self.ftrcLoc.flatten()
         if self.breakMinimization==True:
             obj  = np.zeros(len(ffit),dtype=float)
         else:
@@ -219,9 +225,9 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit inter - is called in every minimizer iteration
     #--------------------------------------------------------------------------#
-    def fitInter(self,params,iter,resid,dbg=0,breakmod=5,nfree=0):
+    def fitInter(self,params,iter,resid,excit=None,dbg=0,breakmod=5,nfree=0):
         if self.breakMinimization: return
-        currentError = np.sum(np.abs(resid))/self.ftrcnorm
+        currentError = np.sum(np.abs(resid))/self.ftrcnormLoc
         if iter==-1:
             self.bestParams   = params
             self.bestError    = currentError
@@ -231,36 +237,58 @@ class Fit:
                 self.bestError  = currentError
                 self.bestParams = params
         if dbg>1: print("DEBUG: Objective Norm: ", iter, currentError)
-        if iter%(breakmod*len(params.valuesdict()))==0 and iter>0:
-            if abs(currentError/self.runningError)>0.99:
-                print("WARNING: Minimization stuck; abort and fall back to best parameter set",file=sys.stderr)
-                self.breakMinimization = True
-            if iter>-1: self.runningError = currentError
+        #####
+        #print("DEBUG: Objective Norm: ", iter, currentError)
+        #####
+        #if iter%(breakmod*len(params.valuesdict()))==0 and iter>0:
+        #    if abs(currentError/self.runningError)>0.99:
+        #        print("WARNING: Minimization stuck; abort and fall back to best parameter set",file=sys.stderr)
+        #        self.breakMinimization = True
+        #    if iter>-1: self.runningError = currentError
 
     #--------------------------------------------------------------------------#
-    # Fit Atomic
+    # Fit Atomic (and update excit)
+    # Todo: Implement fit-range reduction
     #--------------------------------------------------------------------------#
-    def fitAtomic(self,dbg=0):
-        params = self.excit.toParams(noPhase=self.exttype=="boost",noTmod=True) #fix phase if boost and fix time always
-        #params = self.excit.toParams() #free phases and time modifier
-        nfree  = self.excit.countFree()
+    def fitAtomic(self,excit,dbg=0,breakmod=5,fitrange=None):
+        params = excit.toParams(noPhase=self.exttype=="boost",noTmod=True) #fix phase if boost and fix time always
+        #params = excit.toParams() #free phases and time modifier
+        nfree  = excit.countFree()
+        if isinstance(fitrange,list):
+            self.freqLoc = np.array([self.freq[i] for i in range(len(self.freq)) if self.freq[i]>=fitrange[0] and self.freq[i]<=self.fitrange[1]])
+            nf = len(self.freqLoc)
+            ftrcLoc = []
+            for icalc in range(self.ncalc):
+                ftrcLoc.append([])
+                for iarea in range(self.narea):
+                    ftrcLoc[icalc].append([])
+                    for icomp in range(self.ncomp):
+                        ftrcLoc[icalc][iarea].append([])
+                        for irc in range(self.nrc):
+                            ftrcLoc[icalc][iarea][icomp].append([self.ftrc[icalc][iarea][icomp][irc][i] for i in range(len(self.freq)) if self.freq[i]>=fitrange[0] and self.freq[i]<=self.fitrange[1]])
+            self.ftrcLoc = np.array(ftrcLoc)
+        else:
+            self.freqLoc = np.copy(self.freq)
+            self.ftrcLoc = np.copy(self.ftrc)
+        self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
+
         try:
-            fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"dbg":dbg,"nfree":nfree})
+            fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"excit":excit,"dbg":dbg,"breakmod":breakmod,"nfree":nfree})
         except:
             raise #self.excit is not updated in this case
+
         if self.breakMinimization: #If minimization stuck and was force-aborted, reset the parameters to the best ones reached
             params = self.bestParams
             self.breakMinimization = False
         if dbg>0: print(fit_report(fitres))
-        self.excit.updateFromParam(fitres.params)
+        excit.updateFromParam(fitres.params)
 
     #--------------------------------------------------------------------------#
     # Add new excitation
     #--------------------------------------------------------------------------#
-    def addEx(self,dbg=0,wref=1.):
-        fdat   = self.ftrc   .flatten()
-        ffit   = self.ftfitrc.flatten()
-        diff   = np.subtract(fdat,ffit)
+    def addEx(self,dbg=0,wref=1.,stdinterval=3.,singleMax=False):
+        fdat   = self.ftrc   
+        ffit   = self.ftfitrc
         scal   = np.full(self.ftrc.shape,1.) #Fill with 1
         T      = self.tprop
         T2     = T*T
@@ -277,8 +305,35 @@ class Fit:
                                 f   = ex.strength
                                 nmu = np.abs(ex.dipoles[iarea][icomp]/np.linalg.norm(ex.dipole))
                                 scal[icalc][iarea][icomp][irc][i] += wref*T*f*nmu/np.sqrt(T2*dw2+1)
-        maxen  = self.freq[np.argmax(np.abs(diff)/scal.flatten())%self.Nf]
-        phase, dipoles = self.guessExcit(maxen)
+
+        obj = np.zeros(self.Nf)
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                for icomp in range(self.ncomp):
+                    for irc in range(self.nrc):
+                        obj += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp][irc])**2
+        obj = np.sqrt(obj)
+        pos, prop = find_peaks(obj)
+
+        energies = []
+        heights  = []
+        for i in pos:
+            energies.append(self.freq[i])
+            heights .append(self.obj [i])
+
+        minHeight  = np.amin(heights)
+        meanHeight = np.mean(heights) #Mean value
+        stdHeight  = np.std (heights) #Standard deviation
+        baseHeight = meanHeight + stdinterval*stdHeight
+        if singleMax:
+            maxen  = [energies[argmax(heights)]]
+        else:
+            maxen  = [energies[i] for i in range(len(energies)) if heights[i]>baseHeight]
+        piT = np.pi/self.tprop
+        for en in maxen:
+            phase, dipoles = self.guessExcit(en)
+            self.excit.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
+
         #######
 #        print(maxen, phase, dipoles)
 #        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(fdat))
@@ -288,37 +343,44 @@ class Fit:
 #        plt.plot(np.array([self.freq]*self.ncomp*self.narea*self.ncalc*self.nrc).flatten(),np.abs(diff)/scal.flatten())
 #        plt.show()
         #######
-        self.excit.add(energy=maxen,phase=phase,dipoles=dipoles)
+        #iex = self.excit.add(energy=maxen,phase=phase,dipoles=dipoles,erange=piT)
         if dbg>0: self.excit.print()
+        return len(maxen) #Return number of added excitations
 
     #--------------------------------------------------------------------------#
     # Fit Wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False):
+        #Fit guess or input excitations
         if (self.exttype=="boost"): self.excit.zeroPhase()
         self.update(dbg=dbg)
         if not skipfirst:
-            self.fitAtomic(dbg=dbg)   # Fit existing excitations
+            self.fitAtomic(self.excit,dbg=dbg)   # Fit existing excitations
             self.update(dbg=dbg)      # Update some self.components
             self.reportFit(dbg=dbg)
         nex = len(self.excit.exlist)
-        for it in range(nex+1,maxex+1):
-            self.excit.fix()          # Temporarily fix all existing excitations
-            self.addEx(dbg=dbg)       # Add new excitation
+        #Add and fit new excitations
+        while len(self.excit.exlist)<maxex:
+            self.excit.fix()                   # Temporarily fix all existing excitations
+            nadd = self.addEx(dbg=dbg,stdinterval=3.) # Add new excitations (also return this excitation)
+            if nadd==0:
+                nadd = self.addEx(dbg=dbg,singleMax=True) # Add single largest peak as excitation
             try:
-                self.fitAtomic(dbg=dbg)   # Fit new excitation alone
-                self.update(dbg=dbg)      # Update some self.components
-                self.excit.release()      # Release all temporarily fixed excitations
+                self.fitAtomic(self.excit,dbg=dbg) # Fit new excitations alone
+                self.update(dbg=dbg)               # Update some self.components
+                self.excit.release()               # Release all temporarily fixed excitations
             except:
-                break #self.excit is not updated in this case
+                raise #self.excit is not updated in this case
             try:
-                self.fitAtomic(dbg=dbg)   # Fit all non-permanently fixed excitations
+                self.fitAtomic(self.excit,dbg=dbg)   # Fit all non-permanently fixed excitations
                 self.update(dbg=dbg)      # Update some self.components
             except:
-                break #self.excit is not updated in this case
+                raise #self.excit is not updated in this case
             self.reportFit(dbg=dbg)
             if dbg>1: self.plotFitDebug(it)
             if self.fiterr<tol: break
+        #Compute significances (and update self.excit)
+        if signif: self.setSignificances()
         return self.excit
 
     #--------------------------------------------------------------------------#
@@ -340,6 +402,43 @@ class Fit:
             print("Excitations")
             self.excit.print()
             print("")
+
+    #--------------------------------------------------------------------------#
+    # Compute excitation significances
+    #--------------------------------------------------------------------------#
+    def setSignificances(self):
+        sN = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
+        for iex, ex in enumerate(self.excit.exlist):
+            self.setSignificance(self.excit,ex,sN=sN,rc=self.rc)
+
+    #--------------------------------------------------------------------------#
+    # Compute single significance
+    #--------------------------------------------------------------------------#
+    def setSignificance(self,exsN,ex0,sN=0.,rc=[0,1]):
+        exs = exsN.copy()                                                 #Get a copy of the excitations object
+        piT = np.pi/self.tprop
+        exs.restrict(erange=piT,neigh=True)                               #Restrict range of energy parameter before removing the excitation to ensure that a removed large excitation is not filled by a smaller one (leading to an erroneous low significance)
+        exs.fixErange([ex0.energy-2.*piT,ex0.energy+2.*piT],inverse=True) #Fix excitations that are not closed than 2pi/T to the removed excitation
+        fitrange = [ex0.energy-4.*piT,ex0.energy+4.*piT]                  #Restrict fit range to the removed excitation's energy +/- 4pi/T
+        exs.remove(rmname=[ex0.name])                                     #Remove the excitation in question
+        
+        if not sN>0.:
+            ffitN = self.getFitFunc(exsN,rc=rc) #Complete fit function
+        ffit0 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed
+        self.fitAtomic(exs,fitrange=fitrange)   #Fit exs new (no premature break out)
+        ffit  = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed and re-fit
+
+        if not sN>0.:
+            sN    = self.getError(self.ftrc,ffitN,datnorm=self.ftrcnorm) #Fit error of excitations exsN
+        s0        = self.getError(self.ftrc,ffit0,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (without re-fit)
+        s         = self.getError(self.ftrc,ffit ,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (with    re-fit)
+        ######
+        #print(sN,s0,s,s-sN,s0-sN,(s-sN)/(s0-sN))
+        #print(ex0.energy)
+        #print(ex0.dipoles)
+        ######
+
+        ex0.setSignificance((s-sN)/(s0-sN)) #Compute and set significance
 
     #--------------------------------------------------------------------------#
     # Plot fit
