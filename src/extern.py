@@ -25,7 +25,6 @@ class Extern:
             self.freq   = fftfreq(Nf,d=self.dt)*2.*np.pi
             self.ft     = self.dt*fft(self.ext,n=Nf)
             self.ftint  = interpolate.interp1d(self.freq,self.ft,kind="cubic")
-        
 
     #----------------------------------------------------------------------------#
     # Write spectra

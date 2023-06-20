@@ -36,9 +36,10 @@
 #  ./eval.py rm <exlist>
 #    Remove <exlist> from the list of excitations, where exlist is a comma-separated list of excitation labels, e.g., S1,S2,S3
 # Add excitation without fit
-#  ./eval.py [--label=<label>] add [<energy>]
+#  ./eval.py [--label=<label>] [--nsig=<nsig>] add [<energy>]
 #    Add new excitation with given label (optional) at given energy (optional).
 #    Do no fit but guess phase and dipoles moments.
+#    Add excitations that are larger than the mean value of maxima of ft-fit plus <nsig> times the standard deviation of maxima heights
 # Reset energy range to the standard pi/T interval around the current excitations' energy values
 #  ./eval.py reset
 # Fit
@@ -49,9 +50,16 @@
 #    <exs>  Comma-separated list of excitations to fit
 #    Does a prior Fourier transform if not already done.
 #    Does a prior Guess if not already done; requires a range option.
+# Error
+#  ./eval.py error
+#    Compute error value
+# Significance
+#  ./eval.py significance [<listOfExcitations>]
+#    Compute significances of all lines or the excitations given in the comma-separated list of <listOfExcitations>
 # Plot
-#  ./eval.py plot <measure>
-#    Plots <measure> in {pade, ft, fit, err, spectrum} with excitations
+#  ./eval.py [--exclude=<listOfExcitations>] plot <listOfMeasures>
+#    Plots <listOfMeasure> in {pade, ft, fit, err, spectrum} with excitations
+#    --exclude=<listOfExcitations>: Excitations that are excluded from the (fitted) data
 #------------------------------------------------------------------------------#
 import numpy as np
 import sys
@@ -145,14 +153,14 @@ def main():
     #--------------------------------------------------------------------------#
     dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
     if conf.opt["Fit"]["guess"]:
-        dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"])
+        dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],dbg=2)
         conf.opt["Fit"]["guess"] = False #Next time: No new initial guess
 
     #--------------------------------------------------------------------------#
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit = dfit.fit(dbg=1,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False))
+        excit = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.))
         conf.opt["Fit"]["skipfirst"] = True
 
     #--------------------------------------------------------------------------#

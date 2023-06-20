@@ -8,29 +8,37 @@ import matplotlib.pyplot as plt
 class Excitation:
     def __init__(self,narea=1,ncomp=3,exdict={},name="S",energy=0.01,erange=0.01,phase=0.01,tmod=1.,dipoles=None,fix=False):
         # Book keeping
-        self.narea    = narea
-        self.ncomp    = ncomp
+        self.narea        = narea
+        self.ncomp        = ncomp
         if not isinstance(dipoles,list):
-            dipoles = [[0.01]*self.ncomp for i in range(self.narea)]
+            dipoles       = [[0.01]*self.ncomp for i in range(self.narea)]
         # Fundamental
-        self.name     = exdict.get("name"     ,   name     )
-        self.fix      = exdict.get("fix"      ,   fix      ) #Global fix (by configuration file)
-        self.fixtmp   = exdict.get("fix"      ,   fix      ) #Temporary fix (that can be released and is used for generating fit parameters)
-        self.energy   = exdict.get("energy"   ,   energy   )
+        self.name         = exdict.get("name"        ,   name     )
+        self.fix          = exdict.get("fix"         ,   fix      ) #Global fix (by configuration file)
+        self.fixtmp       = exdict.get("fix"         ,   fix      ) #Temporary fix (that can be released and is used for generating fit parameters)
+        self.energy       = exdict.get("energy"      ,   energy   )
+        self.energyErr    = exdict.get("energyErr"   ,   0.       )
         if isinstance(erange,float):
-            erange = [self.energy-erange,self.energy+erange]
-        self.erange   = exdict.get("erange"   ,   erange   ) #Energy range [min/max] (usually +/- 1% (i.e., x (1 +/- 0.01)) of the excitation energy)
-        self.phase    = exdict.get("phase"    ,   phase    )
-        self.tmod     = exdict.get("tmod"     ,   tmod     ) #T_eff = T*tmod (effective time for fitting)
-        self.dipoles  = exdict.get("dipoles"  ,   dipoles  )
+            erange        = [self.energy-erange,self.energy+erange]
+        self.erange       =          exdict.get("erange"      ,   erange   ) #Energy range [min/max] (usually +/- 1% (i.e., x (1 +/- 0.01)) of the excitation energy)
+        self.phase        =          exdict.get("phase"       ,   phase    )
+        self.phaseErr     =          exdict.get("phaseErr"    ,   0.       )
+        self.tmod         =          exdict.get("tmod"        ,   tmod     ) #T_eff = T*tmod (effective time for fitting)
+        self.dipoles      = np.array(exdict.get("dipoles"     ,   dipoles  ))
+        self.dipolesErr   = np.array(exdict.get("dipolesErr"  ,   np.zeros(self.dipoles.shape)))
         # Derived
-        self.dipole   = exdict.get("dipole"   ,  [0.]*ncomp)
-        self.strength = exdict.get("strength" ,   0.       )
-        self.strengths= exdict.get("strengths",  [0.]*narea) #Oscillator strength equivalent derived from the area's dipole (does NOT sum up to the total oscillator strength)
+        self.dipole       = np.array(exdict.get("dipole"      ,  [0.]*ncomp))
+        self.dipoleErr    = np.array(exdict.get("dipoleErr"   ,  [0.]*ncomp))
+        self.strength     =          exdict.get("strength"    ,   0.          )
+        self.strengthErr  =          exdict.get("strengthErr" ,   0.          )
+        self.strengths    = np.array(exdict.get("strengths"   ,  [0.]*narea)) #Oscillator strength equivalent derived from the area's dipole (does NOT sum up to the total oscillator strength)
+        self.strengthsErr = np.array(exdict.get("strengthsErr",  [0.]*narea)) 
         #Significance
-        self.signif   = exdict.get("signif"   ,   0.       ) #Significance of the excitation
+        self.signifFit    = exdict.get("signifFit"   ,   0.       ) #Significance: Can excit be replaced by other excitations
+        self.signifCon    = exdict.get("signifCon"   ,   0.       ) #Significance: Does excitation's contribution to the spectrum match the fraction of its strength to the sum of all strengths
+        self.signifAng    = exdict.get("signifAng"   ,   0.       ) #Significance: sqrt(angle between dipole and ext. excitation)
         # Update derived (overwrite the latter)
-        self.derived()
+        self.derived(errors=False)
 
         # Error checking
         if len(self.dipoles)!=self.narea or len(self.dipoles[0])!=self.ncomp: err(1,"Wrong shape of field 'dipoles'")
@@ -38,29 +46,40 @@ class Excitation:
 
     def todict(self):
         exdict = {}
-        exdict["name"      ] = self.name
-        exdict["fix"       ] = self.fix
-        exdict["energy"    ] = float(self.energy) #Explicit casting to float is necesary for ruaml.dump
-        exdict["erange"    ] = [float(self.erange[i]) for i in range(2)]
-        exdict["phase"     ] = float(self.phase)
-        exdict["tmod"      ] = float(self.tmod)
-        exdict["dipoles"   ] = [[float(self.dipoles[i][j]) for j in range(len(self.dipoles[i]))] for i in range(len(self.dipoles))]
-        exdict["dipole"    ] = [ float(self.dipole[i])     for i in range(len(self.dipole))]
-        exdict["strength"  ] = float(self.strength)
-        exdict["strengths" ] = [float(self.strengths[i])   for i in range(len(self.dipoles))]
-        exdict["signif"    ] = float(self.signif)
+        exdict["name"        ] = self.name
+        exdict["fix"         ] = self.fix
+        exdict["energy"      ] = float(self.energy) #Explicit casting to float is necesary for ruaml.dump
+        exdict["energyErr"   ] = float(self.energyErr) #Explicit casting to float is necesary for ruaml.dump
+        exdict["erange"      ] = [float(self.erange[i]) for i in range(2)]
+        exdict["phase"       ] = float(self.phase)
+        exdict["phaseErr"    ] = float(self.phaseErr)
+        exdict["tmod"        ] = float(self.tmod)
+        exdict["dipoles"     ] = [[float(self.dipoles    [i][j])  for j in range(len(self.dipoles   [i]))] for i in range(len(self.dipoles   ))]
+        exdict["dipolesErr"  ] = [[float(self.dipolesErr [i][j])  for j in range(len(self.dipolesErr[i]))] for i in range(len(self.dipolesErr))]
+        exdict["dipole"      ] = [ float(self.dipole     [i])     for i in range(len(self.dipole       ))]
+        exdict["dipoleErr"   ] = [ float(self.dipoleErr  [i])     for i in range(len(self.dipoleErr    ))]
+        exdict["strength"    ] = float(self.strength)
+        exdict["strengthErr" ] = float(self.strengthErr)
+        exdict["strengths"   ] = [float(self.strengths   [i])     for i in range(len(self.strengths    ))]
+        exdict["strengthsErr"] = [float(self.strengthsErr[i])     for i in range(len(self.strengthsErr ))]
+        exdict["signifFit"   ] = float(self.signifFit)
+        exdict["signifCon"   ] = float(self.signifCon)
+        exdict["signifAng"   ] = float(self.signifAng)
         return exdict
 
     # Updates derived components
-    def derived(self):
+    def derived(self,errors=True):
         #Define constants in Rydberg units
         m    = 0.5
         e2   = 2. #e^2
         hbar = 1.
-        self.dipole   = np.array([sum([self.dipoles[iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)])
-        self.strength = 2.*m*self.energy*np.linalg.norm(self.dipole)**2/(3.*e2*hbar)
-
-        self.strengths= [2.*m*self.energy*np.linalg.norm(self.dipoles[iarea])**2/(3.*e2*hbar) for iarea in range(self.narea)]
+        self.dipole       = np.array([sum([self.dipoles[iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)])
+        self.strength     =  2.*m/(3.*e2*hbar)*self.energy*np.linalg.norm(self.dipole        )**2
+        self.strengths    = [2.*m/(3.*e2*hbar)*self.energy*np.linalg.norm(self.dipoles[iarea])**2      for iarea in range(self.narea)]
+        if errors:
+            self.dipoleErr    = np.array([np.sqrt(sum([self.dipolesErr[iarea][icomp]**2 for iarea in range(self.narea)])) for icomp in range(self.ncomp)])
+            self.strengthErr  =  2.*m/(3.*e2*hbar)*np.sqrt((self.energyErr*self.energy*np.linalg.norm(self.dipole        )**2)**2 + (2.*self.energy*np.dot(self.dipole        ,self.dipoleErr        ))**2)
+            self.strengthsErr = [2.*m/(3.*e2*hbar)*np.sqrt((self.energyErr*self.energy*np.linalg.norm(self.dipoles[iarea])**2)**2 + (2.*self.energy*np.dot(self.dipoles[iarea],self.dipolesErr[iarea]))**2) for iarea in range(self.narea)]
 
     # Temporarily fixes the excitation
     def fixMe(self):
@@ -71,8 +90,10 @@ class Excitation:
         self.fixtmp = self.fix
 
     # Set significance
-    def setSignificance(self,signif):
-        self.signif = signif
+    def setSignificance(self,signifFit,signifCon,signifAng):
+        self.signifFit = signifFit
+        self.signifCon = signifCon
+        self.signifAng = signifAng
 
 #============================================================================#
 # Defines a list of excitations
@@ -140,7 +161,8 @@ class Excitations:
     #-------------------------------------------------------------------------
     def zeroPhase(self):
         for ex in self.exlist:
-            ex.phase = 0.
+            ex.phase    = 0.
+            ex.phaseErr = 0.
 
     #-------------------------------------------------------------------------
     # Set tmod to one
@@ -167,16 +189,22 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Update from fit parameters
     #-------------------------------------------------------------------------
-    def updateFromParam(self,params):
-        pdict = params.valuesdict()
+    def updateFromParam(self,params,errors=True):
         for iex, ex in enumerate(self.exlist):
-            ex.energy = pdict[f"w{iex}"]
-            ex.phase  = pdict[f"p{iex}"]
-            ex.tmod   = pdict[f"t{iex}"]
+            if ex.fixtmp: continue #Continue if values of this excitation need no update
+            ex.energy    = params[f"w{iex}"].value
+            if errors and isinstance(params[f"w{iex}"].stderr,float):
+                ex.energyErr = params[f"w{iex}"].stderr
+            ex.phase     = params[f"p{iex}"].value
+            if errors and isinstance(params[f"p{iex}"].stderr,float):
+                ex.phaseErr  = params[f"p{iex}"].stderr
+            ex.tmod      = params[f"t{iex}"].value
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
-                    ex.dipoles[iarea][icomp] = pdict[f"d{iex}_{iarea}_{icomp}"]
-            ex.derived()
+                    ex.dipoles   [iarea][icomp] = params[f"d{iex}_{iarea}_{icomp}"].value
+                    if errors and isinstance(params[f"d{iex}_{iarea}_{icomp}"].stderr,float):
+                        ex.dipolesErr[iarea][icomp] = params[f"d{iex}_{iarea}_{icomp}"].stderr
+            ex.derived(errors=errors)
 
     #-------------------------------------------------------------------------
     # Temporarily fix all or specific excitations
@@ -237,7 +265,7 @@ class Excitations:
     #-------------------------------------------------------------------------
     def print(self):
         for iex, ex in enumerate(self.exlist):
-            ex.derived()
+            ex.derived(errors=False)
             print("Ex ",iex)
             print("  Name:     ", ex.name    )
             print("  Energy:   ", ex.energy  )
@@ -261,21 +289,28 @@ class Excitations:
         n  = len(w)
         f  = np.zeros(n,dtype=float)
         w0 = []
+        we = []
         f0 = []
+        fe = []
         l0 = []
         for iex, ex in enumerate(self.exlist):
             if isinstance(jex,list):
                 if not jex in iex: cycle
             ex.derived()
             w0.append(ex.energy)
+            we.append(ex.energyErr)
             if isinstance(jarea,int) and isinstance(jcomp,int):
-                f0.append(ex.dipoles[jarea][jcomp])
+                f0.append(ex.dipoles   [jarea][jcomp])
+                fe.append(ex.dipolesErr[jarea][jcomp])
             elif isinstance(jarea,int):
-                f0.append(ex.strengths[jarea])
+                f0.append(ex.strengths   [jarea])
+                fe.append(ex.strengthsErr[jarea])
             elif isinstance(jcomp,int):
-                f0.append(ex.dipole[jcomp])
+                f0.append(ex.dipole   [jcomp])
+                fe.append(ex.dipoleErr[jcomp])
             else:
-                f0.append(ex.strength)
+                f0.append(ex.strength   )
+                fe.append(ex.strengthErr)
             l0.append(ex.name)
             for i in range(n):
                 gw  = gamma*w0[-1]
@@ -283,7 +318,7 @@ class Excitations:
                 dw  = w[i]-w0[-1]
                 dw2 = dw*dw
                 f[i] += f0[-1]*gw2/(dw2+gw2)
-        return f, np.array(w0), np.array(f0), l0
+        return f, np.array(w0), np.array(we), np.array(f0), np.array(fe), l0
 
     #-------------------------------------------------------------------------
     # Plot excitations
@@ -297,13 +332,14 @@ class Excitations:
             err(1,"Unknown units "+units)
         w  = np.arange(wb[0],wb[1],dw)
         n  = len(w)
-        f, w0, f0, l0 = self.lorentz(w,gamma,jarea,jcomp,jex)
+        f, w0, dw, f0, df, l0 = self.lorentz(w,gamma,jarea,jcomp,jex)
         plt.title("Fitted Spectrum")
         plt.xlabel("Energy ["+units+"]")
         plt.ylabel("Oscillator Strength (Peak Height)")
         plt.plot(w*wscal,f)
         fmin = [0.]*len(f0)
-        plt.vlines(w0*wscal,fmin,f0,colors="k")
+        plt.vlines  (w0*wscal,fmin,f0                      ,colors="k")
+        plt.errorbar(w0*wscal     ,f0,xerr=dw*wscal,yerr=df,color ="k",markersize=2.,ecolor ="r",fmt="o",capsize=3.)
         for iex in range(len(self.exlist)):
             plt.text(w0[iex]*wscal,f0[iex]+0.01*np.amax(f0),l0[iex])
         if fname=="":
@@ -331,10 +367,11 @@ class Excitations:
             ax.label_outer()
         for iarea in range(self.narea):
             for icomp in range(self.ncomp):
-                f, w0, f0, l0 = self.lorentz(w,gamma,iarea,icomp,jex)
+                f, w0, dw, f0, df, l0 = self.lorentz(w,gamma,iarea,icomp,jex)
                 axs[icomp][iarea].plot(w*wscal,f)
                 fmin = [0.]*len(f0)
-                axs[icomp][iarea].vlines(w0*wscal,fmin,f0,colors="k")
+                axs[icomp][iarea].vlines  (w0*wscal,fmin,f0                      ,colors="k")
+                axs[icomp][iarea].errorbar(w0*wscal     ,f0,xerr=dw*wscal,yerr=df,color ="k",markersize=2.,ecolor ="r",fmt="o",capsize=3.)
                 for iex in range(len(self.exlist)):
                     axs[icomp][iarea].text(w0[iex]*wscal,f0[iex]+0.01*np.amax(f0),l0[iex])
         if fname=="":

@@ -80,17 +80,28 @@ def writeTemplate(ofile):
         range:                      # Range of spectrum which should be fitted in Ry
           - 0.10
           - 0.40
+        nsigma: 2.                  # New excitations are guessed at energies where the peak height is larger than
+                                    # the mean value plus nsigma times the standard deviation of the distribution of
+                                    # maxima of Fourier Transform minus current fit
+                                    # (and the latter scaled for error compensation around existing lines)
         significances: False
     SPEC:
-      - name:     "S1"                    #Identifier
-        fix:      False                   #Set to true if the excitation shall be unchanged in a restart run
-        energy:   0.                      #Energy [Ry]            can be changed manually to help fit
-        erange:   [0.1,0.5]               #Energy fit range
-        phase:    0.                      #Phase (==0. for boost) can be changed manually to help fit
-        dipoles:  [[0.,0.,0.],[0.,0.,0.]] #Areas' transition-dipole contributions
-        dipole:   [0.,0.,0.]              #Total Transition dipole
-        strength: 0.                      #Oscillator strength
-        signife:  0.                      #Significance
+      - name:         "S1"                    #Identifier
+        fix:          False                   #Set to true if the excitation shall be unchanged in a restart run
+        energy:       0.                      #Energy [Ry]            can be changed manually to help fit
+        energyErr:    0.                      #Energy Error (directly from fit)
+        erange:       [0.1,0.5]               #Energy fit range
+        phase:        0.                      #Phase (==0. for boost) can be changed manually to help fit
+        phaseErr:     0.                      #Phas Error (directly from fit)
+        dipoles:      [[0.,0.,0.],[0.,0.,0.]] #Areas' transition-dipole contributions
+        dipolesErr:   [[0.,0.,0.],[0.,0.,0.]] #Dipoles Error (directly from fit)
+        dipole:       [0.,0.,0.]              #Total Transition dipole
+        dipoleErr:    [0.,0.,0.]              #Dipole Error (derived from dipolesErr)
+        strength:     0.                      #Oscillator strength
+        strengthErr:  0.                      #Strength Error (derived from dipolesErr and energyErr)
+        signifFit:    0.                      #Significance: Fit
+        signifCon:    0.                      #Significance: Contribution matching
+        signifAng:    0.                      #Significance: sqrt(cos(angle between ext polarization and dipole))
     """
     yaml = ruamel.yaml.YAML()
     code = yaml.load(conf)

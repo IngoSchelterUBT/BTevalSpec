@@ -134,7 +134,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Make an initial guess based on the sum of the Pade power spectra and the FT spectra
     #--------------------------------------------------------------------------#
-    def newGuess(self,hf=0.05):
+    def newGuess(self,hf=0.05,dbg=0):
         # Init empty excitation object and arrays
         self.excit = excitations.Excitations(narea=self.narea,ncomp=self.ncomp)
         fdat  = self.pade
@@ -147,7 +147,7 @@ class Fit:
                         for i in range(self.NfPade):
                             f[i] += fdat[icalc][iarea][n][irc][i]**2
         # Search most prominent peaks
-        peaks = self.findPeaks(self.freqPade,np.sqrt(f),dbg=2,hf=hf)
+        peaks = self.findPeaks(self.freqPade,np.sqrt(f),dbg=dbg,hf=hf)
         # For each peak
         for ipeak in range(len(peaks)):
             #Get energy and guess phase and dipoles based on the FT
@@ -171,7 +171,7 @@ class Fit:
         # Get the closest index in the FT array
         idx = int(np.rint((energy-self.freq[0])/self.dw))
         # Find the calculation for which the excitation's peak is largest
-        ampl        = [[[self.ft[icalc][iarea][icomp][0][idx]+1.0j*self.ft[icalc][iarea][icomp][1][idx] for icomp in range(self.ncomp)] for iarea in range(self.narea)] for icalc in range(self.ncalc)]
+        ampl        = [[[(self.ft[icalc][iarea][icomp][0][idx]-self.ftfit[icalc][iarea][icomp][0][idx])+1.0j*(self.ft[icalc][iarea][icomp][1][idx]-self.ftfit[icalc][iarea][icomp][1][idx]) for icomp in range(self.ncomp)] for iarea in range(self.narea)] for icalc in range(self.ncalc)]
         jcalc       = np.argmax([np.linalg.norm([sum([ampl[icalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)]) for icalc in range(self.ncalc)]) #Use this calculation for the dipole-moment guess
         # Approx. dipole directions
         T           = self.tprop
@@ -180,21 +180,29 @@ class Fit:
         heightArea  = [[np.imag(np.exp(-1.0j*phase)*     ampl[jcalc][iarea][icomp]) for iarea in range(self.narea)]   for icomp in range(self.ncomp)] #Rotate the height by e^-i*phi and take its imag part to get the line heights (with sign)
         height      = [ np.imag(np.exp(-1.0j*phase)*sum([ampl[jcalc][iarea][icomp]  for iarea in range(self.narea)])) for icomp in range(self.ncomp)]
         dipdir      = height/np.linalg.norm(height) # Direction of the dipole moment
-        eped        = np.dot(dipdir,Ep) # Scalar product e_pol.e_mu
+        eped        = abs(np.dot(dipdir,Ep)) # Scalar product e_pol.e_mu
+        #Prevent overestimating the dipole moment if the latter is almost orthogonal to the ext. field polarization:
+        # Alternative 1: Hard filter
+        #if eped < 0.1: eped=1.     
+        # Alternative 2: use sqrt(eped) instead of eped. This leads to an systematic underestimation of the dipole moment, especially the closer the angle between excitation and dipole is to 90°
+        #eped        = np.sqrt(abs(eped)) 
+        # -> Use this to scale dipoles, not dipabs below
+
         # Approx. dipoles
-        dipabs  = np.sqrt(np.linalg.norm(height)/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        dipabs  = np.sqrt(np.linalg.norm(height)/(T*Ef*eped*np.abs(Hw))) #Absolute value of the total dipole moment
         dipoles = []
         for iarea in range(self.narea):
             dipoles.append([])
             for icomp in range(self.ncomp):
-                dipoles[iarea].append(heightArea[icomp][iarea]/(T*Ef*eped*np.abs(Hw)*dipabs)) # hightarea[icomp] = T*Ef*eped*abs(Hw)*abs(mu)*mu[icomp] -> solve for mu[icomp]
+                dipoles[iarea].append(heightArea[icomp][iarea]/(T*Ef*np.sqrt(eped)*np.abs(Hw)*dipabs)) # hightarea[icomp] = T*Ef*eped*abs(Hw)*abs(mu)*mu[icomp] -> solve for mu[icomp]
+                #Line above: sqrt(eped) is used to underestimate the dipoles more the less it is aligned with the ext. excitation polarization
 
         return phase, dipoles
             
     #--------------------------------------------------------------------------#
     # Search for the highest peak in the given function
     #--------------------------------------------------------------------------#
-    def findPeaks(self,freq,f,dbg=0,hf=0.05):
+    def findPeaks(self,freq,f,dbg=0,hf=0.0):
         pos, prop = find_peaks(f,height=hf*np.amax(f))#,width=(0.,100))
       
         if dbg>1:
@@ -210,7 +218,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     def fitObj(self,params,excit=None,dbg=0,breakmod=None,nfree=0):
         if not isinstance(excit,excitations.Excitations): excit = self.excit
-        excit.updateFromParam(params)
+        excit.updateFromParam(params,errors=False) #fit errors are not known, yet
         try:
             ffit = self.getFitFunc(excit,self.rc,freq=self.freqLoc).flatten()
         except:
@@ -236,10 +244,7 @@ class Fit:
             if currentError<self.bestError:
                 self.bestError  = currentError
                 self.bestParams = params
-        if dbg>1: print("DEBUG: Objective Norm: ", iter, currentError)
-        #####
-        #print("DEBUG: Objective Norm: ", iter, currentError)
-        #####
+        if dbg>2: print("DEBUG: Objective Norm: ", iter, currentError)
         #if iter%(breakmod*len(params.valuesdict()))==0 and iter>0:
         #    if abs(currentError/self.runningError)>0.99:
         #        print("WARNING: Minimization stuck; abort and fall back to best parameter set",file=sys.stderr)
@@ -286,7 +291,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Add new excitation
     #--------------------------------------------------------------------------#
-    def addEx(self,dbg=0,wref=1.,stdinterval=2.,singleMax=False):
+    def addEx(self,dbg=0,wref=1.,singleMax=False,nsigma=2.):
         fdat   = self.ftrc   
         ffit   = self.ftfitrc
         scal   = np.full(self.ftrc.shape,1.) #Fill with 1
@@ -324,7 +329,7 @@ class Fit:
         minHeight  = np.amin(heights)
         meanHeight = np.mean(heights) #Mean value
         stdHeight  = np.std (heights) #Standard deviation
-        baseHeight = meanHeight + stdinterval*stdHeight
+        baseHeight = meanHeight + nsigma*stdHeight
         if singleMax:
             maxen  = [energies[argmax(heights)]]
             maxhei = [heights [argmax(heights)]]
@@ -336,19 +341,18 @@ class Fit:
             phase, dipoles = self.guessExcit(en)
             self.excit.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
-        #######
-        print(maxen,maxhei)
-        #plt.plot(heights.sort(reverse=True))
-        plt.plot(sorted(heights,reverse=True),"x")
-        plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
-        plt.axhline(y=meanHeight+stdinterval*stdHeight,color="r",linestyle=":")
-        plt.show()
-        plt.plot(self.freq,obj)
-        plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
-        plt.axhline(y=meanHeight+stdinterval*stdHeight,color="r",linestyle=":")
-        plt.plot(maxen,maxhei,"x")
-        plt.show()
-        #######
+        if dbg>1:
+            plt.plot(sorted(heights,reverse=True),"x")
+            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
+            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
+            plt.savefig("heights.png")
+            plt.show()
+            plt.plot(self.freq,obj)
+            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
+            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
+            plt.plot(maxen,maxhei,"x")
+            plt.savefig("objective.png")
+            plt.show()
 
         if dbg>0: self.excit.print()
         return len(maxen) #Return number of added excitations
@@ -356,19 +360,35 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit Wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False,nsigma=2.):
         #Fit guess or input excitations
         if (self.exttype=="boost"): self.excit.zeroPhase()
         self.update(dbg=dbg)
+#        #####
+#        self.reportFit(dbg=dbg)
+#        self.writeFit()
+#        sys.exit(0)
+#        #####
         if not skipfirst:
             self.fitAtomic(self.excit,dbg=dbg)   # Fit existing excitations
             self.update(dbg=dbg)      # Update some self.components
             self.reportFit(dbg=dbg)
+#        #####
+#        self.reportFit(dbg=dbg)
+#        self.writeFit()
+#        sys.exit(0)
+#        #####
         nex = len(self.excit.exlist)
         #Add and fit new excitations
         while len(self.excit.exlist)<maxex:
-            self.excit.fix()                   # Temporarily fix all existing excitations
-            nadd = self.addEx(dbg=dbg,stdinterval=2.) # Add new excitations (also return this excitation)
+            self.excit.fix()                         # Temporarily fix all existing excitations
+            nadd = self.addEx(dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
+#            #####
+#            self.update(dbg=dbg)
+#            self.reportFit(dbg=dbg)
+#            self.writeFit()
+#            sys.exit(0)
+#            #####
             if nadd==0:
                 nadd = self.addEx(dbg=dbg,singleMax=True) # Add single largest peak as excitation
             try:
@@ -383,7 +403,7 @@ class Fit:
             except:
                 raise #self.excit is not updated in this case
             self.reportFit(dbg=dbg)
-            if dbg>1: self.plotFitDebug(it)
+            if dbg>2: self.plotFitDebug(it)
             if self.fiterr<tol: break
         #Compute significances (and update self.excit)
         if signif: self.setSignificances()
@@ -438,13 +458,14 @@ class Fit:
             sN    = self.getError(self.ftrc,ffitN,datnorm=self.ftrcnorm) #Fit error of excitations exsN
         s0        = self.getError(self.ftrc,ffit0,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (without re-fit)
         s         = self.getError(self.ftrc,ffit ,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (with    re-fit)
-        ######
-        #print(sN,s0,s,s-sN,s0-sN,(s-sN)/(s0-sN))
-        #print(ex0.energy)
-        #print(ex0.dipoles)
-        ######
 
-        ex0.setSignificance((s-sN)/(s0-sN)) #Compute and set significance
+        signifFit = (s-sN)/(s0-sN)
+        signifCon = np.sqrt((s0-sN)/(ex0.strength/sum([ex.strength for ex in exsN.exlist])))
+        dip       = ex0.dipole
+        pol       = [self.dip[icalc][0].epol for icalc in range(self.ncalc)]
+        signifAng = np.sqrt(np.max([abs(np.dot(dip/np.linalg.norm(dip),pol[icalc]/np.linalg.norm(pol[icalc]))) for icalc in range(self.ncalc)]))
+
+        ex0.setSignificance(signifFit,signifCon,signifAng) #Compute and set significance
 
     #--------------------------------------------------------------------------#
     # Plot fit
