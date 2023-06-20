@@ -364,31 +364,15 @@ class Fit:
         #Fit guess or input excitations
         if (self.exttype=="boost"): self.excit.zeroPhase()
         self.update(dbg=dbg)
-#        #####
-#        self.reportFit(dbg=dbg)
-#        self.writeFit()
-#        sys.exit(0)
-#        #####
         if not skipfirst:
             self.fitAtomic(self.excit,dbg=dbg)   # Fit existing excitations
             self.update(dbg=dbg)      # Update some self.components
             self.reportFit(dbg=dbg)
-#        #####
-#        self.reportFit(dbg=dbg)
-#        self.writeFit()
-#        sys.exit(0)
-#        #####
         nex = len(self.excit.exlist)
         #Add and fit new excitations
         while len(self.excit.exlist)<maxex:
             self.excit.fix()                         # Temporarily fix all existing excitations
             nadd = self.addEx(dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
-#            #####
-#            self.update(dbg=dbg)
-#            self.reportFit(dbg=dbg)
-#            self.writeFit()
-#            sys.exit(0)
-#            #####
             if nadd==0:
                 nadd = self.addEx(dbg=dbg,singleMax=True) # Add single largest peak as excitation
             try:
@@ -407,7 +391,7 @@ class Fit:
             if self.fiterr<tol: break
         #Compute significances (and update self.excit)
         if signif: self.setSignificances()
-        return self.excit
+        return self.excit, self.fiterr
 
     #--------------------------------------------------------------------------#
     # Update ftfit and fiterr based on self.excit and report
