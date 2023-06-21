@@ -86,7 +86,7 @@ def fspectrum(ncalc,narea,ncomp,rc,T,w,wi,p,tm,a):
                         tmp    = a[icalc][iarea][n][iex]*(\
                             np.exp(-1.0j*p[iex])*t*(coscm + 1.j*sincm) -\
                             np.exp(+1.0j*p[iex])*t*(coscp + 1.j*sincp) )
-                        tmp    = [np.real(tmp),np.imag(tmp)]
+                        tmp    = np.array([np.real(tmp),np.imag(tmp)])
                         for irc in range(nrc):
                             f[icalc][iarea][n][irc][i] += tmp[rc[irc]]
     return f

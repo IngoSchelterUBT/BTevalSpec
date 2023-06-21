@@ -86,7 +86,6 @@ def writeTemplate(ofile):
                                     # (and the latter scaled for error compensation around existing lines)
         significances: False
         fiterr: 0.                  # Current fit error
-        refineSingle: False         # Refine fit by fitting all single lines again from large to small
     SPEC:
       - name:         "S1"                    #Identifier
         fix:          False                   #Set to true if the excitation shall be unchanged in a restart run
