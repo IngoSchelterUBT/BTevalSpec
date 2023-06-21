@@ -35,8 +35,9 @@ class Excitation:
         self.strengthsErr = np.array(exdict.get("strengthsErr",  [0.]*narea)) 
         #Significance
         self.signifFit    = exdict.get("signifFit"   ,   0.       ) #Significance: Can excit be replaced by other excitations
-        self.signifCon    = exdict.get("signifCon"   ,   0.       ) #Significance: Does excitation's contribution to the spectrum match the fraction of its strength to the sum of all strengths
+        self.signifErr    = exdict.get("signifErr"   ,   0.       ) #Significance: Does excitation's contribution to the spectrum match the fraction of its strength to the sum of all strengths
         self.signifAng    = exdict.get("signifAng"   ,   0.       ) #Significance: sqrt(angle between dipole and ext. excitation)
+        self.signifExc    = exdict.get("signifExc"   ,   0.       ) #Significance: Similar to signifFit but re-fit dipole moment of single excitation alone
         # Update derived (overwrite the latter)
         self.derived(errors=False)
 
@@ -63,8 +64,9 @@ class Excitation:
         exdict["strengths"   ] = [float(self.strengths   [i])     for i in range(len(self.strengths    ))]
         exdict["strengthsErr"] = [float(self.strengthsErr[i])     for i in range(len(self.strengthsErr ))]
         exdict["signifFit"   ] = float(self.signifFit)
-        exdict["signifCon"   ] = float(self.signifCon)
+        exdict["signifErr"   ] = float(self.signifErr)
         exdict["signifAng"   ] = float(self.signifAng)
+        exdict["signifExc"   ] = float(self.signifExc)
         return exdict
 
     # Updates derived components
@@ -90,10 +92,11 @@ class Excitation:
         self.fixtmp = self.fix
 
     # Set significance
-    def setSignificance(self,signifFit,signifCon,signifAng):
+    def setSignificance(self,signifFit,signifErr,signifAng,signifExc):
         self.signifFit = signifFit
-        self.signifCon = signifCon
+        self.signifErr = signifErr
         self.signifAng = signifAng
+        self.signifExc = signifExc
 
 #============================================================================#
 # Defines a list of excitations

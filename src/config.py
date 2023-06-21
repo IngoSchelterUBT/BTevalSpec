@@ -85,7 +85,8 @@ def writeTemplate(ofile):
                                     # maxima of Fourier Transform minus current fit
                                     # (and the latter scaled for error compensation around existing lines)
         significances: False
-        fiterr: 0.                  #Current fit error
+        fiterr: 0.                  # Current fit error
+        refineSingle: False         # Refine fit by fitting all single lines again from large to small
     SPEC:
       - name:         "S1"                    #Identifier
         fix:          False                   #Set to true if the excitation shall be unchanged in a restart run
@@ -100,9 +101,10 @@ def writeTemplate(ofile):
         dipoleErr:    [0.,0.,0.]              #Dipole Error (derived from dipolesErr)
         strength:     0.                      #Oscillator strength
         strengthErr:  0.                      #Strength Error (derived from dipolesErr and energyErr)
-        signifFit:    0.                      #Significance: Fit
-        signifCon:    0.                      #Significance: Contribution matching
-        signifAng:    0.                      #Significance: sqrt(cos(angle between ext polarization and dipole))
+        signifFit:    0.                      #Significanc: Fit
+        signifAng:    0.                      #Significanc: sqrt(cos(angle between ext polarization and dipole))
+        signifExc:    0.                      #Significanc: Fitting a single line again
+        signifErr:    0.                      #Significanc: From Fitting-Error
     """
     yaml = ruamel.yaml.YAML()
     code = yaml.load(conf)

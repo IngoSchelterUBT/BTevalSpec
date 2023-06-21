@@ -160,9 +160,9 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.))
+        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),refineSingle=conf.opt["Fit"].get("refineSingle",False))
         conf.opt["Fit"]["skipfirst"] = True
-        conf.opt["Fit"]["fiterr"]    = fiterr
+        conf.opt["Fit"]["fiterr"]    = float(fiterr)
 
     #--------------------------------------------------------------------------#
     # Update configuration file
