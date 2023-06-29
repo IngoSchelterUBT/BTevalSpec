@@ -43,11 +43,12 @@
 # Reset energy range to the standard pi/T interval around the current excitations' energy values
 #  ./eval.py reset
 # Fit
-#  ./eval.py [<ft opt>] [<guess opt>] [--skip] [--range=<lb,rb>] [--imag] fit [<nadd>] [<listOfExcitations>]
+#  ./eval.py [<ft opt>] [<guess opt>] [--skip] [--single] [--range=<lb,rb>] [--imag] fit [<nadd>] [<listOfExcitations>]
 #    Fit current excitations (if not --skip), add and fit <nadd> excitations one after the other, and update eval.yaml.
 #    --imag: only use imaginary part for fitting; automatically true for boost excitation.
 #    <nadd> defaults to +0
-#    <exs>  Comma-separated list of excitations to fit
+#    <exs>    Comma-separated list of excitations to fit
+#    --single: Instead of fitting all excitations at once, fit them one after the other from high to low strength 
 #    Does a prior Fourier transform if not already done.
 #    Does a prior Guess if not already done; requires a range option.
 # Error
@@ -60,6 +61,13 @@
 #  ./eval.py [--exclude=<listOfExcitations>] plot <listOfMeasures>
 #    Plots <listOfMeasure> in {pade, ft, fit, err, spectrum} with excitations
 #    --exclude=<listOfExcitations>: Excitations that are excluded from the (fitted) data
+# Fix
+#  ./eval.py [--invert] fix {<listOfExcitations>|<energyRange>}
+#    Fix the given list of excitations or energy range
+#    --invert: Do the same but inverted
+# Release
+#  ./eval.py release
+#  Un-fix all excitations
 #------------------------------------------------------------------------------#
 import numpy as np
 import sys
@@ -96,7 +104,6 @@ def main():
         config.writeTemplate(ifile)
         err.err(1,'There was no '+ifile+' file, now a template is created!')
     conf  = config.Config(ifile)
-    excit = excitations.Excitations(narea=len(conf.dipfiles[0]),ncomp=3,exlist=conf.excit)
 
     #--------------------------------------------------------------------------#
     # Read dipole moments into dip[ncalc][narea] list:
@@ -144,9 +151,14 @@ def main():
     #--------------------------------------------------------------------------#
     # Read and Fourier transform external excitation
     #--------------------------------------------------------------------------#
-    ext = extern.Extern(conf.ext.get("profile",""))
+    ext = extern.Extern(conf.ext.get("profile",""),dip[0][0].efield,[dip[icalc][0].epol for icalc in range(len(dip))])
     #if isinstance(ext,extern.Extern):
     ext.write()
+
+    #--------------------------------------------------------------------------#
+    # Initialize excitations structure
+    #--------------------------------------------------------------------------#
+    excit = excitations.Excitations(ncalc=len(conf.dipfiles),narea=len(conf.dipfiles[0]),ncomp=3,ext=ext,exlist=conf.excit)
 
     #--------------------------------------------------------------------------#
     # Create initial guess for the spectrum fit
@@ -160,9 +172,11 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.))
-        conf.opt["Fit"]["skipfirst"] = True
-        conf.opt["Fit"]["fiterr"]    = float(fiterr)
+        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False))
+        conf.opt["Fit"]["skipfirst"]    = True
+        conf.opt["Fit"]["firstsingle"]  = False
+        conf.opt["Fit"]["reset_erange"] = False
+        conf.opt["Fit"]["fiterr"]       = float(fiterr)
 
     #--------------------------------------------------------------------------#
     # Update configuration file

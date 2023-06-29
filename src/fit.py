@@ -136,7 +136,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     def newGuess(self,hf=0.05,dbg=0):
         # Init empty excitation object and arrays
-        self.excit = excitations.Excitations(narea=self.narea,ncomp=self.ncomp)
+        self.excit = excitations.Excitations(ncalc=self.ncalc,narea=self.narea,ncomp=self.ncomp,ext=self.ext)
         fdat       = self.pade
         f          = np.zeros(len(self.freqPade),dtype=float)
         # Sum up squared Pade spectra
@@ -206,7 +206,12 @@ class Fit:
         pos, prop = find_peaks(f,height=hf*np.amax(f),width=minwidth/self.dw,distance=dw/self.dw)
       
         if dbg>1:
-            print(prop)
+            print("Pade peak properties:")
+            for i in range(len(pos)):
+                print("  Peak ", i)
+                print("    energy: ",pos[i])
+                for key, val in prop.items():
+                    print("    ",key,val)
             plt.plot(freq,f)
             plt.plot(freq[pos], f[pos], "x")
             plt.show()
@@ -363,16 +368,34 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit Wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False,nsigma=2.):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False,nsigma=2.,firstsingle=False,resetErange=False):
+
+        #----------------------------------------------------------------------#
+        # Reset excitation-specific energy fit range
+        if resetErange: self.excit.resetErange(self.fwhm)
 
         #----------------------------------------------------------------------#
         # Fit guess or input excitations
         if (self.exttype=="boost"): self.excit.zeroPhase()
         self.update(dbg=dbg)
         if not skipfirst:
-            self.fitAtomic(self.excit,dbg=dbg)   # Fit existing excitations
-            self.update(dbg=dbg)      # Update some self.components
-            self.reportFit(dbg=dbg)
+            if firstsingle: #Fit single excitations
+                try:
+                    #i) Sort excitations by effective size in the spectrum (strength*eped)
+                    iexs = np.argsort([self.excit.exlist[iex].strength*np.max(np.abs([np.dot(self.excit.exlist[iex].dipole/np.linalg.norm(self.excit.exlist[iex].dipole),self.dip[icalc][0].epol/np.linalg.norm(self.dip[icalc][0].epol)) for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
+                    #ii) Fit single excitations one after the other
+                    for iex in np.flip(iexs):              #Go through excitations from large to small
+                        self.excit.fix()                   #Fix all
+                        self.excit.release(which=[iex])    #Release single excitation iex
+                        self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
+                        self.fitAtomic(self.excit,dbg=dbg) #Fix single excitation
+                        self.excit.release()               #Release all excitations
+                except:
+                    raise #self.excit is not updated in this case
+            else: #Fit all excitations at once
+                self.fitAtomic(self.excit,dbg=dbg)   # Fit existing excitations
+                self.update(dbg=dbg)      # Update some self.components
+                self.reportFit(dbg=dbg)
         nex = len(self.excit.exlist)
 
         #----------------------------------------------------------------------#
@@ -435,6 +458,7 @@ class Fit:
   
         #----------------------------------------------------------------------#
         # Compute significances (and update self.excit)
+        self.update(dbg=dbg)      # Call update again if nothing has been done here
         if signif: self.setSignificances()
         return self.excit, self.fiterr
 
@@ -506,11 +530,16 @@ class Fit:
         phaerr    = abs(exs.exlist[iex0].phase -exsN.exlist[iex0].phase )/max(abs(exsN.exlist[iex0].phase ),0.001) #0.001: Prevent "divide by zero"
         signifExc = 1.-np.linalg.norm([diperr,engerr,phaerr])/np.sqrt(3)
         strerr    = abs(exsN.exlist[iex0].strengthErr/        exsN.exlist[iex0].strength        )
-        engerr    = abs(exsN.exlist[iex0].energyErr  /        exsN.exlist[iex0].energy          )
+        #engerr    = abs(exsN.exlist[iex0].energyErr  /        exsN.exlist[iex0].energy          )
+        engerr    = abs(exsN.exlist[iex0].energyErr  /        2.*piT                            ) #Use the expected energy range as reference (2pi/T)
         phaerr    = abs(exsN.exlist[iex0].phaseErr   /max(abs(exsN.exlist[iex0].phase   ),0.001))
         signifErr = 1.-np.linalg.norm([strerr,engerr,phaerr])/np.sqrt(3)
+        w         = exsN.exlist[iex0].energy
+        wc        = 0.5*(exsN.exlist[iex0].erange[1]+exsN.exlist[iex0].erange[0])
+        dw        = 0.5*(exsN.exlist[iex0].erange[1]-exsN.exlist[iex0].erange[0])
+        signifRng = 1.-(np.abs(w-wc)/np.abs(dw))**4
 
-        exsN.exlist[iex0].setSignificance(signifFit,signifErr,signifAng,signifExc) #Compute and set significance
+        exsN.exlist[iex0].setSignificance(signifFit,signifErr,signifAng,signifExc,signifRng) #Compute and set significance
 
     #--------------------------------------------------------------------------#
     # Plot fit
@@ -526,7 +555,7 @@ class Fit:
                         plt.show()
 
     #--------------------------------------------------------------------------#
-    # Write fit functions
+    # Write fit and error functions
     #--------------------------------------------------------------------------#
     def writeFit(self):
         head = "Energy (Ry) | real(Fitf) | imag(Fitf)"
@@ -537,3 +566,11 @@ class Fit:
                 for icomp in range(self.ncomp):
                     fname = os.path.splitext(dname)[0]+'_fit_'+dip.descript[icomp]+'.dat'
                     np.savetxt(fname,np.column_stack((self.freq,self.ftfit[icalc][iarea][icomp][0],self.ftfit[icalc][iarea][icomp][1])),header=head)
+        head = "Energy (Ry) | real(Errorf) | imag(Errorf)"
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                dip   = self.dip[icalc][iarea]
+                dname = dip.dipname
+                for icomp in range(self.ncomp):
+                    fname = os.path.splitext(dname)[0]+'_err_'+dip.descript[icomp]+'.dat'
+                    np.savetxt(fname,np.column_stack((self.freq,self.ft[icalc][iarea][icomp][0]-self.ftfit[icalc][iarea][icomp][0],self.ft[icalc][iarea][icomp][1]-self.ftfit[icalc][iarea][icomp][1])),header=head)

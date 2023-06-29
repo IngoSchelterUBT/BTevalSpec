@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 # Defines an excitation
 #==============================================================================#
 class Excitation:
-    def __init__(self,narea=1,ncomp=3,exdict={},name="S",energy=0.01,erange=0.01,phase=0.01,tmod=1.,dipoles=None,fix=False):
+    def __init__(self,ncalc=1,narea=1,ncomp=3,exdict={},name="S",energy=0.01,erange=0.01,phase=0.01,tmod=1.,dipoles=None,fix=False,ext=None):
         # Book keeping
+        self.ncalc        = ncalc
         self.narea        = narea
         self.ncomp        = ncomp
         if not isinstance(dipoles,list):
@@ -16,6 +17,9 @@ class Excitation:
         self.name         = exdict.get("name"        ,   name     )
         self.fix          = exdict.get("fix"         ,   fix      ) #Global fix (by configuration file)
         self.fixtmp       = exdict.get("fix"         ,   fix      ) #Temporary fix (that can be released and is used for generating fit parameters)
+        # External
+        self.ext          = ext
+        # Fitting
         self.energy       = exdict.get("energy"      ,   energy   )
         self.energyErr    = exdict.get("energyErr"   ,   0.       )
         if isinstance(erange,float):
@@ -27,6 +31,7 @@ class Excitation:
         self.dipoles      = np.array(exdict.get("dipoles"     ,   dipoles  ))
         self.dipolesErr   = np.array(exdict.get("dipolesErr"  ,   np.zeros(self.dipoles.shape)))
         # Derived
+        self.ampl         = np.array(exdict.get("ampl"        ,  np.zeros((self.ncalc,)+self.dipoles.shape))) #Note: tuples are concatenated. (n,) makes a tuple from the int n
         self.dipole       = np.array(exdict.get("dipole"      ,  [0.]*ncomp))
         self.dipoleErr    = np.array(exdict.get("dipoleErr"   ,  [0.]*ncomp))
         self.strength     =          exdict.get("strength"    ,   0.          )
@@ -38,6 +43,7 @@ class Excitation:
         self.signifErr    = exdict.get("signifErr"   ,   0.       ) #Significance: Does excitation's contribution to the spectrum match the fraction of its strength to the sum of all strengths
         self.signifAng    = exdict.get("signifAng"   ,   0.       ) #Significance: sqrt(angle between dipole and ext. excitation)
         self.signifExc    = exdict.get("signifExc"   ,   0.       ) #Significance: Similar to signifFit but re-fit dipole moment of single excitation alone
+        self.signifRng    = exdict.get("signifRng"   ,   0.       ) #Significance: close to 1 if energy is close to the center of the energy range
         # Update derived (overwrite the latter)
         self.derived(errors=False)
 
@@ -49,24 +55,26 @@ class Excitation:
         exdict = {}
         exdict["name"        ] = self.name
         exdict["fix"         ] = self.fix
-        exdict["energy"      ] = float(self.energy) #Explicit casting to float is necesary for ruaml.dump
-        exdict["energyErr"   ] = float(self.energyErr) #Explicit casting to float is necesary for ruaml.dump
-        exdict["erange"      ] = [float(self.erange[i]) for i in range(2)]
-        exdict["phase"       ] = float(self.phase)
-        exdict["phaseErr"    ] = float(self.phaseErr)
-        exdict["tmod"        ] = float(self.tmod)
-        exdict["dipoles"     ] = [[float(self.dipoles    [i][j])  for j in range(len(self.dipoles   [i]))] for i in range(len(self.dipoles   ))]
-        exdict["dipolesErr"  ] = [[float(self.dipolesErr [i][j])  for j in range(len(self.dipolesErr[i]))] for i in range(len(self.dipolesErr))]
-        exdict["dipole"      ] = [ float(self.dipole     [i])     for i in range(len(self.dipole       ))]
-        exdict["dipoleErr"   ] = [ float(self.dipoleErr  [i])     for i in range(len(self.dipoleErr    ))]
-        exdict["strength"    ] = float(self.strength)
-        exdict["strengthErr" ] = float(self.strengthErr)
-        exdict["strengths"   ] = [float(self.strengths   [i])     for i in range(len(self.strengths    ))]
-        exdict["strengthsErr"] = [float(self.strengthsErr[i])     for i in range(len(self.strengthsErr ))]
-        exdict["signifFit"   ] = float(self.signifFit)
-        exdict["signifErr"   ] = float(self.signifErr)
-        exdict["signifAng"   ] = float(self.signifAng)
-        exdict["signifExc"   ] = float(self.signifExc)
+        exdict["energy"      ] =    float(self.energy) #Explicit casting to float is necesary for ruaml.dump
+        exdict["energyErr"   ] =    float(self.energyErr) #Explicit casting to float is necesary for ruaml.dump
+        exdict["erange"      ] = [  float(self.erange[i]) for i in range(2)]
+        exdict["phase"       ] =    float(self.phase)
+        exdict["phaseErr"    ] =    float(self.phaseErr)
+        exdict["tmod"        ] =    float(self.tmod)
+        exdict["dipoles"     ] = [[ float(self.dipoles    [i][j])    for j in range(len(self.dipoles   [i]))] for i in range(len(self.dipoles   ))]
+        exdict["dipolesErr"  ] = [[ float(self.dipolesErr [i][j])    for j in range(len(self.dipolesErr[i]))] for i in range(len(self.dipolesErr))]
+        exdict["ampl"        ] = [[[float(self.ampl       [i][j][k]) for k in range(len(self.ampl[i][j]   ))] for j in range(len(self.ampl[i]   ))] for i in range(len(self.ampl))]
+        exdict["dipole"      ] = [  float(self.dipole     [i])       for i in range(len(self.dipole       ))]
+        exdict["dipoleErr"   ] = [  float(self.dipoleErr  [i])       for i in range(len(self.dipoleErr    ))]
+        exdict["strength"    ] =    float(self.strength)
+        exdict["strengthErr" ] =    float(self.strengthErr)
+        exdict["strengths"   ] = [  float(self.strengths   [i])     for i in range(len(self.strengths    ))]
+        exdict["strengthsErr"] = [  float(self.strengthsErr[i])     for i in range(len(self.strengthsErr ))]
+        exdict["signifFit"   ] =    float(self.signifFit)
+        exdict["signifErr"   ] =    float(self.signifErr)
+        exdict["signifAng"   ] =    float(self.signifAng)
+        exdict["signifExc"   ] =    float(self.signifExc)
+        exdict["signifRng"   ] =    float(self.signifRng)
         return exdict
 
     # Updates derived components
@@ -78,6 +86,10 @@ class Excitation:
         self.dipole       = np.array([sum([self.dipoles[iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)])
         self.strength     =  2.*m/(3.*e2*hbar)*self.energy*np.linalg.norm(self.dipole        )**2
         self.strengths    = [2.*m/(3.*e2*hbar)*self.energy*np.linalg.norm(self.dipoles[iarea])**2      for iarea in range(self.narea)]
+        Hw = self.ext.getVal([self.energy])[0]
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                self.ampl[icalc][iarea] = 1./hbar * self.ext.efield * np.dot(self.ext.epol[icalc],self.dipole) * np.abs(Hw) * self.dipoles[iarea]
         if errors:
             self.dipoleErr    = np.array([np.sqrt(sum([self.dipolesErr[iarea][icomp]**2 for iarea in range(self.narea)])) for icomp in range(self.ncomp)])
             self.strengthErr  =  2.*m/(3.*e2*hbar)*np.sqrt((self.energyErr*self.energy*np.linalg.norm(self.dipole        )**2)**2 + (2.*self.energy*np.dot(self.dipole        ,self.dipoleErr        ))**2)
@@ -91,21 +103,28 @@ class Excitation:
     def releaseMe(self):
         self.fixtmp = self.fix
 
+    # Reset erange
+    def resetErange(self,erange=0.01):
+        self.erange = np.array([self.energy-erange,self.energy+erange])
+
     # Set significance
-    def setSignificance(self,signifFit,signifErr,signifAng,signifExc):
+    def setSignificance(self,signifFit,signifErr,signifAng,signifExc,signifRng):
         self.signifFit = signifFit
         self.signifErr = signifErr
         self.signifAng = signifAng
         self.signifExc = signifExc
+        self.signifRng = signifRng
 
 #============================================================================#
 # Defines a list of excitations
 #============================================================================#
 class Excitations:
-    def __init__(self,narea,ncomp,exlist=None):
+    def __init__(self,ncalc,narea,ncomp,ext,exlist=None):
         self.exlist = []
+        self.ncalc  = ncalc
         self.narea  = narea
         self.ncomp  = ncomp
+        self.ext    = ext
         if isinstance(exlist,list):
             for ex in exlist:
                 if isinstance(ex,Excitation):
@@ -125,7 +144,7 @@ class Excitations:
 #            self.exlist.append(Excitation(narea=self.narea,ncomp=self.ncomp,exdict=exdict))
 #        else:
 #            self.exlist.append(Excitation(narea=self.narea,ncomp=self.ncomp,name=name,energy=energy,erange=erange,phase=phase,tmod=tmod,dipoles=dipoles,fix=fix))
-        ex = Excitation(narea=self.narea,ncomp=self.ncomp,exdict=exdict,name=name,energy=energy,erange=erange,phase=phase,tmod=tmod,dipoles=dipoles,fix=fix)
+        ex = Excitation(ncalc=self.ncalc,narea=self.narea,ncomp=self.ncomp,exdict=exdict,name=name,energy=energy,erange=erange,phase=phase,tmod=tmod,dipoles=dipoles,fix=fix,ext=self.ext)
         self.exlist.append(ex)
         if sort: self.sort()
         #return self.exlist.index(ex)
@@ -134,7 +153,7 @@ class Excitations:
     # Copy excitations object (potentially remove excitations)
     #-------------------------------------------------------------------------
     def copy(self):
-        return Excitations(self.narea,self.ncomp,exlist=self.exlist)
+        return Excitations(self.ncalc,self.narea,self.ncomp,self.ext,exlist=self.exlist)
 
     #-------------------------------------------------------------------------
     # Remove excitation by index or name
@@ -245,6 +264,13 @@ class Excitations:
         for ex in self.exlist:
             if not ex.fixtmp: nfree +=1
         return nfree
+
+    #-------------------------------------------------------------------------
+    # Reset erange
+    #-------------------------------------------------------------------------
+    def resetErange(self,erange=0.01):
+        for ex in self.exlist:
+            ex.resetErange(erange=erange)
 
     #-------------------------------------------------------------------------
     # Restrict range of energy parameter

@@ -64,6 +64,7 @@ def writeTemplate(ofile):
       Fit:
         calc: True                  # Turn fit on/off
         skipfirst: False            # Skip first fit of existing excitations
+        firstsingle: False          # If not skipfirst: Fit input excitations all at once (False) or one after the other (by strength) (True)
         guess: True                 # Turn guess for fit via Pade Approximation on/off
         plot_result: True           # If True: The fit results are plotted without fitting again
         gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.
@@ -86,6 +87,7 @@ def writeTemplate(ofile):
                                     # (and the latter scaled for error compensation around existing lines)
         significances: False
         fiterr: 0.                  # Current fit error
+        reset_erange: False         # Reset the excitation-specific energy fit range around the current energy
     SPEC:
       - name:         "S1"                    #Identifier
         fix:          False                   #Set to true if the excitation shall be unchanged in a restart run
