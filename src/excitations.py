@@ -32,6 +32,7 @@ class Excitation:
         self.dipolesErr   = np.array(exdict.get("dipolesErr"  ,   np.zeros(self.dipoles.shape)))
         # Derived
         self.ampl         = np.array(exdict.get("ampl"        ,  np.zeros((self.ncalc,)+self.dipoles.shape))) #Note: tuples are concatenated. (n,) makes a tuple from the int n
+        self.amplErr      = np.array(exdict.get("amplErr"     ,  np.zeros((self.ncalc,)+self.dipoles.shape))) #Note: -"-
         self.dipole       = np.array(exdict.get("dipole"      ,  [0.]*ncomp))
         self.dipoleErr    = np.array(exdict.get("dipoleErr"   ,  [0.]*ncomp))
         self.strength     =          exdict.get("strength"    ,   0.          )
@@ -63,7 +64,8 @@ class Excitation:
         exdict["tmod"        ] =    float(self.tmod)
         exdict["dipoles"     ] = [[ float(self.dipoles    [i][j])    for j in range(len(self.dipoles   [i]))] for i in range(len(self.dipoles   ))]
         exdict["dipolesErr"  ] = [[ float(self.dipolesErr [i][j])    for j in range(len(self.dipolesErr[i]))] for i in range(len(self.dipolesErr))]
-        exdict["ampl"        ] = [[[float(self.ampl       [i][j][k]) for k in range(len(self.ampl[i][j]   ))] for j in range(len(self.ampl[i]   ))] for i in range(len(self.ampl))]
+        exdict["ampl"        ] = [[[float(self.ampl       [i][j][k]) for k in range(len(self.ampl   [i][j]))] for j in range(len(self.ampl   [i]))] for i in range(len(self.ampl   ))]
+        exdict["amplErr"     ] = [[[float(self.amplErr    [i][j][k]) for k in range(len(self.amplErr[i][j]))] for j in range(len(self.amplErr[i]))] for i in range(len(self.amplErr))]
         exdict["dipole"      ] = [  float(self.dipole     [i])       for i in range(len(self.dipole       ))]
         exdict["dipoleErr"   ] = [  float(self.dipoleErr  [i])       for i in range(len(self.dipoleErr    ))]
         exdict["strength"    ] =    float(self.strength)
@@ -89,7 +91,8 @@ class Excitation:
         Hw = self.ext.getVal([self.energy])[0]
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
-                self.ampl[icalc][iarea] = 1./hbar * self.ext.efield * np.dot(self.ext.epol[icalc],self.dipole) * np.abs(Hw) * self.dipoles[iarea]
+                self.ampl   [icalc][iarea] = 1./hbar * self.ext.efield * np.abs(Hw) *          np.dot(self.ext.epol[icalc],self.dipole   ) * self.dipoles[iarea]
+                self.amplErr[icalc][iarea] = 1./hbar * self.ext.efield * np.abs(Hw) * np.sqrt((np.dot(self.ext.epol[icalc],self.dipoleErr) * self.dipoles[iarea])**2 + (np.dot(self.ext.epol[icalc],self.dipole) * self.dipolesErr[iarea])**2)
         if errors:
             self.dipoleErr    = np.array([np.sqrt(sum([self.dipolesErr[iarea][icomp]**2 for iarea in range(self.narea)])) for icomp in range(self.ncomp)])
             self.strengthErr  =  2.*m/(3.*e2*hbar)*np.sqrt((self.energyErr*self.energy*np.linalg.norm(self.dipole        )**2)**2 + (2.*self.energy*np.dot(self.dipole        ,self.dipoleErr        ))**2)
@@ -306,6 +309,24 @@ class Excitations:
             print("  Dipoles per area:")
             for iarea in range(self.narea):
                 print("      ", iarea, ex.dipoles[iarea])
+
+    #-------------------------------------------------------------------------
+    # Create amplitude files
+    #-------------------------------------------------------------------------
+    def excitFiles(self):
+        with open(f"excit.dat","w") as fh:
+            fh.write("# energy | strength | energyErr | strengthErr | signifFit | signifAng | signifExc | signifErr | signifRng\n")
+            for iex, ex in enumerate(self.exlist):
+                fh.write(f"{ex.energy:12.5e} {ex.energyErr:12.5e} {ex.strength:12.5e} {ex.strengthErr:12.5e} {ex.signifFit:12.5e} {ex.signifAng:12.5e} {ex.signifExc:12.5e} {ex.signifErr:12.5e} {ex.signifRng:12.5e}\n")
+
+        xyz = ["x","y","z"]
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                for icomp in range(self.ncomp):
+                    with open(f"ampl_{icalc+1:1d}_{str(iarea+1).zfill(2)}_{xyz[icomp]}.dat","w") as fh:
+                        fh.write("# energy | energy err | amplitude | amplitude error\n")
+                        for iex, ex in enumerate(self.exlist):
+                            fh.write(f"{ex.energy:12.5e} {ex.energyErr:12.5e} {ex.ampl[icalc][iarea][icomp]:12.5e} {ex.amplErr[icalc][iarea][icomp]:12.5e}\n")
 
     #-------------------------------------------------------------------------
     # Return Lorentz function as well as energies, strengths, and labels

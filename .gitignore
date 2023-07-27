@@ -5,4 +5,7 @@ test/*/*ft*.dat
 test/*/*pw*.dat
 test/*/*pade*.dat
 test/*/*fit*.dat
+test/*/*err*.dat
+test/*/*sca*.dat
+test/*/*scaerr*.dat
 *~

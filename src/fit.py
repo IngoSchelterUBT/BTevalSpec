@@ -69,6 +69,7 @@ class Fit:
         self.ftrcnorm = np.linalg.norm(self.ftrc.flatten()) #Use ftrc as reference
         self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
         self.fiterr   = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
+        self.scal     = self.getScaling(self.excit,dbg=0,wref=1.)
         self.breakMinimization = False
         self.runningError = 1000000.
 
@@ -294,37 +295,41 @@ class Fit:
         excit.updateFromParam(fitres.params)
 
     #--------------------------------------------------------------------------#
-    # Add new excitation
+    # Return error-scaling function
     #--------------------------------------------------------------------------#
-    def addEx(self,dbg=0,wref=1.,singleMax=False,nsigma=2.):
-        fdat   = self.ftrc   
-        ffit   = self.ftfitrc
-        scal   = np.full(self.ftrc.shape,1.) #Fill with 1
+    def getScaling(self,excit,dbg=0,wref=1.):
         T      = self.tprop
         T2     = T*T
-
+        scal   = np.full((self.ncalc,self.narea,self.ncomp,self.Nf),1.) #Fill with 1
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
-                    #for irc in range(2):
-                    for irc in range(self.nrc):
-                        for i in range(self.Nf):
-                            w = self.freq[i]
-                            for iex, ex in enumerate(self.excit.exlist):
-                                dw   = w-ex.energy
-                                dw2  = dw*dw
-                                eped = abs(np.dot(ex.dipole/np.linalg.norm(ex.dipole),self.dip[icalc][0].epol/np.linalg.norm(self.dip[icalc][0].epol)))
-                                #eped = 1.
-                                f    = ex.strength
-                                nmu  = np.abs(ex.dipoles[iarea][icomp]/np.linalg.norm(ex.dipole))
-                                scal[icalc][iarea][icomp][irc][i] += wref*T*f*eped*nmu/np.sqrt(T2*dw2+1)
+                    for i in range(self.Nf):
+                        w = self.freq[i]
+                        for iex, ex in enumerate(excit.exlist):
+                            dw   = w-ex.energy
+                            dw2  = dw*dw
+                            eped = abs(np.dot(ex.dipole/np.linalg.norm(ex.dipole),self.dip[icalc][0].epol/np.linalg.norm(self.dip[icalc][0].epol)))
+                            #eped = 1.
+                            f    = ex.strength
+                            nmu  = np.abs(ex.dipoles[iarea][icomp]/np.linalg.norm(ex.dipole))
+                            scal[icalc][iarea][icomp][i] += wref*T*f*eped*nmu/np.sqrt(T2*dw2+1)
+        return scal
+
+    #--------------------------------------------------------------------------#
+    # Add new excitation
+    #--------------------------------------------------------------------------#
+    def addEx(self,dbg=0,singleMax=False,nsigma=2.):
+        fdat   = self.ftrc   
+        ffit   = self.ftfitrc
+        scal   = self.scal
 
         obj = np.zeros(self.Nf)
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
                     for irc in range(self.nrc):
-                        obj += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp][irc])**2
+                        obj += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp])**2
         obj = np.sqrt(obj)
         pos, prop = find_peaks(obj)
 
@@ -469,7 +474,8 @@ class Fit:
         self.ftfit   = self.getFitFunc(self.excit)
         self.pwfit   = self.getPw     (self.ftfit)
         self.ftfitrc = self.getFitFunc(self.excit,self.rc)
-        self.fiterr  = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
+        self.fiterr  = self.getError  (self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
+        self.scal    = self.getScaling(self.excit,dbg=dbg,wref=1.)
 
     #--------------------------------------------------------------------------#
     # Report fit
@@ -574,3 +580,19 @@ class Fit:
                 for icomp in range(self.ncomp):
                     fname = os.path.splitext(dname)[0]+'_err_'+dip.descript[icomp]+'.dat'
                     np.savetxt(fname,np.column_stack((self.freq,self.ft[icalc][iarea][icomp][0]-self.ftfit[icalc][iarea][icomp][0],self.ft[icalc][iarea][icomp][1]-self.ftfit[icalc][iarea][icomp][1])),header=head)
+        head = "Energy (Ry) | real(scalErrorf) | imag(scalErrorf)"
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                dip   = self.dip[icalc][iarea]
+                dname = dip.dipname
+                for icomp in range(self.ncomp):
+                    fname = os.path.splitext(dname)[0]+'_scaerr_'+dip.descript[icomp]+'.dat'
+                    np.savetxt(fname,np.column_stack((self.freq,(self.ft[icalc][iarea][icomp][0]-self.ftfit[icalc][iarea][icomp][0])/self.scal[icalc][iarea][icomp],(self.ft[icalc][iarea][icomp][1]-self.ftfit[icalc][iarea][icomp][1])/self.scal[icalc][iarea][icomp])),header=head)
+        head = "Energy (Ry) | scal"
+        for icalc in range(self.ncalc):
+            for iarea in range(self.narea):
+                dip   = self.dip[icalc][iarea]
+                dname = dip.dipname
+                for icomp in range(self.ncomp):
+                    fname = os.path.splitext(dname)[0]+'_sca_'+dip.descript[icomp]+'.dat'
+                    np.savetxt(fname,np.column_stack((self.freq,self.scal[icalc][iarea][icomp])),header=head)
