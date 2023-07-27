@@ -313,20 +313,20 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Create amplitude files
     #-------------------------------------------------------------------------
-    def excitFiles(self):
+    def excitFiles(self,tprop):
         with open(f"excit.dat","w") as fh:
             fh.write("# energy | strength | energyErr | strengthErr | signifFit | signifAng | signifExc | signifErr | signifRng\n")
             for iex, ex in enumerate(self.exlist):
-                fh.write(f"{ex.energy:12.5e} {ex.energyErr:12.5e} {ex.strength:12.5e} {ex.strengthErr:12.5e} {ex.signifFit:12.5e} {ex.signifAng:12.5e} {ex.signifExc:12.5e} {ex.signifErr:12.5e} {ex.signifRng:12.5e}\n")
+                fh.write(f"{ex.energy:12.5e} {ex.strength:12.5e} {ex.energyErr:12.5e} {ex.strengthErr:12.5e} {ex.signifFit:12.5e} {ex.signifAng:12.5e} {ex.signifExc:12.5e} {ex.signifErr:12.5e} {ex.signifRng:12.5e}\n")
 
         xyz = ["x","y","z"]
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
                     with open(f"ampl_{icalc+1:1d}_{str(iarea+1).zfill(2)}_{xyz[icomp]}.dat","w") as fh:
-                        fh.write("# energy | energy err | amplitude | amplitude error\n")
+                        fh.write("# energy | amplitude | energy err | amplitude error\n")
                         for iex, ex in enumerate(self.exlist):
-                            fh.write(f"{ex.energy:12.5e} {ex.energyErr:12.5e} {ex.ampl[icalc][iarea][icomp]:12.5e} {ex.amplErr[icalc][iarea][icomp]:12.5e}\n")
+                            fh.write(f"{ex.energy:12.5e} {ex.ampl[icalc][iarea][icomp]*tprop:12.5e} {ex.energyErr:12.5e} {ex.amplErr[icalc][iarea][icomp]:12.5e}\n")
 
     #-------------------------------------------------------------------------
     # Return Lorentz function as well as energies, strengths, and labels

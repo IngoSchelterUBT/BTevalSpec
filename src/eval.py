@@ -188,7 +188,7 @@ def main():
     # Write Fit files
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]: dfit.writeFit()
-    excit.excitFiles()
+    excit.excitFiles(dip[0][0].tprop)
 
     #--------------------------------------------------------------------------#
     # Plot spectrum
