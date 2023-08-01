@@ -387,7 +387,7 @@ class Fit:
             if firstsingle: #Fit single excitations
                 try:
                     #i) Sort excitations by effective size in the spectrum (strength*eped)
-                    iexs = np.argsort([self.excit.exlist[iex].strength*np.max(np.abs([np.dot(self.excit.exlist[iex].dipole/np.linalg.norm(self.excit.exlist[iex].dipole),self.dip[icalc][0].epol/np.linalg.norm(self.dip[icalc][0].epol)) for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
+                    iexs = np.argsort([np.sqrt(sum([self.excit.exlist[iex].strengthEped[icalc]**2 for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
                     #ii) Fit single excitations one after the other
                     for iex in np.flip(iexs):              #Go through excitations from large to small
                         self.excit.fix()                   #Fix all
@@ -427,7 +427,7 @@ class Fit:
             # Fit single excitations that still have zero error (those were not fitted properly, maybe due to their low weight)
             try:
                 #i) Sort excitations by effective size in the spectrum (strength*eped)
-                iexs = np.argsort([self.excit.exlist[iex].strength*np.max(np.abs([np.dot(self.excit.exlist[iex].dipole/np.linalg.norm(self.excit.exlist[iex].dipole),self.dip[icalc][0].epol/np.linalg.norm(self.dip[icalc][0].epol)) for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
+                iexs = np.argsort([np.sqrt(sum([self.excit.exlist[iex].strengthEped[icalc]**2 for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
                 #ii) Fit single excitations one after the other
                 for iex in np.flip(iexs):              #Go through excitations from large to small
                     if self.excit.exlist[iex].strengthErr > 0.: continue
