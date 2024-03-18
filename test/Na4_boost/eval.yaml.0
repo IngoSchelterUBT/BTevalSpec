@@ -16,6 +16,7 @@ OPT:
   Fit:
     calc: true                      # Turn fit on/off
     skipfirst: false                # Skip first fit of existing excitations
+    firstsingle: false
     guess: true                     # Turn guess for fit via Pade Approximation on/off
     plot_result: false              # If True: The fit results are plotted without fitting again
     gnuplot_spectrum: false         # If True: A gnuplot script for plotting the resulting spectrum is created.
@@ -32,3 +33,4 @@ OPT:
     range:                          # Range of spectrum which should be fitted in Ry
     - 0.10
     - 0.40
+    significances: true

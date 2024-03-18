@@ -1,6 +1,6 @@
 reset
 
-FILE='eval.yaml.1.res.excit.dat'
+FILE='eval.yaml.6.res.excit.dat'
 
 set xlabel "Sj"
 
