@@ -13,6 +13,7 @@
 #  -> Note this automatically
 #  -> Set skipfirst to false
 #  -> Make a proper guess for the dipole moments and phase
+# - Allow evaluation from multiple calculations (in this case, the dipole-moment direction can differ)
 #
 # Call
 #
@@ -151,7 +152,7 @@ def main():
     #--------------------------------------------------------------------------#
     # Read and Fourier transform external excitation
     #--------------------------------------------------------------------------#
-    ext = extern.Extern(conf.ext.get("profile",""),dip[0][0].efield,[dip[icalc][0].epol for icalc in range(len(dip))])
+    ext = extern.Extern(conf.ext.get("profile",""),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
     #if isinstance(ext,extern.Extern):
     ext.write()
 
@@ -172,7 +173,7 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False))
+        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",True))
         conf.opt["Fit"]["skipfirst"]    = True
         conf.opt["Fit"]["firstsingle"]  = False
         conf.opt["Fit"]["reset_erange"] = False

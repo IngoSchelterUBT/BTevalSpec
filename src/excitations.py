@@ -1,6 +1,7 @@
 import re
 import numpy as np
 from lmfit import Parameters
+import extern
 import matplotlib.pyplot as plt
 #==============================================================================#
 # Defines an excitation
@@ -217,11 +218,14 @@ class Excitations:
     # Generate lm fit parameters
     # Uses the fixtmp variable instead of fix
     #-------------------------------------------------------------------------
-    def toParams(self,noEnergy=False,noPhase=False,noTmod=False):
+    def toParams(self,ext,noEnergy=False,noPhase=False,noTmod=False):
         params = Parameters()
         for iex, ex in enumerate(self.exlist):
             params.add(f"w{iex}",vary=not ex.fixtmp and not noEnergy,value=ex.energy,min=ex.erange[0],max=ex.erange[1])
-            params.add(f"p{iex}",vary=not ex.fixtmp and not noPhase ,value=ex.phase )
+            if not noPhase: #Otherwise, the phase is taken from the external-field profile
+                phasemm = np.angle(ext.getVal(ex.erange))%(2*np.pi)
+                if phasemm[0]>phasemm[1]: phasemm[1] += 2.*np.pi
+                params.add(f"p{iex}",vary=not ex.fixtmp,value=ex.phase,min=phasemm[0],max=phasemm[1])
             params.add(f"t{iex}",vary=not ex.fixtmp and not noTmod  ,value=ex.tmod  )
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
@@ -231,15 +235,19 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Update from fit parameters
     #-------------------------------------------------------------------------
-    def updateFromParam(self,params,errors=True):
+    def updateFromParam(self,params,noPhase,ext,errors=True):
         for iex, ex in enumerate(self.exlist):
             if ex.fixtmp: continue #Continue if values of this excitation need no update
             ex.energy    = params[f"w{iex}"].value
             if errors and isinstance(params[f"w{iex}"].stderr,float):
                 ex.energyErr = params[f"w{iex}"].stderr
-            ex.phase     = params[f"p{iex}"].value
-            if errors and isinstance(params[f"p{iex}"].stderr,float):
-                ex.phaseErr  = params[f"p{iex}"].stderr
+            if noPhase:
+                ex.phase     = np.angle(ext.getVal([ex.energy])[0])%(2*np.pi)
+                ex.phaseErr  = 0.
+            else:
+                ex.phase     = params[f"p{iex}"].value
+                if errors and isinstance(params[f"p{iex}"].stderr,float):
+                    ex.phaseErr  = params[f"p{iex}"].stderr
             ex.tmod      = params[f"t{iex}"].value
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):

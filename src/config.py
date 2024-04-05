@@ -65,17 +65,17 @@ def writeTemplate(ofile):
         calc: True                  # Turn fit on/off
         skipfirst: False            # Skip first fit of existing excitations
         firstsingle: False          # If not skipfirst: Fit input excitations all at once (False) or one after the other (by strength) (True)
+        fitphase: True              # Use the phase as a fit parameter (or get it from the external profile alone)
         guess: True                 # Turn guess for fit via Pade Approximation on/off
         plot_result: True           # If True: The fit results are plotted without fitting again
         gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.
         dat_spectrum: False         # If True: A .dat file for the spectrum is created
         guess_thres: 0.05           # Relative height of line in Pade Approximation compared to highest line 
                                     #   which should be identified as a line for fitting (only relevent, if 
-                                    #   fit_guess == True).
+                                    #   guess == True).
         relerr_crit: 0.05           # Criterium for relative error between fit and data (only relevant, if 
-                                    #   fit_guess == True).
-        max_excit: 10               # Maximum numer of iterations used to reach relative error between fit and 
-                                    #   data (only relevant, if fit_guess == True)
+                                    #   guess == True).
+        max_excit: 10               # Maximum number of iterations used to reach relative error between fit and data
         relspacing_lines: 0.01      # Threshold for relative error between two lines which should be identified 
                                     #   as one in fit of trace (only relevant, if number of dipole files == 3).
         range:                      # Range of spectrum which should be fitted in Ry

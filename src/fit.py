@@ -12,6 +12,7 @@ from scipy.signal import find_peaks
 import errorHandler as err
 import dipole
 import excitations
+import extern
 from mathtools import fspectrum #, butter_lowpass_filter
 
 class Fit:
@@ -164,11 +165,8 @@ class Fit:
     def guessExcit(self,energy):
         # Get the excitation strength/phase at that energy
         Hw    = self.ext.getVal([energy])[0]
-        # Set some abbreviations (only the polarization may differ between different calculations)
-        t0    = self.dip[0][0].t0
-        # Approx. phase: phi = phi_ext - t0*energy (the latter because dipole moment time frame is shifted by t0=excitation period)
-        #phase = 0. if self.exttype=="boost" else (np.angle(Hw) - energy*t0)%(2.*np.pi)
-        phase = (np.angle(Hw) - energy*t0)%(2.*np.pi)
+        #phase = 0. if self.exttype=="boost" else np.angle(Hw)%(2.*np.pi)
+        phase = np.angle(Hw)%(2.*np.pi)
         # Get the closest index in the FT array
         idx = int(np.rint((energy-self.freq[0])/self.dw))
         # Find the calculation for which the excitation's peak is largest
@@ -223,9 +221,10 @@ class Fit:
     # Fit objective
     # nfree is not used here but required since fitInter needs it
     #--------------------------------------------------------------------------#
-    def fitObj(self,params,excit=None,dbg=0,breakmod=None,nfree=0):
+    def fitObj(self,params,excit=None,noPhase=False,ext=None,dbg=0,breakmod=None,nfree=0):
         if not isinstance(excit,excitations.Excitations): excit = self.excit
-        excit.updateFromParam(params,errors=False) #fit errors are not known, yet
+        if not isinstance(ext  ,     extern.Extern     ): ext   = self.ext
+        excit.updateFromParam(params,noPhase,ext,errors=False) #fit errors are not known, yet
         try:
             ffit = self.getFitFunc(excit,self.rc,freq=self.freqLoc).flatten()
         except:
@@ -240,7 +239,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit inter - is called in every minimizer iteration
     #--------------------------------------------------------------------------#
-    def fitInter(self,params,iter,resid,excit=None,dbg=0,breakmod=5,nfree=0):
+    def fitInter(self,params,iter,resid,excit=None,noPhase=False,ext=None,dbg=0,breakmod=5,nfree=0):
         if self.breakMinimization: return
         currentError = np.sum(np.abs(resid))/self.ftrcnormLoc
         if iter==-1:
@@ -261,9 +260,10 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit Atomic (and update excit)
     #--------------------------------------------------------------------------#
-    def fitAtomic(self,excit,dbg=0,breakmod=5,fitrange=None):
-        params = excit.toParams(noPhase=self.exttype=="boost",noTmod=True) #fix phase if boost and fix time always
-        #params = excit.toParams() #free phases and time modifier
+    def fitAtomic(self,excit,dbg=0,breakmod=5,fitrange=None,noPhase=False):
+        noPhase = noPhase or self.exttype=="boost"
+        params = excit.toParams(self.ext,noPhase=noPhase,noTmod=True) #fix phase if boost and fix time always
+        #params = excit.toParams(self.ext) #free phases and time modifier
         nfree  = excit.countFree()
         if isinstance(fitrange,list):
             self.freqLoc = np.array([self.freq[i] for i in range(len(self.freq)) if self.freq[i]>=fitrange[0] and self.freq[i]<=self.fitrange[1]])
@@ -284,7 +284,7 @@ class Fit:
         self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
 
         try:
-            fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"excit":excit,"dbg":dbg,"breakmod":breakmod,"nfree":nfree})
+            fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"excit":excit,"noPhase":noPhase,"ext":self.ext,"dbg":dbg,"breakmod":breakmod,"nfree":nfree})
         except:
             raise #self.excit is not updated in this case
 
@@ -292,7 +292,7 @@ class Fit:
             params = self.bestParams
             self.breakMinimization = False
         if dbg>0: print(fit_report(fitres))
-        excit.updateFromParam(fitres.params)
+        excit.updateFromParam(fitres.params,noPhase,self.ext)
 
     #--------------------------------------------------------------------------#
     # Return error-scaling function
@@ -373,7 +373,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit Wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False,nsigma=2.,firstsingle=False,resetErange=False):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
 
         #----------------------------------------------------------------------#
         # Reset excitation-specific energy fit range
@@ -393,12 +393,12 @@ class Fit:
                         self.excit.fix()                   #Fix all
                         self.excit.release(which=[iex])    #Release single excitation iex
                         self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
-                        self.fitAtomic(self.excit,dbg=dbg) #Fix single excitation
+                        self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) #Fix single excitation
                         self.excit.release()               #Release all excitations
                 except:
                     raise #self.excit is not updated in this case
             else: #Fit all excitations at once
-                self.fitAtomic(self.excit,dbg=dbg)   # Fit existing excitations
+                self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit existing excitations
                 self.update(dbg=dbg)      # Update some self.components
                 self.reportFit(dbg=dbg)
         nex = len(self.excit.exlist)
@@ -417,7 +417,7 @@ class Fit:
             #------------------------------------------------------------------#
             # Fit all new ones (all at once)
             try:
-                self.fitAtomic(self.excit,dbg=dbg) # Fit new excitations alone
+                self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) # Fit new excitations alone
                 self.update(dbg=dbg)               # Update some self.components
                 self.excit.release()               # Release all temporarily fixed excitations
             except:
@@ -434,7 +434,7 @@ class Fit:
                     self.excit.fix()                   #Fix all
                     self.excit.release(which=[iex])    #Release single excitation iex
                     self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
-                    self.fitAtomic(self.excit,dbg=dbg) #Fix single excitation
+                    self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) #Fix single excitation
                     self.excit.release()               #Release all excitations
             except:
                 raise #self.excit is not updated in this case
@@ -450,7 +450,7 @@ class Fit:
             #------------------------------------------------------------------#
             # Fit all excitations
             try:
-                self.fitAtomic(self.excit,dbg=dbg)   # Fit all non-permanently fixed excitations
+                self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit all non-permanently fixed excitations
                 self.update(dbg=dbg)      # Update some self.components
             except:
                 raise #self.excit is not updated in this case
@@ -464,7 +464,7 @@ class Fit:
         #----------------------------------------------------------------------#
         # Compute significances (and update self.excit)
         self.update(dbg=dbg)      # Call update again if nothing has been done here
-        if signif: self.setSignificances()
+        if signif: self.setSignificances(noPhase=not fitphase)
         return self.excit, self.fiterr
 
     #--------------------------------------------------------------------------#
@@ -491,15 +491,15 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Compute excitation significances
     #--------------------------------------------------------------------------#
-    def setSignificances(self):
+    def setSignificances(self,noPhase=False):
         sN = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
         for iex, ex in enumerate(self.excit.exlist):
-            self.setSignificance(self.excit,iex,sN=sN,rc=self.rc)
+            self.setSignificance(self.excit,iex,sN=sN,rc=self.rc,noPhase=noPhase)
 
     #--------------------------------------------------------------------------#
     # Compute single significance
     #--------------------------------------------------------------------------#
-    def setSignificance(self,exsN,iex0,sN=0.,rc=[0,1]):
+    def setSignificance(self,exsN,iex0,sN=0.,rc=[0,1],noPhase=False):
         exs = exsN.copy()                                                 #Get a copy of the excitations object
         piT = np.pi/self.tprop
         exs.restrict(erange=piT,neigh=True)                               #Restrict range of energy parameter before removing the excitation to ensure that a removed large excitation is not filled by a smaller one (leading to an erroneous low significance)
@@ -510,14 +510,14 @@ class Fit:
         if not sN>0.:
             ffitN = self.getFitFunc(exsN,rc=rc) #Complete fit function
         ffit0 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed
-        self.fitAtomic(exs,fitrange=fitrange)   #Fit exs new (no premature break out)
+        self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
         ffit  = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed and re-fit
 
         exs = exsN.copy() #Reset exs structure
         exs.exlist[iex0].dipoles = np.full(exs.exlist[iex0].dipoles.shape,0.001) #Set dipole moment of excitation to small value
         exs.fix() #Fix all excitations
         exs.release(which=[iex0]) #Release excitation in question
-        self.fitAtomic(exs,fitrange=fitrange)   #Fit exs new (no premature break out)
+        self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
         #ffit1 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 alone fitted and all others fixed
 
         if not sN>0.:
