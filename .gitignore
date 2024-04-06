@@ -8,4 +8,5 @@ test/*/*fit*.dat
 test/*/*err*.dat
 test/*/*sca*.dat
 test/*/*scaerr*.dat
+test/*/*.png
 *~

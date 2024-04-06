@@ -166,7 +166,7 @@ def main():
     #--------------------------------------------------------------------------#
     dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
     if conf.opt["Fit"]["guess"]:
-        dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],dbg=2)
+        excit = dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],dbg=2)
         conf.opt["Fit"]["guess"] = False #Next time: No new initial guess
 
     #--------------------------------------------------------------------------#

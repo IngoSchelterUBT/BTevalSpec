@@ -158,6 +158,7 @@ class Fit:
             phase, dipoles = self.guessExcit(energy)
             #Add excitation to list
             self.excit.add(energy=energy,phase=phase,dipoles=dipoles,erange=piT)
+        return self.excit
 
     #--------------------------------------------------------------------------#
     # Guess phase and dipole moments of an excitation at an approx. energy
@@ -165,8 +166,8 @@ class Fit:
     def guessExcit(self,energy):
         # Get the excitation strength/phase at that energy
         Hw    = self.ext.getVal([energy])[0]
-        #phase = 0. if self.exttype=="boost" else np.angle(Hw)%(2.*np.pi)
-        phase = np.angle(Hw)%(2.*np.pi)
+        #phase = 0. if self.exttype=="boost" else np.angle(-np.conj(Hw))%(2.*np.pi)
+        phase = np.angle(-np.conj(Hw))%(2.*np.pi)
         # Get the closest index in the FT array
         idx = int(np.rint((energy-self.freq[0])/self.dw))
         # Find the calculation for which the excitation's peak is largest
