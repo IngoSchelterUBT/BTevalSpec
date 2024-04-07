@@ -374,7 +374,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit Wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,signif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
 
         #----------------------------------------------------------------------#
         # Reset excitation-specific energy fit range
@@ -465,7 +465,7 @@ class Fit:
         #----------------------------------------------------------------------#
         # Compute significances (and update self.excit)
         self.update(dbg=dbg)      # Call update again if nothing has been done here
-        if signif: self.setSignificances(noPhase=not fitphase)
+        self.setSignificances(allSignif=allSignif,noPhase=not fitphase)
         return self.excit, self.fiterr
 
     #--------------------------------------------------------------------------#
@@ -492,50 +492,53 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Compute excitation significances
     #--------------------------------------------------------------------------#
-    def setSignificances(self,noPhase=False):
+    def setSignificances(self,allSignif=False,noPhase=False):
         sN = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
         for iex, ex in enumerate(self.excit.exlist):
-            self.setSignificance(self.excit,iex,sN=sN,rc=self.rc,noPhase=noPhase)
+            self.setSignificance(allSignif=allSignif,self.excit,iex,sN=sN,rc=self.rc,noPhase=noPhase)
 
     #--------------------------------------------------------------------------#
     # Compute single significance
     #--------------------------------------------------------------------------#
-    def setSignificance(self,exsN,iex0,sN=0.,rc=[0,1],noPhase=False):
-        exs = exsN.copy()                                                 #Get a copy of the excitations object
+    def setSignificance(self,allSignif=False,exsN,iex0,sN=0.,rc=[0,1],noPhase=False):
         piT = np.pi/self.tprop
-        exs.restrict(erange=piT,neigh=True)                               #Restrict range of energy parameter before removing the excitation to ensure that a removed large excitation is not filled by a smaller one (leading to an erroneous low significance)
-        exs.fixErange([exs.exlist[iex0].energy-2.*piT,exs.exlist[iex0].energy+2.*piT],inverse=True) #Fix excitations that are not closed than 2pi/T to the removed excitation
-        fitrange = [exs.exlist[iex0].energy-4.*piT,exs.exlist[iex0].energy+4.*piT]                  #Restrict fit range to the removed excitation's energy +/- 4pi/T
-        exs.remove(rmidx=[iex0])                                          #Remove the excitation in question
-        
-        if not sN>0.:
-            ffitN = self.getFitFunc(exsN,rc=rc) #Complete fit function
-        ffit0 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed
-        self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
-        ffit  = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed and re-fit
 
-        exs = exsN.copy() #Reset exs structure
-        exs.exlist[iex0].dipoles = np.full(exs.exlist[iex0].dipoles.shape,0.001) #Set dipole moment of excitation to small value
-        exs.fix() #Fix all excitations
-        exs.release(which=[iex0]) #Release excitation in question
-        self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
-        #ffit1 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 alone fitted and all others fixed
+        if figSignif:
+            exs = exsN.copy()                                                 #Get a copy of the excitations object
+            exs.restrict(erange=piT,neigh=True)                               #Restrict range of energy parameter before removing the excitation to ensure that a removed large excitation is not filled by a smaller one (leading to an erroneous low significance)
+            exs.fixErange([exs.exlist[iex0].energy-2.*piT,exs.exlist[iex0].energy+2.*piT],inverse=True) #Fix excitations that are not closed than 2pi/T to the removed excitation
+            fitrange = [exs.exlist[iex0].energy-4.*piT,exs.exlist[iex0].energy+4.*piT]                  #Restrict fit range to the removed excitation's energy +/- 4pi/T
+            exs.remove(rmidx=[iex0])                                          #Remove the excitation in question
+            
+            if not sN>0.:
+                ffitN = self.getFitFunc(exsN,rc=rc) #Complete fit function
+            ffit0 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed
+            self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
+            ffit  = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 removed and re-fit
 
-        if not sN>0.:
-            sN    = self.getError(self.ftrc,ffitN,datnorm=self.ftrcnorm) #Fit error of excitations exsN
-        s0        = self.getError(self.ftrc,ffit0,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (without re-fit)
-        s         = self.getError(self.ftrc,ffit ,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (with    re-fit)
-        #s1        = self.getError(self.ftrc,ffit1,datnorm=self.ftrcnorm) #Fit error of excitations exsN with    ex0 alone refitted
+            exs = exsN.copy() #Reset exs structure
+            exs.exlist[iex0].dipoles = np.full(exs.exlist[iex0].dipoles.shape,0.001) #Set dipole moment of excitation to small value
+            exs.fix() #Fix all excitations
+            exs.release(which=[iex0]) #Release excitation in question
+            self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
+            #ffit1 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 alone fitted and all others fixed
 
-        signifFit = (s-sN)/(s0-sN)
-        #signifCon = np.sqrt((s0-sN)/(exsN.exlist[iex0].strength/sum([ex.strength for ex in exsN.exlist])))
+            if not sN>0.:
+                sN    = self.getError(self.ftrc,ffitN,datnorm=self.ftrcnorm) #Fit error of excitations exsN
+            s0        = self.getError(self.ftrc,ffit0,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (without re-fit)
+            s         = self.getError(self.ftrc,ffit ,datnorm=self.ftrcnorm) #Fit error of excitations exsN without ex0 (with    re-fit)
+            #s1        = self.getError(self.ftrc,ffit1,datnorm=self.ftrcnorm) #Fit error of excitations exsN with    ex0 alone refitted
+
+        if allSignif:
+            signifFit = (s-sN)/(s0-sN)
+            #signifCon = np.sqrt((s0-sN)/(exsN.exlist[iex0].strength/sum([ex.strength for ex in exsN.exlist])))
+            diperr    = np.linalg.norm(np.subtract(exs.exlist[iex0].dipoles,exsN.exlist[iex0].dipoles))/np.linalg.norm(exsN.exlist[iex0].dipoles)
+            engerr    = abs(exs.exlist[iex0].energy-exsN.exlist[iex0].energy)/abs(exsN.exlist[iex0].energy)
+            phaerr    = abs(exs.exlist[iex0].phase -exsN.exlist[iex0].phase )/max(abs(exsN.exlist[iex0].phase ),0.001) #0.001: Prevent "divide by zero"
+            signifExc = 1.-np.linalg.norm([diperr,engerr,phaerr])/np.sqrt(3)
         dip       = exsN.exlist[iex0].dipole
         pol       = [self.dip[icalc][0].epol for icalc in range(self.ncalc)]
         signifAng = np.sqrt(np.max([abs(np.dot(dip/np.linalg.norm(dip),pol[icalc]/np.linalg.norm(pol[icalc]))) for icalc in range(self.ncalc)]))
-        diperr    = np.linalg.norm(np.subtract(exs.exlist[iex0].dipoles,exsN.exlist[iex0].dipoles))/np.linalg.norm(exsN.exlist[iex0].dipoles)
-        engerr    = abs(exs.exlist[iex0].energy-exsN.exlist[iex0].energy)/abs(exsN.exlist[iex0].energy)
-        phaerr    = abs(exs.exlist[iex0].phase -exsN.exlist[iex0].phase )/max(abs(exsN.exlist[iex0].phase ),0.001) #0.001: Prevent "divide by zero"
-        signifExc = 1.-np.linalg.norm([diperr,engerr,phaerr])/np.sqrt(3)
         strerr    = abs(exsN.exlist[iex0].strengthErr/        exsN.exlist[iex0].strength        )
         #engerr    = abs(exsN.exlist[iex0].energyErr  /        exsN.exlist[iex0].energy          )
         engerr    = abs(exsN.exlist[iex0].energyErr  /        2.*piT                            ) #Use the expected energy range as reference (2pi/T)
@@ -545,8 +548,15 @@ class Fit:
         wc        = 0.5*(exsN.exlist[iex0].erange[1]+exsN.exlist[iex0].erange[0])
         dw        = 0.5*(exsN.exlist[iex0].erange[1]-exsN.exlist[iex0].erange[0])
         signifRng = 1.-(np.abs(w-wc)/np.abs(dw))**4
+        Hw        = self.ext.getVal([exsN.exlist[iex0].energy])[0]
+        phaana    = np.angle(-np.conj(Hw))%(2.*np.pi)
+        phafit    = exsN.exlist[iex0].phase
+        phadiff   = (phaana-phafit)%(2*np.pi) #in ]-2pi:2pi]
+        if phadiff <= -np.pi: phadiff += 2*np.pi #Move into ]-pi:pi] range
+        if phadiff >   np.pi: phadiff -= 2*np.pi
+        signifPha = 1.-np.abs(phadiff)/np.pi
 
-        exsN.exlist[iex0].setSignificance(signifFit,signifErr,signifAng,signifExc,signifRng) #Compute and set significance
+        exsN.exlist[iex0].setSignificance(signifFit,signifErr,signifAng,signifExc,signifRng,signifPha) #Compute and set significance
 
     #--------------------------------------------------------------------------#
     # Plot fit

@@ -173,7 +173,7 @@ def main():
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),signif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",True))
+        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),allSignif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",True))
         conf.opt["Fit"]["skipfirst"]    = True
         conf.opt["Fit"]["firstsingle"]  = False
         conf.opt["Fit"]["reset_erange"] = False

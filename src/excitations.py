@@ -50,6 +50,7 @@ class Excitation:
         self.signifAng       =          exdict.get("signifAng"      ,   0.       ) #Significance: sqrt(angle between dipole and ext. excitation)
         self.signifExc       =          exdict.get("signifExc"      ,   0.       ) #Significance: Similar to signifFit but re-fit dipole moment of single excitation alone
         self.signifRng       =          exdict.get("signifRng"      ,   0.       ) #Significance: close to 1 if energy is close to the center of the energy range
+        self.signifPha       =          exdict.get("signifPha"      ,   0.       ) #Significance: close to 1 if energy is close to the center of the energy range
         # Update derived (overwrite the latter)
         self.derived(errors=False)
 
@@ -86,6 +87,7 @@ class Excitation:
         exdict["signifAng"      ] =    float(self.signifAng)
         exdict["signifExc"      ] =    float(self.signifExc)
         exdict["signifRng"      ] =    float(self.signifRng)
+        exdict["signifPha"      ] =    float(self.signifPha)
         return exdict
 
     # Updates derived components
@@ -129,12 +131,13 @@ class Excitation:
         self.erange = np.array([self.energy-erange,self.energy+erange])
 
     # Set significance
-    def setSignificance(self,signifFit,signifErr,signifAng,signifExc,signifRng):
+    def setSignificance(self,signifFit,signifErr,signifAng,signifExc,signifRng,signifPha):
         self.signifFit = signifFit
         self.signifErr = signifErr
         self.signifAng = signifAng
         self.signifExc = signifExc
         self.signifRng = signifRng
+        self.signifPha = signifPha
 
 #============================================================================#
 # Defines a list of excitations
@@ -342,9 +345,9 @@ class Excitations:
 
         for icalc in range(self.ncalc):
             with open(f"excit_{icalc+1:1d}.dat","w") as fh:
-                fh.write("# name  |  energy  | strength | eped      |strengthEped| energyErr|strengthError|epedErr |strengthEpedErr|signifFit|signifAng|signifExc|signifErr|signifRng\n")
+                fh.write("# name  |  energy  | strength | eped      |strengthEped| energyErr|strengthError|epedErr |strengthEpedErr|signifFit|signifAng|signifExc|signifErr|signifRng|signifPha\n")
                 for iex, ex in enumerate(self.exlist):
-                    fh.write(f"{ex.name:8s} {ex.energy:12.5e} {ex.strength:12.5e} {ex.eped[icalc]:12.5e} {ex.strengthEped[icalc]:12.5e} {ex.energyErr:12.5e} {ex.strengthErr:12.5e} {ex.epedErr[icalc]:12.5e} {ex.strengthEpedErr[icalc]:12.5e} {ex.signifFit:12.5e} {ex.signifAng:12.5e} {ex.signifExc:12.5e} {ex.signifErr:12.5e} {ex.signifRng:12.5e}\n")
+                    fh.write(f"{ex.name:8s} {ex.energy:12.5e} {ex.strength:12.5e} {ex.eped[icalc]:12.5e} {ex.strengthEped[icalc]:12.5e} {ex.energyErr:12.5e} {ex.strengthErr:12.5e} {ex.epedErr[icalc]:12.5e} {ex.strengthEpedErr[icalc]:12.5e} {ex.signifFit:12.5e} {ex.signifAng:12.5e} {ex.signifExc:12.5e} {ex.signifErr:12.5e} {ex.signifRng:12.5e} {ex.signifPha:12.5e}\n")
 
         xyz = ["x","y","z"]
         for icalc in range(self.ncalc):
