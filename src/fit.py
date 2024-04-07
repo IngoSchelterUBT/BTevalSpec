@@ -495,15 +495,15 @@ class Fit:
     def setSignificances(self,allSignif=False,noPhase=False):
         sN = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
         for iex, ex in enumerate(self.excit.exlist):
-            self.setSignificance(allSignif=allSignif,self.excit,iex,sN=sN,rc=self.rc,noPhase=noPhase)
+            self.setSignificance(self.excit,iex,sN=sN,rc=self.rc,allSignif=allSignif,noPhase=noPhase)
 
     #--------------------------------------------------------------------------#
     # Compute single significance
     #--------------------------------------------------------------------------#
-    def setSignificance(self,allSignif=False,exsN,iex0,sN=0.,rc=[0,1],noPhase=False):
+    def setSignificance(self,exsN,iex0,sN=0.,rc=[0,1],allSignif=False,noPhase=False):
         piT = np.pi/self.tprop
 
-        if figSignif:
+        if allSignif:
             exs = exsN.copy()                                                 #Get a copy of the excitations object
             exs.restrict(erange=piT,neigh=True)                               #Restrict range of energy parameter before removing the excitation to ensure that a removed large excitation is not filled by a smaller one (leading to an erroneous low significance)
             exs.fixErange([exs.exlist[iex0].energy-2.*piT,exs.exlist[iex0].energy+2.*piT],inverse=True) #Fix excitations that are not closed than 2pi/T to the removed excitation
@@ -536,6 +536,9 @@ class Fit:
             engerr    = abs(exs.exlist[iex0].energy-exsN.exlist[iex0].energy)/abs(exsN.exlist[iex0].energy)
             phaerr    = abs(exs.exlist[iex0].phase -exsN.exlist[iex0].phase )/max(abs(exsN.exlist[iex0].phase ),0.001) #0.001: Prevent "divide by zero"
             signifExc = 1.-np.linalg.norm([diperr,engerr,phaerr])/np.sqrt(3)
+        else:
+            signifFit =0.
+            signifExc =0.
         dip       = exsN.exlist[iex0].dipole
         pol       = [self.dip[icalc][0].epol for icalc in range(self.ncalc)]
         signifAng = np.sqrt(np.max([abs(np.dot(dip/np.linalg.norm(dip),pol[icalc]/np.linalg.norm(pol[icalc]))) for icalc in range(self.ncalc)]))
