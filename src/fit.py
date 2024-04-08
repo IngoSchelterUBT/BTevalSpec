@@ -177,8 +177,8 @@ class Fit:
         T           = self.tprop
         Ef          = self.dip[    0][0].efield
         Ep          = self.dip[jcalc][0].epol
-        heightArea  = [[np.imag(np.exp(-1.0j*phase)*     ampl[jcalc][iarea][icomp]) for iarea in range(self.narea)]   for icomp in range(self.ncomp)] #Rotate the height by e^-i*phi and take its imag part to get the line heights (with sign)
-        height      = [ np.imag(np.exp(-1.0j*phase)*sum([ampl[jcalc][iarea][icomp]  for iarea in range(self.narea)])) for icomp in range(self.ncomp)]
+        heightArea  = [[np.imag(np.exp(1.0j*phase)*     ampl[jcalc][iarea][icomp]) for iarea in range(self.narea)]   for icomp in range(self.ncomp)] #Rotate the height by e^-i*phi and take its imag part to get the line heights (with sign)
+        height      = [ np.imag(np.exp(1.0j*phase)*sum([ampl[jcalc][iarea][icomp]  for iarea in range(self.narea)])) for icomp in range(self.ncomp)]
         dipdir      = height/np.linalg.norm(height) # Direction of the dipole moment
         eped        = np.dot(dipdir,Ep) # Scalar product e_pol.e_mu
         #Prevent overestimating the dipole moment if the latter is almost orthogonal to the ext. field polarization:
@@ -189,7 +189,9 @@ class Fit:
         # -> Use this to scale dipoles, not dipabs below
 
         # Approx. dipoles
-        dipabs  = np.sqrt(np.linalg.norm(height)/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        #dipabs  = np.sqrt(np.linalg.norm(height)/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        #Use the following instead since the total transition dipole may vanish for excitations without dipole symmetry
+        dipabs  = np.sqrt(np.average([np.linalg.norm([heightArea[icomp][iarea] for icomp in range(self.ncomp)]) for iarea in range(self.narea)])/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
         dipoles = []
         for iarea in range(self.narea):
             dipoles.append([])

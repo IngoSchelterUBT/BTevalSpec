@@ -257,7 +257,7 @@ class Dipole:
                     self.ft.append([fftshift(tmp[1]),fftshift(tmp[2])])
                     if i==0: self.freq = fftshift(tmp[0])
             except:
-                err.err("No FT files to read")
+                err.err(1,"No FT files to read")
 
         #PW
         if "pw" in what:
@@ -267,7 +267,7 @@ class Dipole:
                     fname = os.path.splitext(self.dipname)[0]+'_pw_'+self.descript[i]+'.dat'
                     self.pw.append(np.transpose(np.loadtxt(fname))[1])
             except:
-                err.err("No PW files to read")
+                err.err(1,"No PW files to read")
 
         #Pade
         if "pade" in what:
@@ -279,4 +279,4 @@ class Dipole:
                     self.pade.append([tmp[1],tmp[2]])
                     if i==0: self.freqPade = tmp[0]
             except:
-                err.err("No Pade files to read")
+                err.err(1,"No Pade files to read")

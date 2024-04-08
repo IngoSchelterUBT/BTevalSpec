@@ -226,9 +226,10 @@ class Excitations:
         for iex, ex in enumerate(self.exlist):
             params.add(f"w{iex}",vary=not ex.fixtmp and not noEnergy,value=ex.energy,min=ex.erange[0],max=ex.erange[1])
             if not noPhase: #Otherwise, the phase is taken from the external-field profile
-                phasemm = np.angle(-np.conj(ext.getVal(ex.erange)))%(2*np.pi)
-                if phasemm[0]>phasemm[1]: phasemm[1] += 2.*np.pi
-                params.add(f"p{iex}",vary=not ex.fixtmp,value=ex.phase,min=phasemm[0],max=phasemm[1])
+                #Phase boundaries are (i) not necessary and (ii) can spoil the fit
+                #phasemm = np.angle(-np.conj(ext.getVal(ex.erange)))%(2*np.pi)
+                #if phasemm[0]>phasemm[1]: phasemm[1] += 2.*np.pi
+                params.add(f"p{iex}",vary=not ex.fixtmp,value=ex.phase)#,min=phasemm[0],max=phasemm[1])
             params.add(f"t{iex}",vary=not ex.fixtmp and not noTmod  ,value=ex.tmod  )
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):

@@ -5,7 +5,7 @@ EXT:
   profile: laser_profile.dat      # Profile of excitation
 OPT:
   FT:
-    calc: false                     # Turn fourier transformation on/off
+    calc: true                      # Turn fourier transformation on/off
     minpw: 17                       # Min. length of fourier transform vector (2^n). Can increase sampling rate.
     smooth: 0                       # Artificial decay rate
     window: 0                       # Kaiser-Bessel windowing parameter (>0)
