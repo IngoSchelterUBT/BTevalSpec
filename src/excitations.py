@@ -105,8 +105,8 @@ class Excitation:
             self.eped        [icalc] = np.dot(epol,self.dipole)/np.linalg.norm(self.dipole)
             self.strengthEped[icalc] = self.strength * self.eped[icalc]
             for iarea in range(self.narea):
-                self.ampl   [icalc][iarea] = 1./hbar * self.ext.efield * np.abs(Hw) *          np.dot(self.ext.epol[icalc],self.dipole   ) * self.dipoles[iarea]
-                self.amplErr[icalc][iarea] = 1./hbar * self.ext.efield * np.abs(Hw) * np.sqrt((np.dot(self.ext.epol[icalc],self.dipoleErr) * self.dipoles[iarea])**2 + (np.dot(self.ext.epol[icalc],self.dipole) * self.dipolesErr[iarea])**2)
+                self.ampl   [icalc][iarea] = -1./hbar * self.ext.efield * np.abs(Hw) *          np.dot(self.ext.epol[icalc],self.dipole   ) * self.dipoles[iarea]
+                self.amplErr[icalc][iarea] =  1./hbar * self.ext.efield * np.abs(Hw) * np.sqrt((np.dot(self.ext.epol[icalc],self.dipoleErr) * self.dipoles[iarea])**2 + (np.dot(self.ext.epol[icalc],self.dipole) * self.dipolesErr[iarea])**2)
         if errors:
             self.dipoleErr    = np.array([np.sqrt(sum([self.dipolesErr[iarea][icomp]**2 for iarea in range(self.narea)])) for icomp in range(self.ncomp)])
             self.strengthErr  =  2.*m/(3.*e2*hbar)*np.sqrt((self.energyErr*self.energy*np.linalg.norm(self.dipole        )**2)**2 + (2.*self.energy*np.dot(self.dipole        ,self.dipoleErr        ))**2)
@@ -246,7 +246,8 @@ class Excitations:
             if errors and isinstance(params[f"w{iex}"].stderr,float):
                 ex.energyErr = params[f"w{iex}"].stderr
             if noPhase:
-                ex.phase     = np.angle(-np.conj(ext.getVal([ex.energy])[0]))%(2*np.pi)
+                #ex.phase     = np.angle(-np.conj(ext.getVal([ex.energy])[0]))%(2*np.pi)
+                ex.phase     = -np.angle(ext.getVal([ex.energy])[0])%(2*np.pi)
                 ex.phaseErr  = 0.
             else:
                 ex.phase     = params[f"p{iex}"].value

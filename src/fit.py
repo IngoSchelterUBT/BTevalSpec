@@ -103,8 +103,8 @@ class Fit:
             for iarea in range(self.narea):
                 for n in range(self.ncomp):
                     for iex, ex in enumerate(excit.exlist):
-                        #ampl[icalc][iarea][n][iex] = Ef*np.abs(np.dot(Ep,ex.dipole))*np.abs(Hw[iex])*ex.dipoles[iarea][n]
-                        ampl[icalc][iarea][n][iex] = Ef*       np.dot(Ep,ex.dipole) *np.abs(Hw[iex])*ex.dipoles[iarea][n]
+                        #ampl[icalc][iarea][n][iex] = -Ef*np.abs(np.dot(Ep,ex.dipole))*np.abs(Hw[iex])*ex.dipoles[iarea][n]
+                        ampl[icalc][iarea][n][iex] = -Ef*       np.dot(Ep,ex.dipole) *np.abs(Hw[iex])*ex.dipoles[iarea][n]
         return fspectrum(self.ncalc,self.narea,self.ncomp,np.array(rc),T,freq,energy,phase,tmod,ampl)
 
     #--------------------------------------------------------------------------#
@@ -166,8 +166,8 @@ class Fit:
     def guessExcit(self,energy):
         # Get the excitation strength/phase at that energy
         Hw    = self.ext.getVal([energy])[0]
-        #phase = 0. if self.exttype=="boost" else np.angle(-np.conj(Hw))%(2.*np.pi)
-        phase = np.angle(-np.conj(Hw))%(2.*np.pi)
+        #phase = np.angle(-np.conj(Hw))%(2.*np.pi)
+        phase = -np.angle(Hw)%(2.*np.pi)
         # Get the closest index in the FT array
         idx = int(np.rint((energy-self.freq[0])/self.dw))
         # Find the calculation for which the excitation's peak is largest
@@ -554,7 +554,8 @@ class Fit:
         dw        = 0.5*(exsN.exlist[iex0].erange[1]-exsN.exlist[iex0].erange[0])
         signifRng = 1.-(np.abs(w-wc)/np.abs(dw))**4
         Hw        = self.ext.getVal([exsN.exlist[iex0].energy])[0]
-        phaana    = np.angle(-np.conj(Hw))%(2.*np.pi)
+        #phaana    = np.angle(-np.conj(Hw))%(2.*np.pi)
+        phaana    = -np.angle(Hw)%(2.*np.pi)
         phafit    = exsN.exlist[iex0].phase
         phadiff   = (phaana-phafit)%(2*np.pi) #in ]-2pi:2pi]
         if phadiff <= -np.pi: phadiff += 2*np.pi #Move into ]-pi:pi] range

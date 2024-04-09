@@ -12,7 +12,7 @@ import errorHandler as err
 #   maxdw: Minimum energy resolution (choice)
 #==============================================================================#
 class Extern:
-    def __init__(self,fname,efield,text,epol,maxdw=0.0001):
+    def __init__(self,fname,invPha,efield,text,epol,maxdw=0.0001):
         self.fname  = fname
         self.efield = efield
         self.epol   = epol #List of efield-polarizations for each calculation
@@ -20,7 +20,7 @@ class Extern:
         if (self.fname!=""): #laser
             dat         = np.transpose(np.loadtxt(fname,comments='#'))
             self.time   = dat[0]-text #Free-propagation time frame, i.e., ext. field from -text:0 
-            self.ext    = dat[1]
+            self.ext    = dat[1] if not invPha else self.ext    = -dat[1]
             self.dt     = (self.time[-1]-self.time[0])/(len(self.time)-1)
             self.ncalc  = len(self.epol)
             pw          = int(np.ceil(np.log2(2.*np.pi/self.dt/maxdw)))

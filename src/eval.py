@@ -152,7 +152,7 @@ def main():
     #--------------------------------------------------------------------------#
     # Read and Fourier transform external excitation
     #--------------------------------------------------------------------------#
-    ext = extern.Extern(conf.ext.get("profile",""),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
+    ext = extern.Extern(conf.ext.get("profile",""),conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
     #if isinstance(ext,extern.Extern):
     ext.write()
 

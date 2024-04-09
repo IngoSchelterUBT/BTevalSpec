@@ -48,7 +48,8 @@ def writeTemplate(ofile):
       - [dipole_calc1_area1.dat, dipole_calc1_area2]
       - [dipole_calc2_area1.dat, dipole_calc2_area2]
     EXT:
-      profile: laser_profile.dat  # Profile of excitation
+      profile: laser_profile.dat    # Profile of excitation
+      invertPhase: False            # Before BTDFT v3.5.2, the laser profile missed a factor "-1". InvertPhase==True compensates this error.
     OPT:
       FT:
         calc: True                  # Turn fourier transformation on/off
