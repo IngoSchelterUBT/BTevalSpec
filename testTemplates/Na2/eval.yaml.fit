@@ -2,7 +2,8 @@ DESCRIPTION:                        # Description of evaluation
 DIPOLE:                             # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
 - [dipole_global1_01.dat]
 EXT:
-  profile: laser_profile.dat      # Profile of excitation
+  profile: laser_profile.dat        # Profile of excitation
+  invertPhase: True                 # Before BTDFT v3.5.2, the laser profile lacks a "-" sign, which is compensated here
 OPT:
   FT:
     calc: true                      # Turn fourier transformation on/off
