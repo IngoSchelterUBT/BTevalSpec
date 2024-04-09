@@ -325,20 +325,28 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Print excitations
     #-------------------------------------------------------------------------
-    def print(self):
+    def print(self,long=False):
         for iex, ex in enumerate(self.exlist):
             ex.derived(errors=False)
-            print("Ex ",iex)
-            print("  Name:     ", ex.name    )
-            print("  Energy:   ", ex.energy  )
-            print("  Erange:   ", ex.erange  )
-            print("  Phase:    ", ex.phase   )
-            print("  Tmod:     ", ex.tmod    )
-            print("  Strength: ", ex.strength)
-            print("  Dipole:   ", ex.dipole  )
-            print("  Dipoles per area:")
-            for iarea in range(self.narea):
-                print("      ", iarea, ex.dipoles[iarea])
+            if long:
+                print("")
+                print("Excitations")
+                print("Ex ",iex)
+                print("  Name:     ", ex.name    )
+                print("  Fix:      ", ex.fix     )
+                print("  Energy:   ", ex.energy  )
+                print("  Erange:   ", ex.erange  )
+                print("  Phase:    ", ex.phase   )
+                print("  Tmod:     ", ex.tmod    )
+                print("  Strength: ", ex.strength)
+                print("  Dipole:   ", ex.dipole  )
+                print("  Dipoles per area:")
+                print("")
+                for iarea in range(self.narea):
+                    print("      ", iarea, ex.dipoles[iarea])
+            else:
+                pistr=u"\u03c0"
+                print(f"{ex.name:5s} | fix:{ex.fix!s:^5} | E={ex.energy:7.4f}Ry | phi={ex.phase/np.pi:5.2f}{pistr} | f={ex.strength:6.3f}")
 
     #-------------------------------------------------------------------------
     # Create amplitude files

@@ -294,7 +294,7 @@ class Fit:
         if self.breakMinimization: #If minimization stuck and was force-aborted, reset the parameters to the best ones reached
             params = self.bestParams
             self.breakMinimization = False
-        if dbg>0: print(fit_report(fitres))
+        if dbg>1: print(fit_report(fitres))
         excit.updateFromParam(fitres.params,noPhase,self.ext)
 
     #--------------------------------------------------------------------------#
@@ -370,17 +370,19 @@ class Fit:
             plt.savefig("objective.png")
             plt.show()
 
-        if dbg>0: self.excit.print()
+        if dbg>0: self.excit.print(long=dbg>1)
         return len(maxen) #Return number of added excitations
 
     #--------------------------------------------------------------------------#
     # Fit Wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True,verbose=False):
 
         #----------------------------------------------------------------------#
         # Reset excitation-specific energy fit range
-        if resetErange: self.excit.resetErange(self.fwhm)
+        if resetErange:
+            if verbose: print("  - Reset energy range")
+            self.excit.resetErange(self.fwhm)
 
         #----------------------------------------------------------------------#
         # Fit guess or input excitations
@@ -388,11 +390,13 @@ class Fit:
         self.update(dbg=dbg)
         if not skipfirst:
             if firstsingle: #Fit single excitations
+                if verbose: print("  - Fit single excitations")
                 try:
                     #i) Sort excitations by effective size in the spectrum (strength*eped)
                     iexs = np.argsort([np.sqrt(sum([self.excit.exlist[iex].strengthEped[icalc]**2 for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
                     #ii) Fit single excitations one after the other
                     for iex in np.flip(iexs):              #Go through excitations from large to small
+                        if verbose: print("    excit",iex)
                         self.excit.fix()                   #Fix all
                         self.excit.release(which=[iex])    #Release single excitation iex
                         self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
@@ -401,6 +405,7 @@ class Fit:
                 except:
                     raise #self.excit is not updated in this case
             else: #Fit all excitations at once
+                if verbose: print("  - Fit excitations collectivly")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit existing excitations
                 self.update(dbg=dbg)      # Update some self.components
                 self.reportFit(dbg=dbg)
@@ -412,33 +417,42 @@ class Fit:
 
             #------------------------------------------------------------------#
             # Add excitations
+            if verbose: print("  - Fix excitations")
             self.excit.fix()                         # Temporarily fix all existing excitations
+            if verbose: print("  - Add new excitations:",end="")
             nadd = self.addEx(dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
+            if verbose: print(nadd)
             if nadd==0:
+                if verbose: print("  - Add single largest line")
                 nadd = self.addEx(dbg=dbg,singleMax=True) # Add single largest peak as excitation
 
             #------------------------------------------------------------------#
             # Fit all new ones (all at once)
             try:
+                if verbose: print("  - Fit new excitations",end="")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) # Fit new excitations alone
                 self.update(dbg=dbg)               # Update some self.components
                 self.excit.release()               # Release all temporarily fixed excitations
+                if verbose: print(" - done")
             except:
                 raise #self.excit is not updated in this case
 
             #------------------------------------------------------------------#
             # Fit single excitations that still have zero error (those were not fitted properly, maybe due to their low weight)
             try:
+                if verbose: print("  - Fit single new excitations that have zero error",end="")
                 #i) Sort excitations by effective size in the spectrum (strength*eped)
                 iexs = np.argsort([np.sqrt(sum([self.excit.exlist[iex].strengthEped[icalc]**2 for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
                 #ii) Fit single excitations one after the other
                 for iex in np.flip(iexs):              #Go through excitations from large to small
                     if self.excit.exlist[iex].strengthErr > 0.: continue
+                    if verbose: print(iex,end="")
                     self.excit.fix()                   #Fix all
                     self.excit.release(which=[iex])    #Release single excitation iex
                     self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
                     self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) #Fix single excitation
                     self.excit.release()               #Release all excitations
+                if verbose: print(" - done")
             except:
                 raise #self.excit is not updated in this case
 
@@ -453,8 +467,10 @@ class Fit:
             #------------------------------------------------------------------#
             # Fit all excitations
             try:
+                if verbose: print("  - Fit all excitations",end="")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit all non-permanently fixed excitations
                 self.update(dbg=dbg)      # Update some self.components
+                if verbose: print(" - done")
             except:
                 raise #self.excit is not updated in this case
 
@@ -462,12 +478,16 @@ class Fit:
             # Report and check exit condition
             self.reportFit(dbg=dbg)
             if dbg>2: self.plotFitDebug(it)
-            if self.fiterr<tol: break
+            if self.fiterr<tol:
+                if verbose: print("  - Reached tolerance -> exit")
+                break
   
         #----------------------------------------------------------------------#
         # Compute significances (and update self.excit)
         self.update(dbg=dbg)      # Call update again if nothing has been done here
+        if verbose: print("  - Calculate significances",end="")
         self.setSignificances(allSignif=allSignif,noPhase=not fitphase)
+        if verbose: print(" - done")
         return self.excit, self.fiterr
 
     #--------------------------------------------------------------------------#
@@ -484,12 +504,9 @@ class Fit:
     # Report fit
     #--------------------------------------------------------------------------#
     def reportFit(self,dbg=0):
-        print("Nex | Error: ",len(self.excit.exlist),self.fiterr)
+        print(f"Nex {len(self.excit.exlist):3d} | Error {self.fiterr:7.4f}")
         if dbg>0:
-            print("")
-            print("Excitations")
-            self.excit.print()
-            print("")
+            self.excit.print(long=dbg>1)
 
     #--------------------------------------------------------------------------#
     # Compute excitation significances
@@ -580,7 +597,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Write fit and error functions
     #--------------------------------------------------------------------------#
-    def writeFit(self):
+    def writeFit(self,dbg=0):
         head = "Energy (Ry) | real(Fitf) | imag(Fitf)"
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
@@ -597,19 +614,20 @@ class Fit:
                 for icomp in range(self.ncomp):
                     fname = os.path.splitext(dname)[0]+'_err_'+dip.descript[icomp]+'.dat'
                     np.savetxt(fname,np.column_stack((self.freq,self.ft[icalc][iarea][icomp][0]-self.ftfit[icalc][iarea][icomp][0],self.ft[icalc][iarea][icomp][1]-self.ftfit[icalc][iarea][icomp][1])),header=head)
-        head = "Energy (Ry) | real(scalErrorf) | imag(scalErrorf)"
-        for icalc in range(self.ncalc):
-            for iarea in range(self.narea):
-                dip   = self.dip[icalc][iarea]
-                dname = dip.dipname
-                for icomp in range(self.ncomp):
-                    fname = os.path.splitext(dname)[0]+'_scaerr_'+dip.descript[icomp]+'.dat'
-                    np.savetxt(fname,np.column_stack((self.freq,(self.ft[icalc][iarea][icomp][0]-self.ftfit[icalc][iarea][icomp][0])/self.scal[icalc][iarea][icomp],(self.ft[icalc][iarea][icomp][1]-self.ftfit[icalc][iarea][icomp][1])/self.scal[icalc][iarea][icomp])),header=head)
-        head = "Energy (Ry) | scal"
-        for icalc in range(self.ncalc):
-            for iarea in range(self.narea):
-                dip   = self.dip[icalc][iarea]
-                dname = dip.dipname
-                for icomp in range(self.ncomp):
-                    fname = os.path.splitext(dname)[0]+'_sca_'+dip.descript[icomp]+'.dat'
-                    np.savetxt(fname,np.column_stack((self.freq,self.scal[icalc][iarea][icomp])),header=head)
+        if dbg>2:
+            head = "Energy (Ry) | real(scalErrorf) | imag(scalErrorf)"
+            for icalc in range(self.ncalc):
+                for iarea in range(self.narea):
+                    dip   = self.dip[icalc][iarea]
+                    dname = dip.dipname
+                    for icomp in range(self.ncomp):
+                        fname = os.path.splitext(dname)[0]+'_scaerr_'+dip.descript[icomp]+'.dat'
+                        np.savetxt(fname,np.column_stack((self.freq,(self.ft[icalc][iarea][icomp][0]-self.ftfit[icalc][iarea][icomp][0])/self.scal[icalc][iarea][icomp],(self.ft[icalc][iarea][icomp][1]-self.ftfit[icalc][iarea][icomp][1])/self.scal[icalc][iarea][icomp])),header=head)
+            head = "Energy (Ry) | scal"
+            for icalc in range(self.ncalc):
+                for iarea in range(self.narea):
+                    dip   = self.dip[icalc][iarea]
+                    dname = dip.dipname
+                    for icomp in range(self.ncomp):
+                        fname = os.path.splitext(dname)[0]+'_sca_'+dip.descript[icomp]+'.dat'
+                        np.savetxt(fname,np.column_stack((self.freq,self.scal[icalc][iarea][icomp])),header=head)

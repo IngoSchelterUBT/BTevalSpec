@@ -13,62 +13,11 @@
 #  -> Note this automatically
 #  -> Set skipfirst to false
 #  -> Make a proper guess for the dipole moments and phase
-# - Allow evaluation from multiple calculations (in this case, the dipole-moment direction can differ)
+# - Log commands and iterations automatically (save intermediate eval.yaml and dipole*fit.dat etc.)
+#  -> e.g., automatically write and update a skript with all commands that are executed
 #
-# Call
 #
-#  ./eval.py [--debug=<dbg>] [<cmd-opt>] cmd arg
-# 
-# Create a new eval.yaml file
-#  ./eval.py [--ext=<extern profile>] new <dipole files>
-#    Generates a new eval.yaml (or other) file based on the dipole-moment files
-#    Automatically groups the dipole-moment files into calculations and areas.
-# Fourier transform
-#  ./eval.py [--minpw=<pw>] [--smooth=<smooth>] [--window=<window>] ft
-#    Fourier transforms the dipole moment files, writes the transformations, and updates eval.yaml. 
-# Pade approx
-#  ./eval.py [--wmax=<wmax>] [--dw=<dw>] [--smooth=<smooth>] [--thin=<thin>] pade
-#    Pade approximates the dipole moment files, writes the transformations, and updates eval.yaml.
-# Make a new guess based on the pade approximation
-#  ./eval.py [<pade opt>] [--thres=<thres>] guess <lb,rb>
-#    Creates a new guess, sets the plot range, and updates eval.yaml.
-#    Does a prior Pade approximation with the given <pade opt> options if not already done.
-# Remove excitation without fit
-#  ./eval.py rm <exlist>
-#    Remove <exlist> from the list of excitations, where exlist is a comma-separated list of excitation labels, e.g., S1,S2,S3
-# Add excitation without fit
-#  ./eval.py [--label=<label>] [--nsig=<nsig>] add [<energy>]
-#    Add new excitation with given label (optional) at given energy (optional).
-#    Do no fit but guess phase and dipoles moments.
-#    Add excitations that are larger than the mean value of maxima of ft-fit plus <nsig> times the standard deviation of maxima heights
-# Reset energy range to the standard pi/T interval around the current excitations' energy values
-#  ./eval.py reset
-# Fit
-#  ./eval.py [<ft opt>] [<guess opt>] [--skip] [--single] [--range=<lb,rb>] [--imag] fit [<nadd>] [<listOfExcitations>]
-#    Fit current excitations (if not --skip), add and fit <nadd> excitations one after the other, and update eval.yaml.
-#    --imag: only use imaginary part for fitting; automatically true for boost excitation.
-#    <nadd> defaults to +0
-#    <exs>    Comma-separated list of excitations to fit
-#    --single: Instead of fitting all excitations at once, fit them one after the other from high to low strength 
-#    Does a prior Fourier transform if not already done.
-#    Does a prior Guess if not already done; requires a range option.
-# Error
-#  ./eval.py error
-#    Compute error value
-# Significance
-#  ./eval.py significance [<listOfExcitations>]
-#    Compute significances of all lines or the excitations given in the comma-separated list of <listOfExcitations>
-# Plot
-#  ./eval.py [--exclude=<listOfExcitations>] plot <listOfMeasures>
-#    Plots <listOfMeasure> in {pade, ft, fit, err, spectrum} with excitations
-#    --exclude=<listOfExcitations>: Excitations that are excluded from the (fitted) data
-# Fix
-#  ./eval.py [--invert] fix {<listOfExcitations>|<energyRange>}
-#    Fix the given list of excitations or energy range
-#    --invert: Do the same but inverted
-# Release
-#  ./eval.py release
-#  Un-fix all excitations
+# See errorHandler.py for usage information
 #------------------------------------------------------------------------------#
 import numpy as np
 import sys
@@ -97,45 +46,56 @@ def main():
     # Process command-line arguments
     #--------------------------------------------------------------------------#
     ifile = "eval.yaml"
+    dbg   = 1
 
     #--------------------------------------------------------------------------#
     # Read configuration from eval.yaml
     #--------------------------------------------------------------------------#
+    if dbg>0: print("Read configuration",end="")
     if not os.path.isfile(ifile):
         config.writeTemplate(ifile)
         err.err(1,'There was no '+ifile+' file, now a template is created!')
     conf  = config.Config(ifile)
+    if dbg>0: print(" - done")
+
 
     #--------------------------------------------------------------------------#
     # Read dipole moments into dip[ncalc][narea] list:
     # In case of an external excitation with t_end>0:
     # Move the time frame so that it starts at t_end
     #--------------------------------------------------------------------------#
+    if dbg>0: print("Read dipole moment files",end="")
     dip = []
     for icalc in range(len(conf.dipfiles)):
         dip.append([])
         for iarea in range(len(conf.dipfiles[icalc])):
             dip[icalc].append(dipole.Dipole(conf.dipfiles[icalc][iarea],["x","y","z"]))
+    if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Fourier transform
     #--------------------------------------------------------------------------#
     if conf.opt["FT"]["calc"]:
+        if dbg>0: print("Calculate Fourier transform",end="")
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
                     executer.submit(dip[icalc][iarea].getFt(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True))
                     dip[icalc][iarea].writeSpectra(what=["ft","pw"])
         conf.opt["FT"]["calc"] = False #Next time: read by default
+        if dbg>0: print(" - done")
     else: #elif conf.opt["Fit"]["calc"] or conf.opt["Fit"]["plot_results"]:
+        if dbg>0: print("Read Fourier transform",end="")
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["ft","pw"])
+        if dbg>0: print(" - done")
         
     #--------------------------------------------------------------------------#
     # Pade approximation
     #--------------------------------------------------------------------------#
     if conf.opt["Pade"]["calc"]:
+        if dbg>0: print("Calculate Pade approximation",end="")
         if not conf.opt["Pade"].get("smooth",0.) > 0.: #Choose automatic smoothing
             conf.opt["Pade"]["smooth"] = float(np.log(100)/dip[0][0].tprop) # e^-s*T=0.01 <=> s=ln(100)/T
         with concurrent.futures.ThreadPoolExecutor() as executer:
@@ -144,56 +104,72 @@ def main():
                     executer.submit(dip[icalc][iarea].getPade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"]))
                     dip[icalc][iarea].writeSpectra(what=["pade"])
         conf.opt["Pade"]["calc"] = False #Next time: read by default
+        if dbg>0: print(" - done")
     else: #elif conf.opt["Fit"]["guess"]:
+        if dbg>0: print("Read Pade approximation",end="")
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["pade"])
+        if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Read and Fourier transform external excitation
     #--------------------------------------------------------------------------#
+    if dbg>0: print("Initialize extern potential",end="")
     ext = extern.Extern(conf.ext.get("profile",""),conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
     #if isinstance(ext,extern.Extern):
     ext.write()
+    if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Initialize excitations structure
     #--------------------------------------------------------------------------#
+    if dbg>0: print("Initialize excitations",end="")
     excit = excitations.Excitations(ncalc=len(conf.dipfiles),narea=len(conf.dipfiles[0]),ncomp=3,ext=ext,exlist=conf.excit)
+    if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Create initial guess for the spectrum fit
     #--------------------------------------------------------------------------#
     dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
     if conf.opt["Fit"]["guess"]:
-        excit = dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],dbg=2)
+        if dbg>0: print("Initial guess",end="")
+        excit = dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],dbg=dbg)
         conf.opt["Fit"]["guess"] = False #Next time: No new initial guess
+        if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Fit
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
-        excit, fiterr = dfit.fit(dbg=2,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),allSignif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",True))
+        if dbg>0: print("Fitting:")
+        excit, fiterr = dfit.fit(dbg=dbg,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),allSignif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",True))
         conf.opt["Fit"]["skipfirst"]    = True
         conf.opt["Fit"]["firstsingle"]  = False
         conf.opt["Fit"]["reset_erange"] = False
         conf.opt["Fit"]["fiterr"]       = float(fiterr)
+        if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Update configuration file
     #--------------------------------------------------------------------------#
+    if dbg>0: print("Update new configuration file")
     conf.excit = [excit.exlist[i].todict() for i in range(len(excit.exlist))]
     conf.write(ifile) 
+    if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Write Fit files
     #--------------------------------------------------------------------------#
-    if conf.opt["Fit"]["calc"]: dfit.writeFit()
+    if dbg>0: print("Write fit files")
+    if conf.opt["Fit"]["calc"]: dfit.writeFit(dbg=dbg)
     excit.excitFiles(dip[0][0].tprop)
+    if dbg>0: print(" - done")
 
     #--------------------------------------------------------------------------#
     # Plot spectrum
     #--------------------------------------------------------------------------#
+    if dbg>0: print("Plot spectrum")
     excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
     for icalc in range(excit.ncalc):
         excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrumEped_{icalc+1}.png")
@@ -202,6 +178,7 @@ def main():
 #            for icomp in range(excit.ncomp):
 #                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
         excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
+    if dbg>0: print(" - done")
 
 #------------------------------------------------------------------------------#
 # Call main
