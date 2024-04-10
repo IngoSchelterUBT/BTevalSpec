@@ -17,7 +17,7 @@ OPT:
   Fit:
     calc: true                      # Turn fit on/off
     skipfirst: false                # Skip first fit of existing excitations
-    guess: true                     # Turn guess for fit via Pade Approximation on/off
+    guess: pade                     # Turn guess for fit via Pade Approximation on/off
     plot_result: true               # If True: The fit results are plotted without fitting again
     gnuplot_spectrum: false         # If True: A gnuplot script for plotting the resulting spectrum is created.
     dat_spectrum: false             # If True: A .dat file for the spectrum is created

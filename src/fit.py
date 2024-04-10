@@ -136,28 +136,35 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Make an initial guess based on the sum of the Pade power spectra and the FT spectra
     #--------------------------------------------------------------------------#
-    def newGuess(self,hf=0.05,dbg=0):
+    def newGuess(self,guesstype="pade",hf=0.05,dbg=0,nsigma=2.):
         # Init empty excitation object and arrays
         self.excit = excitations.Excitations(ncalc=self.ncalc,narea=self.narea,ncomp=self.ncomp,ext=self.ext)
-        fdat       = self.pade
-        f          = np.zeros(len(self.freqPade),dtype=float)
-        # Sum up squared Pade spectra
-        for icalc in range(self.ncalc):
-            for iarea in range(self.narea):
-                for n in range(self.ncomp):
-                    for irc in range(2):
-                        for i in range(self.NfPade):
-                            f[i] += fdat[icalc][iarea][n][irc][i]**2
-        # Search most prominent peaks
-        piT = np.pi/self.tprop
-        peaks = self.findPeaks(self.freqPade,np.sqrt(f),dbg=dbg,hf=hf,dw=piT,minwidth=piT)
-        # For each peak
-        for ipeak in range(len(peaks)):
-            #Get energy and guess phase and dipoles based on the FT
-            energy  = self.freqPade[peaks[ipeak]]
-            phase, dipoles = self.guessExcit(energy)
-            #Add excitation to list
-            self.excit.add(energy=energy,phase=phase,dipoles=dipoles,erange=piT)
+        # Pade-based guess
+        if guesstype=="pade":
+            fdat       = self.pade
+            f          = np.zeros(len(self.freqPade),dtype=float)
+            # Sum up squared Pade spectra
+            for icalc in range(self.ncalc):
+                for iarea in range(self.narea):
+                    for n in range(self.ncomp):
+                        for irc in range(2):
+                            for i in range(self.NfPade):
+                                f[i] += fdat[icalc][iarea][n][irc][i]**2
+            # Search most prominent peaks
+            piT = np.pi/self.tprop
+            peaks = self.findPeaks(self.freqPade,np.sqrt(f),dbg=dbg,hf=hf,dw=piT,minwidth=piT)
+            # For each peak
+            for ipeak in range(len(peaks)):
+                #Get energy and guess phase and dipoles based on the FT
+                energy  = self.freqPade[peaks[ipeak]]
+                phase, dipoles = self.guessExcit(energy)
+                #Add excitation to list
+                self.excit.add(energy=energy,phase=phase,dipoles=dipoles,erange=piT)
+        elif guesstype=="ft":
+            nadd=self.addEx(dbg=dbg,nsigma=nsigma)
+            if nadd==0: nadd=self.addEx(dbg=dbg,singleMax=True,nsigma=nsigma)
+        else:
+            err(1,"Unknown guess type "+guesstype)
         return self.excit
 
     #--------------------------------------------------------------------------#
@@ -196,8 +203,10 @@ class Fit:
         for iarea in range(self.narea):
             dipoles.append([])
             for icomp in range(self.ncomp):
-                dipoles[iarea].append(heightArea[icomp][iarea]/(T*Ef*eped/np.sqrt(np.abs(eped))*np.abs(Hw)*dipabs)) # hightarea[icomp] = T*Ef*eped*abs(Hw)*abs(mu)*mu[icomp] -> solve for mu[icomp]
+                #dipoles[iarea].append(heightArea[icomp][iarea]/(T*Ef*eped/np.sqrt(np.abs(eped))*np.abs(Hw)*dipabs)) # hightarea[icomp] = T*Ef*eped*abs(Hw)*abs(mu)*mu[icomp] -> solve for mu[icomp]
                 #Line above: sqrt(eped) is used to underestimate the dipoles more the less it is aligned with the ext. excitation polarization
+                #Here the version without 1/sqrt(abs(eped))
+                dipoles[iarea].append(heightArea[icomp][iarea]/(T*Ef*eped*np.abs(Hw)*dipabs)) # hightarea[icomp] = T*Ef*eped*abs(Hw)*abs(mu)*mu[icomp] -> solve for mu[icomp]
 
         return phase, dipoles
             
@@ -347,8 +356,8 @@ class Fit:
         stdHeight  = np.std (heights) #Standard deviation
         baseHeight = meanHeight + nsigma*stdHeight
         if singleMax:
-            maxen  = [energies[argmax(heights)]]
-            maxhei = [heights [argmax(heights)]]
+            maxen  = [energies[np.argmax(heights)]]
+            maxhei = [heights [np.argmax(heights)]]
         else:
             maxen  = [energies[i] for i in range(len(energies)) if heights[i]>baseHeight]
             maxhei = [heights [i] for i in range(len(heights )) if heights[i]>baseHeight]
