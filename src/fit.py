@@ -16,7 +16,7 @@ import extern
 from mathtools import fspectrum #, butter_lowpass_filter
 
 class Fit:
-    def __init__(self,dip,ext,excit,fitrange):
+    def __init__(self,dip,ext,excit,fitrange,wref):
         self.fitrange = fitrange
         self.dip      = dip
         self.ext      = ext
@@ -70,7 +70,8 @@ class Fit:
         self.ftrcnorm = np.linalg.norm(self.ftrc.flatten()) #Use ftrc as reference
         self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
         self.fiterr   = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
-        self.scal     = self.getScaling(self.excit,dbg=0,wref=1.)
+        self.wref     = wref
+        self.scal     = self.getScaling(self.excit,dbg=0,wref=self.wref)
         self.breakMinimization = False
         self.runningError = 1000000.
 
@@ -366,7 +367,7 @@ class Fit:
             phase, dipoles = self.guessExcit(en)
             self.excit.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
-        if dbg>1:
+        if dbg>0:
             plt.plot(sorted(heights,reverse=True),"x")
             plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
             plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
@@ -507,7 +508,7 @@ class Fit:
         self.pwfit   = self.getPw     (self.ftfit)
         self.ftfitrc = self.getFitFunc(self.excit,self.rc)
         self.fiterr  = self.getError  (self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
-        self.scal    = self.getScaling(self.excit,dbg=dbg,wref=1.)
+        self.scal    = self.getScaling(self.excit,dbg=dbg,wref=self.wref)
 
     #--------------------------------------------------------------------------#
     # Report fit

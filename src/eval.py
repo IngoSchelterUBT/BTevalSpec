@@ -46,7 +46,7 @@ def main():
     # Process command-line arguments
     #--------------------------------------------------------------------------#
     ifile = "eval.yaml"
-    dbg   = 2
+    dbg   = 1
 
     #--------------------------------------------------------------------------#
     # Read configuration from eval.yaml
@@ -131,7 +131,7 @@ def main():
     #--------------------------------------------------------------------------#
     # Create initial guess for the spectrum fit
     #--------------------------------------------------------------------------#
-    dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"])
+    dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"],conf.opt["Fit"].get("errsuppr_wref",0.))
     if conf.opt["Fit"]["guess"]!="no":
         if dbg>0: print("Initial guess",end="")
         excit = dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],guesstype=conf.opt["Fit"]["guess"],nsigma=conf.opt["Fit"].get("nsigma",2.),dbg=dbg)

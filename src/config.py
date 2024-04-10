@@ -89,6 +89,7 @@ def writeTemplate(ofile):
         significances: False
         fiterr: 0.                  # Current fit error
         reset_erange: False         # Reset the excitation-specific energy fit range around the current energy
+        errsuppr_wref: 0.0          # reference-w for error suppression close to fitted excitations (large wref=large error suppression close to large lines = fit is not spoiled by fit errors close to large lines = hard to fit "real" excitations close to large lines)
     SPEC:
       - name:         "S1"                    #Identifier
         fix:          False                   #Set to true if the excitation shall be unchanged in a restart run
