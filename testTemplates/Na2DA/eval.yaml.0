@@ -27,11 +27,10 @@ OPT:
     dat_spectrum: false             # If True: A .dat file for the spectrum is created
     guess_thres: 0.1                # Relative height of line in Pade Approximation compared to highest line 
                                     #   which should be identified as a line for fitting (only relevent, if 
-                                    #   fit_guess == True).
+                                    #   guess == True).
     relerr_crit: 0.001               # Criterium for relative error between fit and data (only relevant, if 
-                                    #   fit_guess == True).
-    max_excit: 2                    # Maximum numer of iterations used to reach relative error between fit and 
-                                    #   data (only relevant, if fit_guess == True)
+                                    #   guess == True).
+    max_excit: 2                    # Maximum numer of iterations used to reach relative error between fit and data
     relspacing_lines: 0.01          # Threshold for relative error between two lines which should be identified 
                                     #   as one in fit of trace (only relevant, if number of dipole files == 3).
     range:                          # Range of spectrum which should be fitted in Ry
@@ -44,3 +43,4 @@ OPT:
     significances: true
     fiterr: 0.4313167554943775      # Current fit error
     reset_erange: false             # Reset the excitation-specific energy fit range around the current energy
+    errsuppr_wref: 0.0              # reference-w for error suppression close to fitted excitations (large wref=large error suppression close to large lines = fit is not spoiled by fit errors close to large lines = hard to fit "real" excitations close to large lines)

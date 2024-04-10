@@ -66,7 +66,7 @@ def writeTemplate(ofile):
         calc: True                  # Turn fit on/off
         skipfirst: False            # Skip first fit of existing excitations
         firstsingle: False          # If not skipfirst: Fit input excitations all at once (False) or one after the other (by strength) (True)
-        fitphase: True              # Use the phase as a fit parameter (or get it from the external profile alone)
+        fitphase: False             # Use the phase as a fit parameter (or get it from the external profile alone)
         guess: pade                 # Can be "pade" for a Pade-based guess, "ft" for an FT-based guess (the same as used for adding excitations), and "no" (which is the default for a restart run)
         plot_result: True           # If True: The fit results are plotted without fitting again
         gnuplot_spectrum: False     # If True: A gnuplot script for plotting the resulting spectrum is created.

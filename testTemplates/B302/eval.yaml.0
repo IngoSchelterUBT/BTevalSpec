@@ -26,8 +26,7 @@ OPT:
                                     #   guess == True).
     relerr_crit: 0.05               # Criterium for relative error between fit and data (only relevant, if 
                                     #   guess == True).
-    max_excit: 35                   # Maximum numer of iterations used to reach relative error between fit and 
-                                    #   data (only relevant, if fit_guess == True)
+    max_excit: 35                   # Maximum numer of iterations used to reach relative error between fit and data
     relspacing_lines: 0.01          # Threshold for relative error between two lines which should be identified 
                                     #   as one in fit of trace (only relevant, if number of dipole files == 3).
     range:                          # Range of spectrum which should be fitted in Ry
@@ -35,4 +34,5 @@ OPT:
     - 0.35
     significances: True
     nsigma: 2.
-EXT: {}
+    reset_erange: false             # Reset the excitation-specific energy fit range around the current energy
+    errsuppr_wref: 0.0              # reference-w for error suppression close to fitted excitations (large wref=large error suppression close to large lines = fit is not spoiled by fit errors close to large lines = hard to fit "real" excitations close to large lines)

@@ -146,7 +146,7 @@ def main():
     #--------------------------------------------------------------------------#
     if conf.opt["Fit"]["calc"]:
         if dbg>0: print("Fitting:")
-        excit, fiterr = dfit.fit(dbg=dbg,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),allSignif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",True))
+        excit, fiterr = dfit.fit(dbg=dbg,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),allSignif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",False))
         conf.opt["Fit"]["skipfirst"] = not (oldguess != "no" and conf.opt["Fit"]["skipfirst"]) #If this run only does an initial guess without fitting, set skipfirst to False (True else)
         conf.opt["Fit"]["firstsingle"]  = False
         conf.opt["Fit"]["reset_erange"] = False

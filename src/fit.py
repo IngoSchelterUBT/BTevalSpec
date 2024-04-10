@@ -174,8 +174,7 @@ class Fit:
     def guessExcit(self,energy):
         # Get the excitation strength/phase at that energy
         Hw    = self.ext.getVal([energy])[0]
-        #phase = np.angle(-np.conj(Hw))%(2.*np.pi)
-        phase = -np.angle(Hw)%(2.*np.pi)
+        phase = np.angle(Hw)%(2.*np.pi)
         # Get the closest index in the FT array
         idx = int(np.rint((energy-self.freq[0])/self.dw))
         # Find the calculation for which the excitation's peak is largest
@@ -185,8 +184,8 @@ class Fit:
         T           = self.tprop
         Ef          = self.dip[    0][0].efield
         Ep          = self.dip[jcalc][0].epol
-        heightArea  = [[np.imag(np.exp(1.0j*phase)*     ampl[jcalc][iarea][icomp]) for iarea in range(self.narea)]   for icomp in range(self.ncomp)] #Rotate the height by e^-i*phi and take its imag part to get the line heights (with sign)
-        height      = [ np.imag(np.exp(1.0j*phase)*sum([ampl[jcalc][iarea][icomp]  for iarea in range(self.narea)])) for icomp in range(self.ncomp)]
+        heightArea  = [[np.imag(np.exp(-1.0j*phase)*     ampl[jcalc][iarea][icomp]) for iarea in range(self.narea)]   for icomp in range(self.ncomp)] #Rotate the height by e^-i*phi and take its imag part to get the line heights (with sign)
+        height      = [ np.imag(np.exp(-1.0j*phase)*sum([ampl[jcalc][iarea][icomp]  for iarea in range(self.narea)])) for icomp in range(self.ncomp)]
         dipdir      = height/np.linalg.norm(height) # Direction of the dipole moment
         eped        = np.dot(dipdir,Ep) # Scalar product e_pol.e_mu
         #Prevent overestimating the dipole moment if the latter is almost orthogonal to the ext. field polarization:
@@ -581,8 +580,7 @@ class Fit:
         dw        = 0.5*(exsN.exlist[iex0].erange[1]-exsN.exlist[iex0].erange[0])
         signifRng = 1.-(np.abs(w-wc)/np.abs(dw))**4
         Hw        = self.ext.getVal([exsN.exlist[iex0].energy])[0]
-        #phaana    = np.angle(-np.conj(Hw))%(2.*np.pi)
-        phaana    = -np.angle(Hw)%(2.*np.pi)
+        phaana    = np.angle(Hw)%(2.*np.pi)
         phafit    = exsN.exlist[iex0].phase
         phadiff   = (phaana-phafit)%(2*np.pi) #in ]-2pi:2pi]
         if phadiff <= -np.pi: phadiff += 2*np.pi #Move into ]-pi:pi] range
