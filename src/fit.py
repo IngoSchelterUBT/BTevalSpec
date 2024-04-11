@@ -141,7 +141,7 @@ class Fit:
         # Init empty excitation object and arrays
         self.excit = excitations.Excitations(ncalc=self.ncalc,narea=self.narea,ncomp=self.ncomp,ext=self.ext)
         # Pade-based guess
-        if guesstype=="pade":
+        if guesstype in ["pade",True,"true"]:
             fdat       = self.pade
             f          = np.zeros(len(self.freqPade),dtype=float)
             # Sum up squared Pade spectra
@@ -162,10 +162,11 @@ class Fit:
                 #Add excitation to list
                 self.excit.add(energy=energy,phase=phase,dipoles=dipoles,erange=piT)
         elif guesstype=="ft":
-            nadd=self.addEx(dbg=dbg,nsigma=nsigma)
-            if nadd==0: nadd=self.addEx(dbg=dbg,singleMax=True,nsigma=nsigma)
+            self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma)
+            if nadd==0:
+                self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True,nsigma=nsigma)
         else:
-            err(1,"Unknown guess type "+guesstype)
+            err(1,"Unknown guess type "+str(guesstype))
         return self.excit
 
     #--------------------------------------------------------------------------#
@@ -223,8 +224,11 @@ class Fit:
                 print("    energy: ",pos[i])
                 for key, val in prop.items():
                     print("    ",key,val)
+        if dbg>0:
             plt.plot(freq,f)
-            plt.plot(freq[pos], f[pos], "x")
+            plt.plot(freq[pos],f[pos],"x")
+            plt.xlabel("Energy [Ry]")
+            plt.ylabel("Pade spectrum [a.u.]")
             plt.show()
 
         return pos
@@ -327,22 +331,32 @@ class Fit:
                             nmu  = np.abs(ex.dipoles[iarea][icomp]/np.linalg.norm(ex.dipole))
                             scal[icalc][iarea][icomp][i] += wref*T*f*eped*nmu/np.sqrt(T2*dw2+1)
         return scal
-
+    
     #--------------------------------------------------------------------------#
-    # Add new excitation
+    # Compute objective function for adding new exictations
+    # (obj0 is a version without error-compensating scaling)
     #--------------------------------------------------------------------------#
-    def addEx(self,dbg=0,singleMax=False,nsigma=2.):
-        fdat   = self.ftrc   
-        ffit   = self.ftfitrc
-        scal   = self.scal
-
-        obj = np.zeros(self.Nf)
+    def addExObj(self,fdat,ffit,scal):
+        obj  = np.zeros(self.Nf)
+        obj0 = np.zeros(self.Nf)
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
                     for irc in range(self.nrc):
-                        obj += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp])**2
-        obj = np.sqrt(obj)
+                        obj  += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp])**2
+                        obj0 += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc])))**2
+        return np.sqrt(obj), np.sqrt(obj0)
+
+    #--------------------------------------------------------------------------#
+    # Add new excitation
+    #--------------------------------------------------------------------------#
+    def addEx(self,excit,dbg=0,singleMax=False,nsigma=2.):
+        excit0 = excit.copy()
+        fdat   = self.ftrc   
+        ffit   = self.ftfitrc
+        scal   = self.scal
+
+        obj, obj0 = self.addExObj(fdat,ffit,scal)
         pos, prop = find_peaks(obj)
 
         energies = []
@@ -364,33 +378,38 @@ class Fit:
         piT = np.pi/self.tprop
         for en in maxen:
             phase, dipoles = self.guessExcit(en)
-            self.excit.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
+            excit0.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
         if dbg>0:
-            plt.plot(sorted(heights,reverse=True),"x")
-            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
-            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
-            plt.savefig("heights.png")
-            plt.show()
-            plt.plot(self.freq,obj)
-            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
+#!            plt.plot(sorted(heights,reverse=True),"x")
+#!            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
+#!            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
+#!            plt.savefig("heights.png")
+#!            plt.show()
+            plt.plot(self.freq,obj0,label="unscaled objective")
+            plt.plot(self.freq,obj ,label="  scaled objective")
+            plt.xlabel("Energy [Ry]")
+            plt.ylabel("Objective function [a.u.]")
+            plt.legend(loc="upper right")
+            plt.axhline(y=meanHeight                 ,color="r",linestyle="-")
             plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
             plt.plot(maxen,maxhei,"x")
             plt.savefig("objective.png")
             plt.show()
 
-        if dbg>0: self.excit.print(long=dbg>1)
-        return len(maxen) #Return number of added excitations
+        if dbg>0:
+            excit0.print(long=dbg>1)
+        return excit0, len(maxen)
 
     #--------------------------------------------------------------------------#
-    # Fit Wrapper
+    # Fit wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True,verbose=False):
+    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
 
         #----------------------------------------------------------------------#
         # Reset excitation-specific energy fit range
         if resetErange:
-            if verbose: print("  - Reset energy range")
+            if dbg>0: print("  - Reset energy range")
             self.excit.resetErange(self.fwhm)
 
         #----------------------------------------------------------------------#
@@ -399,13 +418,13 @@ class Fit:
         self.update(dbg=dbg)
         if not skipfirst:
             if firstsingle: #Fit single excitations
-                if verbose: print("  - Fit single excitations")
+                if dbg>0: print("  - Fit single excitations")
                 try:
                     #i) Sort excitations by effective size in the spectrum (strength*eped)
                     iexs = np.argsort([np.sqrt(sum([self.excit.exlist[iex].strengthEped[icalc]**2 for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
                     #ii) Fit single excitations one after the other
                     for iex in np.flip(iexs):              #Go through excitations from large to small
-                        if verbose: print("    excit",iex)
+                        if dbg>0: print("    excit",iex)
                         self.excit.fix()                   #Fix all
                         self.excit.release(which=[iex])    #Release single excitation iex
                         self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
@@ -414,7 +433,7 @@ class Fit:
                 except:
                     raise #self.excit is not updated in this case
             else: #Fit all excitations at once
-                if verbose: print("  - Fit excitations collectivly")
+                if dbg>0: print("  - Fit excitations collectivly")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit existing excitations
                 self.update(dbg=dbg)      # Update some self.components
                 self.reportFit(dbg=dbg)
@@ -426,42 +445,42 @@ class Fit:
 
             #------------------------------------------------------------------#
             # Add excitations
-            if verbose: print("  - Fix excitations")
+            if dbg>0: print("  - Fix excitations")
             self.excit.fix()                         # Temporarily fix all existing excitations
-            if verbose: print("  - Add new excitations:",end="")
-            nadd = self.addEx(dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
-            if verbose: print(nadd)
+            if dbg>0: print("  - Add new excitations: ",end="")
+            self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
+            if dbg>0: print(nadd)
             if nadd==0:
-                if verbose: print("  - Add single largest line")
-                nadd = self.addEx(dbg=dbg,singleMax=True) # Add single largest peak as excitation
+                if dbg>0: print("  - Add single largest line")
+                self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True) # Add single largest peak as excitation
 
             #------------------------------------------------------------------#
             # Fit all new ones (all at once)
             try:
-                if verbose: print("  - Fit new excitations",end="")
+                if dbg>0: print("  - Fit new excitations",end="")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) # Fit new excitations alone
                 self.update(dbg=dbg)               # Update some self.components
                 self.excit.release()               # Release all temporarily fixed excitations
-                if verbose: print(" - done")
+                if dbg>0: print(" - done")
             except:
                 raise #self.excit is not updated in this case
 
             #------------------------------------------------------------------#
             # Fit single excitations that still have zero error (those were not fitted properly, maybe due to their low weight)
             try:
-                if verbose: print("  - Fit single new excitations that have zero error",end="")
+                if dbg>0: print("  - Fit single new excitations that have zero error",end="")
                 #i) Sort excitations by effective size in the spectrum (strength*eped)
                 iexs = np.argsort([np.sqrt(sum([self.excit.exlist[iex].strengthEped[icalc]**2 for icalc in range(self.ncalc)])) for iex in range(len(self.excit.exlist))])
                 #ii) Fit single excitations one after the other
                 for iex in np.flip(iexs):              #Go through excitations from large to small
                     if self.excit.exlist[iex].strengthErr > 0.: continue
-                    if verbose: print(iex,end="")
+                    if dbg>0: print(iex,end="")
                     self.excit.fix()                   #Fix all
                     self.excit.release(which=[iex])    #Release single excitation iex
                     self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
                     self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) #Fix single excitation
                     self.excit.release()               #Release all excitations
-                if verbose: print(" - done")
+                if dbg>0: print(" - done")
             except:
                 raise #self.excit is not updated in this case
 
@@ -476,10 +495,10 @@ class Fit:
             #------------------------------------------------------------------#
             # Fit all excitations
             try:
-                if verbose: print("  - Fit all excitations",end="")
+                if dbg>0: print("  - Fit all excitations",end="")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit all non-permanently fixed excitations
                 self.update(dbg=dbg)      # Update some self.components
-                if verbose: print(" - done")
+                if dbg>0: print(" - done")
             except:
                 raise #self.excit is not updated in this case
 
@@ -488,15 +507,20 @@ class Fit:
             self.reportFit(dbg=dbg)
             if dbg>2: self.plotFitDebug(it)
             if self.fiterr<tol:
-                if verbose: print("  - Reached tolerance -> exit")
+                if dbg>0: print("  - Reached tolerance -> exit")
                 break
+            
+        #----------------------------------------------------------------------#
+        # Simulate adding new excitations
+        if dbg>0: print("  - Simulate adding new excitations:")
+        extmp, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma)
   
         #----------------------------------------------------------------------#
         # Compute significances (and update self.excit)
         self.update(dbg=dbg)      # Call update again if nothing has been done here
-        if verbose: print("  - Calculate significances",end="")
+        if dbg>0: print("  - Calculate significances",end="")
         self.setSignificances(allSignif=allSignif,noPhase=not fitphase)
-        if verbose: print(" - done")
+        if dbg>0: print(" - done")
         return self.excit, self.fiterr
 
     #--------------------------------------------------------------------------#
