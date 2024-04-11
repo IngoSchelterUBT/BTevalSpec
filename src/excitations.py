@@ -345,7 +345,11 @@ class Excitations:
                     print("      ", iarea, ex.dipoles[iarea])
             else:
                 pistr=u"\u03c0"
-                print(f"{ex.name:5s} | fix:{ex.fix!s:^5} | E={ex.energy:7.4f}Ry | phi={ex.phase/np.pi:5.2f}{pistr} | f={ex.strength:6.3f}")
+                print(f"{ex.name:5s} | fix:{ex.fix!s:^5} | E={ex.energy:7.4f}Ry | phi={ex.phase/np.pi:5.2f}{pistr} | f={ex.strength:6.3f}",end="")
+                for icalc in range(self.ncalc):
+                    ampl = np.linalg.norm([sum([ex.ampl[icalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)])
+                    print(f"| |a|({icalc})={ampl:6.3e}",end="")
+                print("")
 
     #-------------------------------------------------------------------------
     # Create amplitude files
@@ -363,9 +367,9 @@ class Excitations:
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
                     with open(f"amplT_{icalc+1:1d}_{str(iarea+1).zfill(2)}_{xyz[icomp]}.dat","w") as fh:
-                        fh.write("# name | energy | amplitude*T | energy err | amplitude*T error\n")
+                        fh.write("# name  |   energy   | amplitude*T|  energy err  | amplitude*T error\n")
                         for iex, ex in enumerate(self.exlist):
-                            fh.write(f"{ex.name:8s} {ex.energy:12.5e} {ex.ampl[icalc][iarea][icomp]*tprop:12.5e} {ex.energyErr:12.5e} {ex.amplErr[icalc][iarea][icomp]*tprop:12.5e}\n")
+                            fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.ampl[icalc][iarea][icomp]*tprop:12.5e} {ex.energyErr:14.7f} {ex.amplErr[icalc][iarea][icomp]*tprop:14.7e}\n")
 
     #-------------------------------------------------------------------------
     # Return Lorentz function as well as energies, strengths, and labels
