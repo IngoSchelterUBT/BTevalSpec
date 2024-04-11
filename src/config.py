@@ -108,6 +108,8 @@ def writeTemplate(ofile):
         signifAng:    0.                      #Significanc: sqrt(cos(angle between ext polarization and dipole))
         signifExc:    0.                      #Significanc: Fitting a single line again
         signifErr:    0.                      #Significanc: From Fitting-Error
+        signifRng:    0.                      #Significanc: From Low if close to energy-range boundary
+        signifPha:    0.                      #Significanc: From difference to analytical phase
     """
     yaml = ruamel.yaml.YAML()
     code = yaml.load(conf)
