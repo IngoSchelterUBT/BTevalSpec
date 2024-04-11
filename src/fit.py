@@ -396,6 +396,8 @@ class Fit:
             plt.plot(maxen,maxhei,"x")
             plt.savefig("objective.png")
             plt.show()
+            head = 'Energy (Ry) | unscaled addExObj | scaled addExObj '
+            np.savetxt("addExObj.dat",np.column_stack((self.freq,obj0,obj)),header=head)
 
         if dbg>0:
             excit0.print(long=dbg>1)
@@ -405,6 +407,12 @@ class Fit:
     # Fit wrapper
     #--------------------------------------------------------------------------#
     def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
+
+        #------------------------------------------------------------------#
+        # Report initial state
+        if dbg>0:
+            print("  - Initial state")
+            self.reportFit(dbg=dbg)
 
         #----------------------------------------------------------------------#
         # Reset excitation-specific energy fit range
@@ -436,7 +444,7 @@ class Fit:
                 if dbg>0: print("  - Fit excitations collectivly")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit existing excitations
                 self.update(dbg=dbg)      # Update some self.components
-                self.reportFit(dbg=dbg)
+            self.reportFit(dbg=dbg)
         nex = len(self.excit.exlist)
 
         #----------------------------------------------------------------------#
@@ -447,12 +455,13 @@ class Fit:
             # Add excitations
             if dbg>0: print("  - Fix excitations")
             self.excit.fix()                         # Temporarily fix all existing excitations
-            if dbg>0: print("  - Add new excitations: ",end="")
+            if dbg>0: print("  - Add new excitations:")
             self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
-            if dbg>0: print(nadd)
+            if dbg>0: print("Added "+str(nadd))
             if nadd==0:
                 if dbg>0: print("  - Add single largest line")
                 self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True) # Add single largest peak as excitation
+                if dbg>0: print("Added "+str(nadd))
 
             #------------------------------------------------------------------#
             # Fit all new ones (all at once)
@@ -514,6 +523,7 @@ class Fit:
         # Simulate adding new excitations
         if dbg>0: print("  - Simulate adding new excitations:")
         extmp, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma)
+        if dbg>0: print("Added "+str(nadd))
   
         #----------------------------------------------------------------------#
         # Compute significances (and update self.excit)
@@ -537,9 +547,11 @@ class Fit:
     # Report fit
     #--------------------------------------------------------------------------#
     def reportFit(self,dbg=0):
+        print("--------------------------------")
         print(f"Nex {len(self.excit.exlist):3d} | Error {self.fiterr:7.4f}")
         if dbg>0:
             self.excit.print(long=dbg>1)
+        print("--------------------------------")
 
     #--------------------------------------------------------------------------#
     # Compute excitation significances
