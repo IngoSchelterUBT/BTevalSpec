@@ -365,11 +365,20 @@ class Excitations:
         xyz = ["x","y","z"]
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
-                for icomp in range(self.ncomp):
-                    with open(f"amplT_{icalc+1:1d}_{str(iarea+1).zfill(2)}_{xyz[icomp]}.dat","w") as fh:
-                        fh.write("# name  |   energy   | amplitude*T|  energy err  | amplitude*T error\n")
-                        for iex, ex in enumerate(self.exlist):
-                            fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.ampl[icalc][iarea][icomp]*tprop:12.5e} {ex.energyErr:14.7f} {ex.amplErr[icalc][iarea][icomp]*tprop:14.7e}\n")
+                with open(f"ampl_{icalc+1:1d}_{str(iarea+1).zfill(2)}.dat","w") as fh:
+                    fh.write("# name  |   energy   |   ampl x   |   ampl y   |   ampl z    |  abs(ampl)  | energy err | ampl err x | ampl err y | ampl err z | abs(ampl) err\n")
+                    for iex, ex in enumerate(self.exlist):
+                        ampl    = np.linalg.norm([ex.ampl   [icalc][iarea][icomp] for icomp in range(self.ncomp)])
+                        amplErr = np.linalg.norm([ex.amplErr[icalc][iarea][icomp] for icomp in range(self.ncomp)])
+                        fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.ampl[icalc][iarea][0]:12.5e} {ex.ampl[icalc][iarea][1]:12.5e} {ex.ampl[icalc][iarea][2]:12.5e} {ampl:12.5e} {ex.energyErr:12.5f} {ex.amplErr[icalc][iarea][0]:12.5e} {ex.amplErr[icalc][iarea][1]:12.5e} {ex.amplErr[icalc][iarea][2]:12.5e} {amplErr:12.5e}\n")
+            with open(f"ampl_{icalc+1:1d}_glob.dat","w") as fh:
+                fh.write("# name  |   energy   |   ampl x   |   ampl y   |   ampl z    |  abs(ampl)  | energy err | ampl err x | ampl err y | ampl err z | abs(ampl) err\n")
+                for iex, ex in enumerate(self.exlist):
+                    amplGlob    = [           sum([ex.ampl   [icalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)]
+                    amplGlobErr = [np.linalg.norm([ex.amplErr[icalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)]
+                    ampl    = np.linalg.norm(amplGlob   )
+                    amplErr = np.linalg.norm(amplGlobErr)
+                    fh.write(f"{ex.name:8s} {ex.energy:12.5f} {amplGlob[0]:12.5e} {amplGlob[1]:12.5e} {amplGlob[2]:12.5e} {ampl:12.5e} {ex.energyErr:12.5f} {amplGlobErr[0]:12.5e} {amplGlobErr[1]:12.5e} {amplGlobErr[2]:12.5e} {amplErr:12.5e}\n")
 
     #-------------------------------------------------------------------------
     # Return Lorentz function as well as energies, strengths, and labels

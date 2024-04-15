@@ -529,7 +529,7 @@ class Fit:
         # Compute significances (and update self.excit)
         self.update(dbg=dbg)      # Call update again if nothing has been done here
         if dbg>0: print("  - Calculate significances",end="")
-        self.setSignificances(allSignif=allSignif,noPhase=not fitphase)
+        self.setSignificances(allSignif=allSignif,noPhase=not fitphase,dbg=dbg)
         if dbg>0: print(" - done")
         return self.excit, self.fiterr
 
@@ -556,9 +556,10 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Compute excitation significances
     #--------------------------------------------------------------------------#
-    def setSignificances(self,allSignif=False,noPhase=False):
+    def setSignificances(self,allSignif=False,noPhase=False,dbg=0):
         sN = self.getError(self.ftrc,self.ftfitrc,datnorm=self.ftrcnorm)
         for iex, ex in enumerate(self.excit.exlist):
+            if dbg>0: print("    "+ex.name)
             self.setSignificance(self.excit,iex,sN=sN,rc=self.rc,allSignif=allSignif,noPhase=noPhase)
 
     #--------------------------------------------------------------------------#
