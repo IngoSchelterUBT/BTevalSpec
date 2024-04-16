@@ -358,9 +358,9 @@ class Excitations:
 
         for icalc in range(self.ncalc):
             with open(f"excit_{icalc+1:1d}.dat","w") as fh:
-                fh.write("# name  |   energy   |  strength  |  eped      |strengthEped|   energyErr  | strengthError|   epedErr   |strengthEpedErr|signifFit|signifAng|signifExc|signifErr|signifRng|signifPha\n")
+                fh.write("# name  | energy[Ry] |  strength  | phase[rad] |  eped      |strengthEped|   energyErr  | strengthError|   phaseErr   |   epedErr   |strengthEpedErr|signifFit|signifAng|signifExc|signifErr|signifRng|signifPha\n")
                 for iex, ex in enumerate(self.exlist):
-                    fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.strength:12.5f} {ex.eped[icalc]:12.5f} {ex.strengthEped[icalc]:12.5f} {ex.energyErr:14.7f} {ex.strengthErr:14.7f} {ex.epedErr[icalc]:14.7f} {ex.strengthEpedErr[icalc]:14.7f} {ex.signifFit:9.2f} {ex.signifAng:9.2f} {ex.signifExc:9.2f} {ex.signifErr:9.2f} {ex.signifRng:9.2f} {ex.signifPha:9.2f}\n")
+                    fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.strength:12.5f} {ex.phase:12.5f} {ex.eped[icalc]:12.5f} {ex.strengthEped[icalc]:12.5f} {ex.energyErr:14.7f} {ex.strengthErr:14.7f} {ex.phaseErr:14.7f} {ex.epedErr[icalc]:14.7f} {ex.strengthEpedErr[icalc]:14.7f} {ex.signifFit:9.2f} {ex.signifAng:9.2f} {ex.signifExc:9.2f} {ex.signifErr:9.2f} {ex.signifRng:9.2f} {ex.signifPha:9.2f}\n")
 
         xyz = ["x","y","z"]
         for icalc in range(self.ncalc):
