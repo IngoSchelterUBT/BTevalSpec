@@ -225,11 +225,16 @@ class Fit:
                 for key, val in prop.items():
                     print("    ",key,val)
         if dbg>0:
+            plt.rcParams["text.usetex"] = True
+            plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
             plt.plot(freq,f)
             plt.plot(freq[pos],f[pos],"x")
             plt.xlabel("Energy [Ry]")
-            plt.ylabel("Pade spectrum [a.u.]")
+            plt.ylabel(r"$\|\boldsymbol{\Delta}_{\mathrm{pade}}\|^\prime$ [a.u.]")
+            plt.savefig("padeObjective.png",dpi=300)
             plt.show()
+            plt.rcParams["text.latex.preamble"] = r""
+            plt.rcParams["text.usetex"] = False
 
         return pos
 
@@ -381,23 +386,27 @@ class Fit:
             excit0.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
         if dbg>0:
+            plt.rcParams["text.usetex"] = True
+            plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
 #!            plt.plot(sorted(heights,reverse=True),"x")
 #!            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
 #!            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
 #!            plt.savefig("heights.png")
 #!            plt.show()
-            plt.plot(self.freq,obj0,label="unscaled objective")
-            plt.plot(self.freq,obj ,label="  scaled objective")
+            plt.plot(self.freq,obj0,label="without scaling")
+            plt.plot(self.freq,obj ,label="with    scaling")
             plt.xlabel("Energy [Ry]")
-            plt.ylabel("Objective function [a.u.]")
+            plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
             plt.legend(loc="upper right")
             plt.axhline(y=meanHeight                 ,color="r",linestyle="-")
             plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
             plt.plot(maxen,maxhei,"x")
-            plt.savefig("objective.png")
+            plt.savefig("addLineObjective.png",dpi=300)
             plt.show()
             head = 'Energy (Ry) | unscaled addExObj | scaled addExObj '
             np.savetxt("addExObj.dat",np.column_stack((self.freq,obj0,obj)),header=head)
+            plt.rcParams["text.latex.preamble"] = r""
+            plt.rcParams["text.usetex"] = False
 
         if dbg>0:
             excit0.print(long=dbg>1)
