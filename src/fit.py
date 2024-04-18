@@ -105,7 +105,7 @@ class Fit:
                 for n in range(self.ncomp):
                     for iex, ex in enumerate(excit.exlist):
                         #ampl[icalc][iarea][n][iex] = -Ef*np.abs(np.dot(Ep,ex.dipole))*np.abs(Hw[iex])*ex.dipoles[iarea][n]
-                        ampl[icalc][iarea][n][iex] = -Ef*       np.dot(Ep,ex.dipole) *np.abs(Hw[iex])*ex.dipoles[iarea][n]
+                        ampl[icalc][iarea][n][iex] = -Ef*       np.dot(Ep,ex.dipole) *np.abs(Hw[iex])*ex.dipoles[iarea][n] #*1/hbar, which is one in Ry a.u.
         return fspectrum(self.ncalc,self.narea,self.ncomp,np.array(rc),T,freq,energy,phase,tmod,ampl)
 
     #--------------------------------------------------------------------------#
@@ -227,8 +227,8 @@ class Fit:
         if dbg>0:
             plt.rcParams["text.usetex"] = True
             plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
-            plt.plot(freq,f)
-            plt.plot(freq[pos],f[pos],"x")
+            plt.plot(freq,f,color="#36454F")
+            plt.plot(freq[pos],f[pos],"x",markersize=10,color="#DAA520")
             plt.xlabel("Energy [Ry]")
             plt.ylabel(r"$\|\boldsymbol{\Delta}_{\mathrm{pade}}\|^\prime$ [a.u.]")
             plt.savefig("padeObjective.png",dpi=300)
@@ -388,19 +388,19 @@ class Fit:
         if dbg>0:
             plt.rcParams["text.usetex"] = True
             plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
-#!            plt.plot(sorted(heights,reverse=True),"x")
+#!            plt.plot(sorted(heights,reverse=True),"x",markersize=10)
 #!            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
 #!            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
 #!            plt.savefig("heights.png")
 #!            plt.show()
-            plt.plot(self.freq,obj0,label="without scaling")
-            plt.plot(self.freq,obj ,label="with    scaling")
+            plt.plot(self.freq,obj0,label="without scaling",color="#C0C0C3")
+            plt.plot(self.freq,obj ,label="with    scaling",color="#36454F")
             plt.xlabel("Energy [Ry]")
             plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
             plt.legend(loc="upper right")
-            plt.axhline(y=meanHeight                 ,color="r",linestyle="-")
-            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
-            plt.plot(maxen,maxhei,"x")
+            plt.axhline(y=meanHeight                 ,color="#B22222",linestyle="-",label=r"\overline{h}")
+            plt.axhline(y=meanHeight+nsigma*stdHeight,color="#B22222",linestyle=":",label=r"\overline{h}+2 \Delta h")
+            plt.plot(maxen,maxhei,"x",markersize=10,color="#DAA520")
             plt.savefig("addLineObjective.png",dpi=300)
             plt.show()
             head = 'Energy (Ry) | unscaled addExObj | scaled addExObj '

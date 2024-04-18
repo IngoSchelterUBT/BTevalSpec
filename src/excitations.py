@@ -452,7 +452,7 @@ class Excitations:
         if fname=="":
             plt.show()
         else:
-            plt.savefig(fname)
+            plt.savefig(fname,dpi=300)
 
     #-------------------------------------------------------------------------
     # Plot all excitations into panels
