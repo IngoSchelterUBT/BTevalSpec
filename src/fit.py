@@ -395,6 +395,10 @@ class Fit:
 #!            plt.show()
             plt.plot(self.freq,obj0,label="without scaling",color="#C0C0C3")
             plt.plot(self.freq,obj ,label="with    scaling",color="#36454F")
+# Set different ylimits
+#            ax = plt.gca()
+#            ylim = ax.get_ylim()
+#            ax.set_ylim([ylim[0]*0.05, ylim[1]*0.05])
             plt.xlabel("Energy [Ry]")
             plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
             plt.legend(loc="upper right")
