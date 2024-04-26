@@ -173,15 +173,21 @@ def main():
     # Plot spectrum
     #--------------------------------------------------------------------------#
     if dbg>0: print("Plot spectrum")
-    excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
+    excit.plot(gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
     for icalc in range(excit.ncalc):
-        excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrumEped_{icalc+1}.png")
+        excit.plot(gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrum_ampl_{icalc+1}.png")
     if conf.opt["Fit"].get("plot_result",False):
 #        for iarea in range(excit.narea):
 #            for icomp in range(excit.ncomp):
 #                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
         excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
     if dbg>0: print(" - done")
+
+    #--------------------------------------------------------------------------#
+    # Write Latex table
+    #--------------------------------------------------------------------------#
+    excit.latexTable()
+    excit.gnuTable()
 
 #------------------------------------------------------------------------------#
 # Call main

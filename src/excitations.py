@@ -197,10 +197,10 @@ class Excitations:
     #-------------------------------------------------------------------------
     def sort(self):
         self.exlist = sorted(self.exlist, key=lambda x: x.energy)
-        pattern     = re.compile("^S[0-9]*$") #Matches and name "S<number>" or "S"
+        pattern     = re.compile("^S[0-9]*$") #Matches name "S<number>" or "S"
         for iex, ex in enumerate(self.exlist):
             if pattern.match(ex.name):
-                ex.name = "S"+str(iex)
+                ex.name = "S"+str(iex+1)
 
     #-------------------------------------------------------------------------
     # Set phases to zero (usually if boost excitation)
@@ -358,9 +358,12 @@ class Excitations:
 
         for icalc in range(self.ncalc):
             with open(f"excit_{icalc+1:1d}.dat","w") as fh:
-                fh.write("# name  | energy[Ry] |  strength  | phase[rad] |  eped      |strengthEped|   energyErr  | strengthError|   phaseErr   |   epedErr   |strengthEpedErr|signifFit|signifAng|signifExc|signifErr|signifRng|signifPha\n")
+                fh.write("# name  | energy[Ry] |  strength  | phase[pi]  |  eped      |strengthEped|   energyErr  | strengthError|   phaseErr   |   epedErr   |strengthEpedErr|signifFit|signifAng|signifExc|signifErr|signifRng|signifPha\n")
                 for iex, ex in enumerate(self.exlist):
-                    fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.strength:12.5f} {ex.phase:12.5f} {ex.eped[icalc]:12.5f} {ex.strengthEped[icalc]:12.5f} {ex.energyErr:14.7f} {ex.strengthErr:14.7f} {ex.phaseErr:14.7f} {ex.epedErr[icalc]:14.7f} {ex.strengthEpedErr[icalc]:14.7f} {ex.signifFit:9.2f} {ex.signifAng:9.2f} {ex.signifExc:9.2f} {ex.signifErr:9.2f} {ex.signifRng:9.2f} {ex.signifPha:9.2f}\n")
+                    pha = (ex.phase/np.pi)%(2.*np.pi)
+                    if pha >   np.pi: pha -= 2.*np.pi
+                    if pha <= -np.pi: pha += 2.*np.pi
+                    fh.write(f"{ex.name:8s} {ex.energy:12.5f} {ex.strength:12.5f} {pha:12.5f} {ex.eped[icalc]:12.5f} {ex.strengthEped[icalc]:12.5f} {ex.energyErr:14.7f} {ex.strengthErr:14.7f} {ex.phaseErr/np.pi:14.7f} {ex.epedErr[icalc]:14.7f} {ex.strengthEpedErr[icalc]:14.7f} {ex.signifFit:9.2f} {ex.signifAng:9.2f} {ex.signifExc:9.2f} {ex.signifErr:9.2f} {ex.signifRng:9.2f} {ex.signifPha:9.2f}\n")
 
         xyz = ["x","y","z"]
         for icalc in range(self.ncalc):
@@ -386,9 +389,9 @@ class Excitations:
     #  - jarea is an integer specifying the area. If None: Sum up all areas
     #  - jcomp is 0 (x), 1 (y), or 2 (z). if None: Use an oscillator-strength equivalent derived from the area's dipole
     #  - if jcalc, jarea, and jcomp are None: Use the oscillator strengths as height
-    #  - if jarea and jcomp are None but jcalc is an integer, use strengthEped as height
+    #  - if jarea and jcomp are None but jcalc is an integer, use the absolute amplitude as height (error is still zero)
     #-------------------------------------------------------------------------
-    def lorentz(self,w,gamma,jcalc=None,jarea=None,jcomp=None,jex=None):
+    def lorenz(self,w,gamma,jcalc=None,jarea=None,jcomp=None,jex=None):
         n  = len(w)
         f  = np.zeros(n,dtype=float)
         w0 = []
@@ -396,6 +399,7 @@ class Excitations:
         f0 = []
         fe = []
         l0 = []
+        pattern = re.compile("^S[0-9]*$") #Matches name "S<number>" or "S"
         for iex, ex in enumerate(self.exlist):
             if isinstance(jex,list):
                 if not jex in iex: cycle
@@ -413,12 +417,18 @@ class Excitations:
                 fe.append(ex.dipoleErr[jcomp])
             else:
                 if isinstance(jcalc,int):
-                    f0.append(ex.strengthEped   [jcalc])
-                    fe.append(ex.strengthEpedErr[jcalc])
+#                    f0.append(ex.strengthEped   [jcalc])
+#                    fe.append(ex.strengthEpedErr[jcalc])
+                    ampl = np.linalg.norm([sum([ex.ampl[jcalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)])
+                    f0.append(ampl)
+                    fe.append(0.)
                 else:
                     f0.append(ex.strength   )
                     fe.append(ex.strengthErr)
-            l0.append(ex.name)
+            if pattern.match(ex.name):
+                l0.append(u"\u03C3"+str(iex+1))
+            else:
+                l0.append(ex.name)
             for i in range(n):
                 gw  = gamma*w0[-1]
                 gw2 = gw*gw
@@ -430,23 +440,32 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Plot excitations
     #-------------------------------------------------------------------------
-    def plot(self,wb,dw,gamma,jcalc=None,jarea=None,jcomp=None,jex=None,units="eV",fname=""):
+    def plot(self,wb=[None,None],dw=0.00001,gamma=np.pi/1000.,jcalc=None,jarea=None,jcomp=None,jex=None,units="eV",fname=""):
         if units=="eV":
             wscal=13.605684958
         elif units=="Ry":
             wscal=1.
         else:
             err(1,"Unknown units "+units)
-        w  = np.arange(wb[0],wb[1],dw)
+        wrange = self.exlist[-1].energy-self.exlist[0].energy
+        wb0 = self.exlist[ 0].energy - 0.1*wrange
+        wb1 = self.exlist[-1].energy + 0.1*wrange
+        if wb[0]: wb0 = wb[0]
+        if wb[1]: wb1 = wb[1]
+        w  = np.arange(wb0,wb1,dw)
         n  = len(w)
-        f, w0, dw, f0, df, l0 = self.lorentz(w,gamma,jcalc=jcalc,jarea=jarea,jcomp=jcomp,jex=jex)
-        plt.title("Fitted Spectrum")
+        f, w0, dw, f0, df, l0 = self.lorenz(w,gamma,jcalc=jcalc,jarea=jarea,jcomp=jcomp,jex=jex)
+        plt.clf()
+        #plt.title("Fitted Spectrum")
         plt.xlabel("Energy ["+units+"]")
-        plt.ylabel("Oscillator Strength (Peak Height)")
-        plt.plot(w*wscal,f)
+        if isinstance(jcalc,int):
+            plt.ylabel("absolute amplitude |a_0j| (Peak Height)")
+        else:
+            plt.ylabel("isotropic oscillator strength f_0j (Peak Height)")
+        plt.plot(w*wscal,f,color="#C0C0C3")
         fmin = [0.]*len(f0)
-        plt.vlines  (w0*wscal,fmin,f0                      ,colors="k")
-        plt.errorbar(w0*wscal     ,f0,xerr=dw*wscal,yerr=df,color ="k",markersize=2.,ecolor ="r",fmt="o",capsize=3.)
+        plt.vlines  (w0*wscal,fmin,f0                      ,colors="#36454F")
+        plt.errorbar(w0*wscal     ,f0,xerr=dw*wscal,yerr=df,color ="#B22222",markersize=2.,ecolor ="r",fmt="o",capsize=3.)
         for iex in range(len(self.exlist)):
             plt.text(w0[iex]*wscal,f0[iex]+0.01*np.amax(f0),l0[iex])
         if fname=="":
@@ -474,7 +493,7 @@ class Excitations:
             ax.label_outer()
         for iarea in range(self.narea):
             for icomp in range(self.ncomp):
-                f, w0, dw, f0, df, l0 = self.lorentz(w,gamma,jarea=iarea,jcomp=icomp,jex=jex)
+                f, w0, dw, f0, df, l0 = self.lorenz(w,gamma,jarea=iarea,jcomp=icomp,jex=jex)
                 axs[icomp][iarea].plot(w*wscal,f)
                 fmin = [0.]*len(f0)
                 axs[icomp][iarea].vlines  (w0*wscal,fmin,f0                      ,colors="k")
@@ -485,3 +504,148 @@ class Excitations:
             plt.show()
         else:
             plt.savefig(fname)
+
+    #-------------------------------------------------------------------------
+    # Output tex table
+    #-------------------------------------------------------------------------
+    def latexTable(self,fname=""):
+        if fname=="": fname="excit_LatexTable.dat"
+        ev=13.605684958
+        lines = []
+        lines.append(fr"\begin{{table}}[ht]")
+        lines.append(fr"\centering")
+        lines.append(fr"\fontsize{{8}}{{10}}\selectfont")
+        lines.append(fr"\begin{{tabular}}{{l"+len(self.exlist)*"r"+"}}")
+
+        lines.append(fr"Label                                      ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"& {self.exlist[iex].name}"
+        lines[-1] += fr"\\"
+
+        lines.append(fr"Energy $[\mathrm{{Ry}}]$                   ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {self.exlist[iex].energy:8.3f}       "
+        lines[-1] += fr"\\"
+
+        lines.append(fr"Energy $[\mathrm{{eV}}]$                   ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {self.exlist[iex].energy*ev:8.3f}       "
+        lines[-1] += fr"\\"
+
+        lines.append(fr"Strength                                   ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {self.exlist[iex].strength:8.3f}        "
+        lines[-1] += fr"\\"
+
+        lines.append(fr"Phase $[\pi]$                              ")
+        for iex in range(len(self.exlist)):
+            pha = (self.exlist[iex].phase/np.pi)%(2.*np.pi)
+            if pha >   np.pi: pha-=2.*np.pi
+            if pha <= -np.pi: pha+=2.*np.pi
+            lines[-1] += fr"&    {pha:8.3f}        "
+        lines[-1] += fr"\\"
+
+        lines.append(fr"Area-transition dipoles [a.u.]\\")
+        
+        for iarea in range(self.narea):
+            lines.append(fr"\hline     area {iarea}  -$x$          ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {self.exlist[iex].dipoles[iarea][0]*100.:8.3f}        "
+            lines[-1] += fr"\\"
+            lines.append(fr"\hphantom{{area {iarea}}}-$y$          ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {self.exlist[iex].dipoles[iarea][1]*100.:8.3f}        "
+            lines[-1] += fr"\\"
+            lines.append(fr"\hphantom{{area {iarea}}}-$z$          ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {self.exlist[iex].dipoles[iarea][2]*100.:8.3f}        "
+            lines[-1] += fr"\\"
+            lines.append(fr"\hphantom{{area {iarea}}}-$\|\ldots\|$   ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {np.linalg.norm(self.exlist[iex].dipoles[iarea])*100.:8.3f}        "
+            lines[-1] += fr"\\"
+
+        lines.append(fr"Global transition dipoles [a.u.]\\")
+        lines.append(fr"\hline                   -$x$          ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {self.exlist[iex].dipole[0]*100.:8.3f}        "
+        lines[-1] += fr"\\"
+        lines.append(fr"                         -$y$          ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {self.exlist[iex].dipole[1]*100.:8.3f}        "
+        lines[-1] += fr"\\"
+        lines.append(fr"                         -$z$          ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {self.exlist[iex].dipole[2]*100.:8.3f}        "
+        lines[-1] += fr"\\"
+        lines.append(fr"                         -$\|\ldots\|$   ")
+        for iex in range(len(self.exlist)):
+            lines[-1] += fr"&    {np.linalg.norm(self.exlist[iex].dipole)*100.:8.3f}        "
+        lines[-1] += fr"\\"
+
+        
+        for icalc in range(self.ncalc):
+            lines.append(fr"\hline     calc {icalc}  \\")
+            lines.append(fr"Area amplitudes [$10^{{-2}}$ a.u.]\\")
+            for iarea in range(self.narea):
+                lines.append(fr"\hline     area {iarea}  -$x$          ")
+                for iex in range(len(self.exlist)):
+                    lines[-1] += fr"&    {self.exlist[iex].ampl[icalc][iarea][0]*100.:8.3f}        "
+                lines[-1] += fr"\\"
+                lines.append(fr"\hphantom{{area {iarea}}}-$y$          ")
+                for iex in range(len(self.exlist)):
+                    lines[-1] += fr"&    {self.exlist[iex].ampl[icalc][iarea][1]*100.:8.3f}        "
+                lines[-1] += fr"\\"
+                lines.append(fr"\hphantom{{area {iarea}}}-$z$          ")
+                for iex in range(len(self.exlist)):
+                    lines[-1] += fr"&    {self.exlist[iex].ampl[icalc][iarea][2]*100.:8.3f}        "
+                lines[-1] += fr"\\"
+                lines.append(fr"\hphantom{{area {iarea}}}-$\|\ldots\|$   ")
+                for iex in range(len(self.exlist)):
+                    lines[-1] += fr"&    {np.linalg.norm(self.exlist[iex].ampl[icalc][iarea])*100.:8.3f}        "
+                lines[-1] += fr"\\"
+            lines.append(fr"Global amplitudes [$10^{{-2}}$ a.u.]\\")
+            lines.append(fr"\hline                   -$x$          ")
+            ampl = [[sum([self.exlist[iex].ampl[icalc][iarea][icomp] for iarea in range(self.narea)]) for icomp in range(self.ncomp)] for iex in range(len(self.exlist))]
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {ampl[iex][0]*100.:8.3f}        "
+            lines[-1] += fr"\\"
+            lines.append(fr"\hphantom{{area {iarea}}}-$y$          ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {ampl[iex][1]*100.:8.3f}        "
+            lines[-1] += fr"\\"
+            lines.append(fr"\hphantom{{area {iarea}}}-$z$          ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {ampl[iex][2]*100.:8.3f}        "
+            lines[-1] += fr"\\"
+            lines.append(fr"\hphantom{{area {iarea}}}-$\|\ldots\|$   ")
+            for iex in range(len(self.exlist)):
+                lines[-1] += fr"&    {np.linalg.norm(ampl[iex])*100.:8.3f}        "
+            lines[-1] += fr"\\"
+        lines.append(fr"\end{{tabular}}")
+        lines.append(fr"\caption{{'fit data'}}")
+        lines.append(fr"\label{{tab:fit_data}}")
+        lines.append(fr"\end{{table}}")
+
+        with open(fname,"w") as fh:
+            for line in lines:
+                fh.write(line+"\n")
+
+    #-------------------------------------------------------------------------
+    # Output amplitude table for gnuplot script
+    #-------------------------------------------------------------------------
+    def gnuTable(self):
+        comp = ["x","y","z"]
+        for icalc in range(self.ncalc):
+            fname=f"excit_GnuTable_{icalc}.dat"
+            lines = []
+            for iex, ex in enumerate(self.exlist):
+                lines.append(f"w{iex+1} = {ex.energy}")
+                lines.append(f"p{iex+1} = {ex.phase}")
+                for iarea in range(self.narea):
+                    for icomp in range(self.ncomp):
+                        lines.append(f"a{iex+1}{comp[icomp]}{iarea+1} = {ex.ampl[icalc][iarea][icomp]}")
+
+            with open(fname,"w") as fh:
+                for line in lines:
+                    fh.write(line+"\n")
