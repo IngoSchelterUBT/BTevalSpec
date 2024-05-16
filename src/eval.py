@@ -2,21 +2,6 @@
 #------------------------------------------------------------------------------#
 # author: Rian Richter & Ingo Schelter
 #------------------------------------------------------------------------------#
-#
-# TODO:
-# - Implement command-line-argument handling
-# - Go through each excitation and warn if there are close excitations with same dipole direction. This could be due to misshaped lines (e.g., non-linear effects due to too strong excitation)
-# - Warn if excitations are insignificant (e.g, small oscillator strength, strong correlations between excitations)
-# - Spectrum plot with amplitudes instead of osci strengths if the latter are not significant (e.g., if excitation restricted to an area)
-# - Print #number of excitations and error after fit into file
-# - If manually adding an excitation:
-#  -> Note this automatically
-#  -> Set skipfirst to false
-#  -> Make a proper guess for the dipole moments and phase
-# - Log commands and iterations automatically (save intermediate eval.yaml and dipole*fit.dat etc.)
-#  -> e.g., automatically write and update a skript with all commands that are executed
-#
-#
 # See errorHandler.py for usage information
 #------------------------------------------------------------------------------#
 import numpy as np
@@ -27,6 +12,7 @@ import os.path
 #import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import concurrent.futures
+import getopt
 
 #Import own Modules
 import errorHandler as err
@@ -39,158 +25,398 @@ import fit
 #------------------------------------------------------------------------------#
 # Main
 #------------------------------------------------------------------------------#
-def main():
+def main(argv):
 
     #--------------------------------------------------------------------------#
-    # In Future:
     # Process command-line arguments
     #--------------------------------------------------------------------------#
-    ifile = "eval.yaml"
-    dbg   = 1
+    done    = False
 
     #--------------------------------------------------------------------------#
-    # Read configuration from eval.yaml
+    # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
-    if dbg>0: print("Read configuration",end="")
-    if not os.path.isfile(ifile):
+    try:
+        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit="])
+    except getopt.GetoptError:
+        err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
+
+    #--------------------------------------------------------------------------#
+    # Get command argument
+    #--------------------------------------------------------------------------#
+    try:
+        cmd = args[0]
+    except:
+        err.usage(cmd=cmd)
+        exit(0)
+
+    #--------------------------------------------------------------------------#
+    # Process general command line options
+    #--------------------------------------------------------------------------#
+    ifile       = "eval.yaml"
+    verbose     = 1
+    got_verbose = False
+    got_ifile   = False
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            err.usage(cmd=cmd)
+            sys.exit()
+        elif opt in ("-v", "--verbose"):
+            if got_verbose: err.err(1,"Multiple verbose arguments!")
+            verbose = int(arg)
+            got_verbose = True
+        elif opt in ("-f", "--file"):
+            if got_ifile: err.err(1,"Multiple file arguments!")
+            ifile   = arg
+            got_ifile = True
+
+    #--------------------------------------------------------------------------#
+    # Handle command "new"
+    if cmd == "new":
+        #----------------------------------------------------------------------#
+        # Create configuration file 
         config.writeTemplate(ifile)
-        err.err(1,'There was no '+ifile+' file, now a template is created!')
-    conf  = config.Config(ifile)
-    if dbg>0: print(" - done")
+        print(f"")
+        print(f"Please add dipole-moment and extern-profile files to configuration file {ifile}")
+        print(f"")
+        done=True
 
+    #----------------------------------------------------------------------#
+    # Read configuration from input file
+    if verbose>0: print(f"Read configuration file {ifile}",end="")
+    if not os.path.isfile(ifile):
+        err.err.err(1,"No configuration file '{ifile}'. Select an existing file using '-f <file>' option or create a new configuration file using the 'new' command")
+    conf = config.Config(ifile)
+    if verbose>0: print(" - done")
 
-    #--------------------------------------------------------------------------#
-    # Read dipole moments into dip[ncalc][narea] list:
-    # In case of an external excitation with t_end>0:
-    # Move the time frame so that it starts at t_end
-    #--------------------------------------------------------------------------#
-    if dbg>0: print("Read dipole moment files",end="")
-    dip = []
-    for icalc in range(len(conf.dipfiles)):
-        dip.append([])
-        for iarea in range(len(conf.dipfiles[icalc])):
-            dip[icalc].append(dipole.Dipole(conf.dipfiles[icalc][iarea],["x","y","z"]))
-    if dbg>0: print(" - done")
+    if not done:
+        #----------------------------------------------------------------------#
+        # Read dipole moments into dip[ncalc][narea] list:
+        # In case of an external excitation with t_end>0:
+        # Move the time frame so that it starts at t_end
+        #----------------------------------------------------------------------#
+        if verbose>0: print("Read dipole moment files",end="")
+        dip = []
+        for icalc in range(len(conf.dipfiles)):
+            dip.append([])
+            for iarea in range(len(conf.dipfiles[icalc])):
+                dip[icalc].append(dipole.Dipole(conf.dipfiles[icalc][iarea],["x","y","z"]))
+        if verbose>0: print(" - done")
 
-    #--------------------------------------------------------------------------#
-    # Fourier transform
-    #--------------------------------------------------------------------------#
-    if conf.opt["FT"]["calc"]:
-        if dbg>0: print("Calculate Fourier transform",end="")
+    if cmd == "ft" or conf.opt["FT"].get("calc",False) and not done:
+        #--------------------------------------------------------------------------#
+        # Fourier transform
+        minpw  = conf.opt["FT"].get("minpw" ,17  )
+        window = conf.opt["FT"].get("window",0.  )
+        smooth = conf.opt["FT"].get("smooth",0.  )
+        rmDC   = conf.opt["FT"].get("rmDC"  ,True)
+        got_minpw  = False
+        got_window = False
+        got_smooth = False
+        for opt, arg in opts:
+            if opt in ("--minpw"):
+                if got_minpw: err.err(1,"Multiple minpw arguments!")
+                minpw = int(arg)
+                got_minpw = True
+            elif opt in ("--window"):
+                if got_window: err.err(1,"Multiple window arguments!")
+                window = float(arg)
+                got_window = True
+            elif opt in ("--smooth"):
+                if got_smooth: err.err(1,"Multiple smooth arguments!")
+                smooth = float(arg)
+                got_smooth = True
+            elif opt in ("--no-rmDC"):
+                rmDC=False
+
+        if verbose>0: print("Calculate Fourier transform",end="")
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
-                    executer.submit(dip[icalc][iarea].getFt(minpw=conf.opt["FT"]["minpw"],window=conf.opt["FT"]["window"],smooth=conf.opt["FT"]["smooth"],rmDC=True))
+                    executer.submit(dip[icalc][iarea].getFt(minpw=minpw,window=window,smooth=smooth,rmDC=rmDC))
                     dip[icalc][iarea].writeSpectra(what=["ft","pw"])
-        conf.opt["FT"]["calc"] = False #Next time: read by default
-        if dbg>0: print(" - done")
-    else: #elif conf.opt["Fit"]["calc"] or conf.opt["Fit"]["plot_results"]:
-        if dbg>0: print("Read Fourier transform",end="")
+        if verbose>0: print(" - done")
+        conf.opt["FT"]["calc"]   = False #Next time: read by default
+        conf.opt["FT"]["minpw"]  = minpw
+        conf.opt["FT"]["window"] = window
+        conf.opt["FT"]["smooth"] = smooth
+        conf.opt["FT"]["rmDC"]   = rmDC
+        if cmd=="ft": done = True
+    elif not done:
+        if verbose>0: print("Read Fourier transform",end="")
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["ft","pw"])
-        if dbg>0: print(" - done")
-        
-    #--------------------------------------------------------------------------#
-    # Pade approximation
-    #--------------------------------------------------------------------------#
-    if conf.opt["Pade"]["calc"]:
-        if dbg>0: print("Calculate Pade approximation",end="")
-        if not conf.opt["Pade"].get("smooth",0.) > 0.: #Choose automatic smoothing
-            conf.opt["Pade"]["smooth"] = float(np.log(100)/dip[0][0].tprop) # e^-s*T=0.01 <=> s=ln(100)/T
+        if verbose>0: print(" - done")
+
+    if cmd == "pade" or conf.opt["Pade"].get("calc",False) and not done: 
+        #----------------------------------------------------------------------#
+        # Pade approximation
+        wmax   = conf.opt["Pade"].get("wmax"  ,0.5   )
+        dw     = conf.opt["Pade"].get("dw"    ,1.0e-5)
+        smooth = conf.opt["Pade"].get("smooth",0.    )
+        thin   = conf.opt["Pade"].get("thin"  ,0     )
+        got_wmax   = False
+        got_dw     = False
+        got_smooth = False
+        got_thin   = False
+        for opt, arg in opts:
+            if opt in ("--wmax"):
+                if got_wmax: err.err(1,"Multiple wmax arguments!")
+                wmax = float(arg)
+                got_wmax = True
+            elif opt in ("--dw"):
+                if got_dw: err.err(1,"Multiple dw arguments!")
+                dw = float(arg)
+                got_dw = True
+            elif opt in ("--smooth"):
+                if got_smooth: err.err(1,"Multiple smooth arguments!")
+                smooth = float(arg)
+                got_smooth = True
+            elif opt in ("--thin"):
+                if got_thin: err.err(1,"Multiple thin arguments!")
+                thin = float(arg)
+                got_thin = True
+        if verbose>0: print("Calculate Pade approximation",end="")
+        if not smooth > 0.: #Choose automatic smoothing
+            smooth = float(np.log(100)/dip[0][0].tprop) # e^-s*T=0.01 <=> s=ln(100)/T
         with concurrent.futures.ThreadPoolExecutor() as executer:
             for icalc in range(len(dip)):
                 for iarea in range(len(dip[icalc])):
-                    executer.submit(dip[icalc][iarea].getPade(conf.opt["Pade"]["wmax"],conf.opt["Pade"]["dw"],thin=conf.opt["Pade"]["thin"],smooth=conf.opt["Pade"]["smooth"]))
+                    executer.submit(dip[icalc][iarea].getPade(wmax,dw,thin=thin,smooth=smooth))
                     dip[icalc][iarea].writeSpectra(what=["pade"])
-        conf.opt["Pade"]["calc"] = False #Next time: read by default
-        if dbg>0: print(" - done")
-    else: #elif conf.opt["Fit"]["guess"]:
-        if dbg>0: print("Read Pade approximation",end="")
+        conf.opt["Pade"]["calc"]   = False #Next time: read by default
+        conf.opt["Pade"]["wmax"]   = wmax 
+        conf.opt["Pade"]["dw"]     = dw
+        conf.opt["Pade"]["smooth"] = smooth
+        conf.opt["Pade"]["thin"]   = thin
+        if verbose>0: print(" - done")
+        if cmd=="pade": done = True
+    elif not done:
+        if verbose>0: print("Read Pade approximation",end="")
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
                 dip[icalc][iarea].readSpectra(what=["pade"])
-        if dbg>0: print(" - done")
+        if verbose>0: print(" - done")
+
+    if not done:
+        #----------------------------------------------------------------------#
+        # Read and Fourier transform external excitation
+        if verbose>0: print("Initialize extern potential",end="")
+        ext = extern.Extern(conf.ext.get("profile",""),conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
+        ext.write()
+        if verbose>0: print(" - done")
+
+        #----------------------------------------------------------------------#
+        # Create excit structure
+        if verbose>0: print("Initialize excitations",end="")
+        excit = excitations.Excitations(ncalc=len(conf.dipfiles),narea=len(conf.dipfiles[0]),ncomp=3,ext=ext,exlist=conf.excit)
+        if verbose>0: print(" - done")
 
     #--------------------------------------------------------------------------#
-    # Read and Fourier transform external excitation
-    #--------------------------------------------------------------------------#
-    if dbg>0: print("Initialize extern potential",end="")
-    ext = extern.Extern(conf.ext.get("profile",""),conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
-    #if isinstance(ext,extern.Extern):
-    ext.write()
-    if dbg>0: print(" - done")
-
-    #--------------------------------------------------------------------------#
-    # Initialize excitations structure
-    #--------------------------------------------------------------------------#
-    if dbg>0: print("Initialize excitations",end="")
-    excit = excitations.Excitations(ncalc=len(conf.dipfiles),narea=len(conf.dipfiles[0]),ncomp=3,ext=ext,exlist=conf.excit)
-    if dbg>0: print(" - done")
-
-    #--------------------------------------------------------------------------#
-    # Create initial guess for the spectrum fit
-    #--------------------------------------------------------------------------#
-    dfit = fit.Fit(dip,ext,excit,conf.opt["Fit"]["range"],conf.opt["Fit"].get("errsuppr_wref",0.))
-    if conf.opt["Fit"]["guess"]!="no":
-        if dbg>0: print("Initial guess",end="")
-        excit = dfit.newGuess(hf=conf.opt["Fit"]["guess_thres"],guesstype=conf.opt["Fit"]["guess"],nsigma=conf.opt["Fit"].get("nsigma",2.),dbg=dbg)
-        oldguess = conf.opt["Fit"]["guess"]
-        conf.opt["Fit"]["guess"] = "no" #Next time: No new initial guess
-        if dbg>0: print(" - done")
-    else:
-        oldguess = "no"
-
-    #--------------------------------------------------------------------------#
-    # Fit
-    #--------------------------------------------------------------------------#
-    if conf.opt["Fit"]["calc"]:
-        if dbg>0: print("Fitting:")
-        excit, fiterr = dfit.fit(dbg=dbg,tol=conf.opt["Fit"]["relerr_crit"],maxex=conf.opt["Fit"]["max_excit"],skipfirst=conf.opt["Fit"].get("skipfirst",False),allSignif=conf.opt["Fit"].get("significances",False),nsigma=conf.opt["Fit"].get("nsigma",2.),firstsingle=conf.opt["Fit"].get("firstsingle",False),resetErange=conf.opt["Fit"].get("reset_erange",False),fitphase=conf.opt["Fit"].get("fitphase",False))
-        conf.opt["Fit"]["skipfirst"] = not (oldguess != "no" and conf.opt["Fit"]["skipfirst"]) #If this run only does an initial guess without fitting, set skipfirst to False (True else)
-        conf.opt["Fit"]["firstsingle"]  = False
-        conf.opt["Fit"]["reset_erange"] = False
-        conf.opt["Fit"]["fiterr"]       = float(fiterr)
-        if dbg>0: print(" - done")
-
-    #--------------------------------------------------------------------------#
-    # Update configuration file
-    #--------------------------------------------------------------------------#
-    if dbg>0: print("Update new configuration file")
-    conf.excit = [excit.exlist[i].todict() for i in range(len(excit.exlist))]
-    conf.write(ifile) 
-    if dbg>0: print(" - done")
-
-    #--------------------------------------------------------------------------#
-    # Write Fit files
-    #--------------------------------------------------------------------------#
-    if dbg>0: print("Write fit files")
-    if conf.opt["Fit"]["calc"]: dfit.writeFit(dbg=dbg)
-    excit.excitFiles(dip[0][0].tprop)
-    if dbg>0: print(" - done")
-
-    #--------------------------------------------------------------------------#
-    # Plot spectrum
-    #--------------------------------------------------------------------------#
-    if dbg>0: print("Plot spectrum")
-    excit.plot(gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
-    for icalc in range(excit.ncalc):
-        excit.plot(gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrum_ampl_{icalc+1}.png")
-    if conf.opt["Fit"].get("plot_result",False):
+    # Handle commands that change the configuration file or plot
+    if cmd == "rm" and not done:
+        try:
+            excit.remove(rmname=args[1].split(","),dbg=verbose)
+        except:
+            err.err(1,"No excitations given as second argument or wrong format")
+        done=True
+    if cmd == "fix" and not done:
+        invert  = False
+        for opt, arg in opts:
+            if opt in ("--invert"): invert=True
+        excit.fix(whichname=args[1].split(","),dbg=verbose,inverse=invert)
+        done=True
+    if cmd == "release" and not done:
+        invert  = False
+        for opt, arg in opts:
+            if opt in ("--invert"): invert=True
+        excit.release(whichname=args[1].split(","),dbg=verbose,inverse=invert)
+        done=True
+    if cmd == "plot" and not done:
+        #----------------------------------------------------------------------#
+        # Plot spectrum
+        excit.plot(gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
+        for icalc in range(excit.ncalc):
+            excit.plot(gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrum_ampl_{icalc+1}.png")
 #        for iarea in range(excit.narea):
 #            for icomp in range(excit.ncomp):
 #                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
         excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
-    if dbg>0: print(" - done")
+
+        #----------------------------------------------------------------------#
+        # Write Latex table
+        excit.latexTable()
+        excit.gnuTable()
+
+        done=True
+
+    if not done:
+        #----------------------------------------------------------------------#
+        # Create fit structure
+        fitrange  = conf.opt["Fit"].get("range",[0.0,0.4])
+        wref      = 0.
+        got_range = False
+        got_wref  = False
+        for opt, arg in opts:
+            if opt in ("--range"):
+                if got_range: err.err(1,"Multiple range arguments!")
+                fitrange = [float(x) for x in arg.split(",")]
+                got_range = True
+                if len(range)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
+            elif opt in ("--wref"):
+                if got_wref: err.err(1,"Multiple wref arguments!")
+                wref = float(arg)
+                got_wref = True
+        dfit = fit.Fit(dip,ext,excit,fitrange,wref)
+        conf.opt["Fit"]["range"] = fitrange
+        
+    #--------------------------------------------------------------------------#
+    # Handle commands that actually do something
+    if cmd == "guess" or conf.opt["Fit"].get("guess")!="no" and not done: 
+        #--------------------------------------------------------------------------#
+        # Create initial guess for the spectrum fit
+        guesstype     = conf.opt["Fit"].get("guess","pade")
+        if guesstype=="no": guesstype="pade" #Choose pade as default if "no" is given by the eval.yaml
+        thres         = 0.05
+        nsig          = 2.
+        got_thres     = False
+        got_guesstype = False
+        got_nsig      = False
+        for opt, arg in opts:
+            if opt in ("--guess"):
+                if got_guesstype: err.err(1,"Multiple guess arguments!")
+                guesstype = arg
+                got_guesstype = True
+            elif opt in ("--thres"):
+                if got_thres: err.err(1,"Multiple thres arguments!")
+                thres = float(arg)
+                got_thres = True
+            elif opt in ("--nsig"):
+                if got_nsig: err.err(1,"Multiple nsig arguments!")
+                nsig = float(arg)
+                got_nsig = True
+        if verbose>0: print("Initial guess",end="")
+        excit = dfit.newGuess(hf=thres,guesstype=guesstype,nsigma=nsig,dbg=verbose)
+        if verbose>0: print(" - done")
+        conf.opt["Fit"]["guess"] = "no" #Next time: No new initial guess
+        if cmd=="guess": done = True
+
+    if cmd == "add" and not done:
+        #----------------------------------------------------------------------#
+        # Handle command options
+        nofix   = False
+        nex     = 0
+        nsig    = 2.
+        energy  = []
+        got_nex     = False
+        got_nsig    = False
+        got_energy  = False
+        for opt, arg in opts:
+            if opt in ("--energy"):
+                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!")
+                energy = [float(x) for x in arg.split(",")]
+                got_energy = True
+            elif opt in ("--nsig"):
+                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!")
+                nsig = float(arg)
+                got_nsig = True
+            elif opt in ("--nex"):
+                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!")
+                nex  = int(arg)
+                got_nex  = True
+            elif opt in ("--nofix"):
+                nofix = True
+        #----------------------------------------------------------------------#
+        # Fix existing excitations
+        if not nofix:
+            if dbg>0: print("  - Fix excitations")
+            self.excit.fix()
+        #----------------------------------------------------------------------#
+        # Add new excitations
+        if dbg>0: print("  - Add new excitations:")
+        if got_energy:
+            excit, nadd = fit.addEx(excit,dbg=verbose,addEnergies=energy)
+        elif got_nex:
+            excit, nadd = fit.addEx(excit,dbg=verbose,nadd=nex)
+        else:
+            excit, nadd = fit.addEx(excit,dbg=verbose,nsigma=nsig)
+        if dbg>0: print("Added "+str(nadd))
+        done=True
+
+    if cmd == "fit" and not done:
+        #----------------------------------------------------------------------#
+        # Fit
+        try:
+            nadd = int(args[1])
+        except:
+            nadd = 0
+        crit      = 0.
+        skipfirst = False
+        signif    = False
+        single    = False
+        fitrange  = conf.opt["Fit"].get("range",[0.0,0.4])
+        nsig      = 2.
+        reset     = False
+        fitphase  = conf.opt["Fit"].get("fitphase",False)
+        got_crit  = False
+        got_range = False
+        got_nsig  = False
+        for opt, arg in opts:
+            if opt in ("--crit"):
+                if got_crit: err.err(1,"Multiple crit arguments!")
+                crit = float(arg)
+                if crit>1. or crit<0.:  err.err(1,"Criterion must be within [0;1]")
+                got_crit = True
+            elif opt in ("--nsig"):
+                if got_nsig: err.err(1,"Multiple nsig arguments!")
+                nsig = float(arg)
+                got_nsig = True
+            elif opt in ("--range"):
+                if got_range: err.err(1,"Multiple range arguments!")
+                fitrange = [float(x) for x in arg.split(",")]
+                got_range = True
+                if len(range)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
+            elif opt in ("--skipfirst"):
+                skipfirst = True
+            elif opt in ("--reset"):
+                reset = True
+            elif opt in ("--fitphase"):
+                fitphase = True
+            elif opt in ("--single"):
+                single = True
+            elif opt in ("--signif"):
+                signif = True
+
+        if verbose>0: print("Fitting:")
+        excit, fiterr = dfit.fit(dbg=verbose,tol=crit,addex=nadd,skipfirst=skipfirst,allSignif=signif,nsigma=nsig,firstsingle=single,resetErange=reset,fitphase=fitphase)
+        conf.opt["Fit"]["fiterr"]   = float(fiterr)
+        conf.opt["Fit"]["range"]    = fitrange
+        conf.opt["Fit"]["fitphase"] = fitphase
+        if verbose>0: print(" - done")
+
+        #----------------------------------------------------------------------#
+        # Write Fit files
+        if verbose>0: print("Write fit files")
+        excit.excitFiles(dip[0][0].tprop)
+        if verbose>0: print(" - done")
+
+        done = True
+
+    if not done: err.err(1,"Unknown command "+cmd)
 
     #--------------------------------------------------------------------------#
-    # Write Latex table
+    # Update configuration file
     #--------------------------------------------------------------------------#
-    excit.latexTable()
-    excit.gnuTable()
+    if verbose>0: print("Update configuration file")
+    try:
+        conf.excit = [excit.exlist[i].todict() for i in range(len(excit.exlist))]
+    except:
+        conf.excit = []
+    conf.write(ifile) 
+    if verbose>0: print(" - done")
 
 #------------------------------------------------------------------------------#
 # Call main
 #------------------------------------------------------------------------------#
 if __name__=="__main__":
-    main()
+    main(sys.argv[1:])

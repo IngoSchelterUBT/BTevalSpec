@@ -165,8 +165,8 @@ class Fit:
             self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma)
             if nadd==0:
                 self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True,nsigma=nsigma)
-        else:
-            err(1,"Unknown guess type "+str(guesstype))
+        elif guesstype!="no":
+            err.err(1,"Unknown guess type "+str(guesstype))
         return self.excit
 
     #--------------------------------------------------------------------------#
@@ -214,7 +214,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Search for the highest peak in the given function
     #--------------------------------------------------------------------------#
-    def findPeaks(self,freq,f,dbg=0,hf=0.,dw=None,minwidth=None):
+    def findPeaks(self,freq,f,dbg=0,hf=0.,dw=None,minwidth=None,latex=False):
         pos, prop = find_peaks(f,height=hf*np.amax(f),width=minwidth/self.dw,distance=dw/self.dw)
       
         if dbg>1:
@@ -225,16 +225,20 @@ class Fit:
                 for key, val in prop.items():
                     print("    ",key,val)
         if dbg>0:
-            plt.rcParams["text.usetex"] = True
-            plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
+            if latex:
+                plt.rcParams["text.usetex"] = True
+                plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
+                plt.ylabel(r"$\|\boldsymbol{\Delta}_{\mathrm{pade}}\|^\prime$ [a.u.]")
+            else:
+                plt.ylabel("Add-line objective [a.u.]")
+            plt.xlabel("Energy [Ry]")
             plt.plot(freq,f,color="#36454F")
             plt.plot(freq[pos],f[pos],"x",markersize=10,color="#DAA520")
-            plt.xlabel("Energy [Ry]")
-            plt.ylabel(r"$\|\boldsymbol{\Delta}_{\mathrm{pade}}\|^\prime$ [a.u.]")
             plt.savefig("padeObjective.png",dpi=300)
             plt.show()
-            plt.rcParams["text.latex.preamble"] = r""
-            plt.rcParams["text.usetex"] = False
+            if latex:
+                plt.rcParams["text.latex.preamble"] = r""
+                plt.rcParams["text.usetex"] = False
 
         return pos
 
@@ -355,39 +359,56 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Add new excitation
     #--------------------------------------------------------------------------#
-    def addEx(self,excit,dbg=0,singleMax=False,nsigma=2.):
+    def addEx(self,excit,dbg=0,addEnergies=[],nadd=0,nsigma=2.,maxadd=-1,latex=False):
+        piT    = np.pi/self.tprop
         excit0 = excit.copy()
         fdat   = self.ftrc   
         ffit   = self.ftfitrc
         scal   = self.scal
 
         obj, obj0 = self.addExObj(fdat,ffit,scal)
-        pos, prop = find_peaks(obj)
 
-        energies = []
-        heights  = []
-        for i in pos:
-            energies.append(self.freq[i])
-            heights .append(     obj [i])
-
-        minHeight  = np.amin(heights)
-        meanHeight = np.mean(heights) #Mean value
-        stdHeight  = np.std (heights) #Standard deviation
-        baseHeight = meanHeight + nsigma*stdHeight
-        if singleMax:
-            maxen  = [energies[np.argmax(heights)]]
-            maxhei = [heights [np.argmax(heights)]]
+        maxen  = []
+        maxhei = []
+        if len(addEnergies)>0:
+            pos       = [min(range(len(self.freq)), key = lambda i: abs(self.freq[i]-en)) for en in addEnergies]
+            maxen     = [self.freq[i] for i in pos]
+            maxhei    = [obj      [i] for i in pos]
         else:
-            maxen  = [energies[i] for i in range(len(energies)) if heights[i]>baseHeight]
-            maxhei = [heights [i] for i in range(len(heights )) if heights[i]>baseHeight]
-        piT = np.pi/self.tprop
+            pos, prop = find_peaks(obj)
+
+            energies = []
+            heights  = []
+            for i in pos:
+                energies.append(self.freq[i])
+                heights .append(     obj [i])
+
+            if nadd>0:
+                idx = sorted(range(len(heights)), key = lambda i: heights[i])[-nadd:]
+                maxen  = [energies[i] for i in idx]
+                maxhei = [heights [i] for i in idx]
+            else:
+                minHeight  = np.amin(heights)
+                meanHeight = np.mean(heights) #Mean value
+                stdHeight  = np.std (heights) #Standard deviation
+                baseHeight = meanHeight + nsigma*stdHeight
+                maxen  = [energies[i] for i in range(len(energies)) if heights[i]>baseHeight]
+                maxhei = [heights [i] for i in range(len(heights )) if heights[i]>baseHeight]
+                if len(maxen)>nadd:
+                    maxen  = [x for _,x in sorted(zip(maxhei,maxen ))][-nadd:]
+                    maxhei = [x for _,x in sorted(zip(maxhei,maxhei))][-nadd:]
+
         for en in maxen:
             phase, dipoles = self.guessExcit(en)
             excit0.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
         if dbg>0:
-            plt.rcParams["text.usetex"] = True
-            plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
+            if latex:
+                plt.rcParams["text.usetex"] = True
+                plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
+                plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
+            else:
+                plt.ylabel(r"Add-line objective [a.u.]")
 #!            plt.plot(sorted(heights,reverse=True),"x",markersize=10)
 #!            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
 #!            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
@@ -400,7 +421,6 @@ class Fit:
 #            ylim = ax.get_ylim()
 #            ax.set_ylim([ylim[0]*0.05, ylim[1]*0.05])
             plt.xlabel("Energy [Ry]")
-            plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
             plt.legend(loc="upper right")
             plt.axhline(y=meanHeight                 ,color="#B22222",linestyle="-",label=r"\overline{h}")
             plt.axhline(y=meanHeight+nsigma*stdHeight,color="#B22222",linestyle=":",label=r"\overline{h}+2 \Delta h")
@@ -409,8 +429,9 @@ class Fit:
             plt.show()
             head = 'Energy (Ry) | unscaled addExObj | scaled addExObj '
             np.savetxt("addExObj.dat",np.column_stack((self.freq,obj0,obj)),header=head)
-            plt.rcParams["text.latex.preamble"] = r""
-            plt.rcParams["text.usetex"] = False
+            if latex:
+                plt.rcParams["text.latex.preamble"] = r""
+                plt.rcParams["text.usetex"] = False
 
         if dbg>0:
             excit0.print(long=dbg>1)
@@ -419,7 +440,10 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,maxex=10,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
+    def fit(self,dbg=0,addex=0,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
+        #------------------------------------------------------------------#
+        # Init aux
+        maxex = len(self.excit.exlist) + addex
 
         #------------------------------------------------------------------#
         # Report initial state
@@ -447,7 +471,7 @@ class Fit:
                     for iex in np.flip(iexs):              #Go through excitations from large to small
                         if dbg>0: print("    excit",iex)
                         self.excit.fix()                   #Fix all
-                        self.excit.release(which=[iex])    #Release single excitation iex
+                        self.excit.release(whichidx=[iex])    #Release single excitation iex
                         self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
                         self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) #Fix single excitation
                         self.excit.release()               #Release all excitations
@@ -469,11 +493,11 @@ class Fit:
             if dbg>0: print("  - Fix excitations")
             self.excit.fix()                         # Temporarily fix all existing excitations
             if dbg>0: print("  - Add new excitations:")
-            self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma) # Add new excitations (also return this excitation)
+            self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma,maxadd=maxex-len(self.excit.exlist)) # Add new excitations (also return this excitation)
             if dbg>0: print("Added "+str(nadd))
             if nadd==0:
                 if dbg>0: print("  - Add single largest line")
-                self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True) # Add single largest peak as excitation
+                self.excit, nadd = self.addEx(self.excit,dbg=dbg,nex=1) # Add single largest peak as excitation
                 if dbg>0: print("Added "+str(nadd))
 
             #------------------------------------------------------------------#
@@ -498,7 +522,7 @@ class Fit:
                     if self.excit.exlist[iex].strengthErr > 0.: continue
                     if dbg>0: print(iex,end="")
                     self.excit.fix()                   #Fix all
-                    self.excit.release(which=[iex])    #Release single excitation iex
+                    self.excit.release(whichidx=[iex])    #Release single excitation iex
                     self.excit.exlist[iex].dipoles = np.full(self.excit.exlist[iex].dipoles.shape,0.001) #Set dipole moment of excitation to small value
                     self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase) #Fix single excitation
                     self.excit.release()               #Release all excitations
@@ -597,7 +621,7 @@ class Fit:
             exs = exsN.copy() #Reset exs structure
             exs.exlist[iex0].dipoles = np.full(exs.exlist[iex0].dipoles.shape,0.001) #Set dipole moment of excitation to small value
             exs.fix() #Fix all excitations
-            exs.release(which=[iex0]) #Release excitation in question
+            exs.release(whichidx=[iex0]) #Release excitation in question
             self.fitAtomic(exs,fitrange=fitrange,noPhase=noPhase)   #Fit exs new (no premature break out)
             #ffit1 = self.getFitFunc(exs ,rc=rc)     #Fit function with ex0 alone fitted and all others fixed
 

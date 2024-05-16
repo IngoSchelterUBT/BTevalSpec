@@ -182,15 +182,16 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Remove excitation by index or name
     #-------------------------------------------------------------------------
-    def remove(self,rmidx=[],rmname=[]):
-        #Remove by indices first and extend rmname list
+    def remove(self,rmidx=[],rmname=[],dbg=0):
+        # Collect excitations to remove
+        #Don't remove yet since this would change the original indexing
+        rmex = []
         for iex, ex in enumerate(self.exlist):
-            if iex in rmidx: rmname.append(ex.name)
-            #Don't remove yet since this would change the original indexing
-        #Then remove by names
-        for iex, ex in enumerate(self.exlist):
-            #if ex.name in rmname: del self.exlist[iex]
-            if ex.name in rmname: self.exlist.remove(ex)
+            if iex     in rmidx or ex.name in rmname:  rmex.append(ex)
+        # Remove excitations
+        for ex in rmex:
+            if dbg>0: print(f"  Remove {ex.name}")
+            self.exlist.remove(ex)
 
     #-------------------------------------------------------------------------
     # Sorts the list of excitations and rename those with generic names "S[1234..]"
@@ -263,11 +264,20 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Temporarily fix all or specific excitations
     #-------------------------------------------------------------------------
-    def fix(self,which=None):
+    def fix(self,whichidx=None,whichname=None,dbg=0,inverse=False):
         for iex, ex in enumerate(self.exlist):
-            if isinstance(which,list):
-                if not iex in which: continue
+            if inverse:
+                if isinstance(whichidx,list):
+                    if iex in whichidx: continue
+                if isinstance(whichname,list):
+                    if ex.name in whichname: continue
+            else:
+                if isinstance(whichidx,list):
+                    if not iex in whichidx: continue
+                if isinstance(whichname,list):
+                    if not ex.name in whichname: continue
             ex.fixMe()
+            if dbg>0: print(f"Fix excitation {ex.name}")
 
     #-------------------------------------------------------------------------
     # Temporarily fix excitations in a given interval (or the inverse interval)
@@ -282,11 +292,20 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Release all or specific excitations
     #-------------------------------------------------------------------------
-    def release(self,which=None):
+    def release(self,whichidx=None,whichname=None,dbg=0,inverse=False):
         for iex, ex in enumerate(self.exlist):
-            if isinstance(which,list):
-                if not iex in which: continue
+            if inverse:
+                if isinstance(whichidx,list):
+                    if iex in whichidx: continue
+                if isinstance(whichname,list):
+                    if ex.name in whichname: continue
+            else:
+                if isinstance(whichidx,list):
+                    if not iex in whichidx: continue
+                if isinstance(whichname,list):
+                    if not ex.name in whichname: continue
             ex.releaseMe()
+            if dbg>0: print(f"Release excitation {ex.name}")
 
     #-------------------------------------------------------------------------
     # Count free excitations
