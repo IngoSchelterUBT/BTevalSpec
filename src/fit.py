@@ -365,6 +365,7 @@ class Fit:
         fdat   = self.ftrc   
         ffit   = self.ftfitrc
         scal   = self.scal
+        if maxadd>=0: nadd = min(nadd,maxadd)
 
         obj, obj0 = self.addExObj(fdat,ffit,scal)
 
@@ -394,9 +395,9 @@ class Fit:
                 baseHeight = meanHeight + nsigma*stdHeight
                 maxen  = [energies[i] for i in range(len(energies)) if heights[i]>baseHeight]
                 maxhei = [heights [i] for i in range(len(heights )) if heights[i]>baseHeight]
-                if len(maxen)>nadd:
-                    maxen  = [x for _,x in sorted(zip(maxhei,maxen ))][-nadd:]
-                    maxhei = [x for _,x in sorted(zip(maxhei,maxhei))][-nadd:]
+                if maxadd>=0 and len(maxen)>maxadd:
+                    maxen  = [x for _,x in sorted(zip(maxhei,maxen ))][-maxadd:]
+                    maxhei = [x for _,x in sorted(zip(maxhei,maxhei))][-maxadd:]
 
         for en in maxen:
             phase, dipoles = self.guessExcit(en)
@@ -440,7 +441,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Fit wrapper
     #--------------------------------------------------------------------------#
-    def fit(self,dbg=0,addex=0,tol=0.05,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
+    def fit(self,dbg=0,addex=0,tol=0.0,niter=0,skipfirst=False,allSignif=False,nsigma=2.,firstsingle=False,resetErange=False,fitphase=True):
         #------------------------------------------------------------------#
         # Init aux
         maxex = len(self.excit.exlist) + addex
@@ -478,7 +479,7 @@ class Fit:
                 except:
                     raise #self.excit is not updated in this case
             else: #Fit all excitations at once
-                if dbg>0: print("  - Fit excitations collectivly")
+                if dbg>0: print("  - Fit excitations collectively")
                 self.fitAtomic(self.excit,dbg=dbg,noPhase=not fitphase)   # Fit existing excitations
                 self.update(dbg=dbg)      # Update some self.components
             self.reportFit(dbg=dbg)
@@ -486,7 +487,9 @@ class Fit:
 
         #----------------------------------------------------------------------#
         # Add and fit new excitations
-        while len(self.excit.exlist)<maxex:
+        jiter = 0
+        while len(self.excit.exlist)<maxex and jiter<niter:
+            jiter += 1
 
             #------------------------------------------------------------------#
             # Add excitations
@@ -497,7 +500,7 @@ class Fit:
             if dbg>0: print("Added "+str(nadd))
             if nadd==0:
                 if dbg>0: print("  - Add single largest line")
-                self.excit, nadd = self.addEx(self.excit,dbg=dbg,nex=1) # Add single largest peak as excitation
+                self.excit, nadd = self.addEx(self.excit,dbg=dbg,nadd=1) # Add single largest peak as excitation
                 if dbg>0: print("Added "+str(nadd))
 
             #------------------------------------------------------------------#

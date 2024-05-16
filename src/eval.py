@@ -36,7 +36,7 @@ def main(argv):
     # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
     try:
-        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit="])
+        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit="])
     except getopt.GetoptError:
         err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
 
@@ -46,7 +46,7 @@ def main(argv):
     try:
         cmd = args[0]
     except:
-        err.usage(cmd=cmd)
+        err.usage()
         exit(0)
 
     #--------------------------------------------------------------------------#
@@ -269,14 +269,15 @@ def main(argv):
                 got_wref = True
         dfit = fit.Fit(dip,ext,excit,fitrange,wref)
         conf.opt["Fit"]["range"] = fitrange
-        
+
     #--------------------------------------------------------------------------#
     # Handle commands that actually do something
-    if cmd == "guess" or conf.opt["Fit"].get("guess")!="no" and not done: 
+    #if (cmd == "guess" or conf.opt["Fit"].get("guess")!="no" or any("--guess" in opt for opt in opts)) and not done: 
+    if (cmd == "guess" or any("--guess" in opt for opt in opts)) and not done: 
         #--------------------------------------------------------------------------#
         # Create initial guess for the spectrum fit
-        guesstype     = conf.opt["Fit"].get("guess","pade")
-        if guesstype=="no": guesstype="pade" #Choose pade as default if "no" is given by the eval.yaml
+        guesstype     = pade #conf.opt["Fit"].get("guess","pade")
+        #if guesstype=="no": guesstype="pade" #Choose pade as default if "no" is given by the eval.yaml
         thres         = 0.05
         nsig          = 2.
         got_thres     = False
@@ -298,7 +299,7 @@ def main(argv):
         if verbose>0: print("Initial guess",end="")
         excit = dfit.newGuess(hf=thres,guesstype=guesstype,nsigma=nsig,dbg=verbose)
         if verbose>0: print(" - done")
-        conf.opt["Fit"]["guess"] = "no" #Next time: No new initial guess
+        #conf.opt["Fit"]["guess"] = "no" #Next time: No new initial guess
         if cmd=="guess": done = True
 
     if cmd == "add" and not done:
@@ -346,27 +347,37 @@ def main(argv):
     if cmd == "fit" and not done:
         #----------------------------------------------------------------------#
         # Fit
-        try:
-            nadd = int(args[1])
-        except:
-            nadd = 0
+        niter     = 1
         crit      = 0.
         skipfirst = False
         signif    = False
         single    = False
         fitrange  = conf.opt["Fit"].get("range",[0.0,0.4])
         nsig      = 2.
+        nadd      = 0
         reset     = False
         fitphase  = conf.opt["Fit"].get("fitphase",False)
+        got_niter = False
         got_crit  = False
         got_range = False
         got_nsig  = False
+        got_nadd  = False
         for opt, arg in opts:
+            if opt in ("--niter"):
+                if got_niter: err.err(1,"Multiple niter arguments!")
+                niter = int(arg)
+                if niter>0: nadd = 1000 #almost unlimited number of excitations can be added
+                got_niter = True
             if opt in ("--crit"):
-                if got_crit: err.err(1,"Multiple crit arguments!")
+                if got_nadd or got_crit: err.err(1,"Multiple nadd/crit arguments (exclusive)!")
                 crit = float(arg)
+                nadd = 1000 #almost unlimited number of excitations can be added
                 if crit>1. or crit<0.:  err.err(1,"Criterion must be within [0;1]")
                 got_crit = True
+            elif opt in ("--nadd"):
+                if got_nadd or got_crit: err.err(1,"Multiple nadd/crit arguments (exclusive)!")
+                nadd = int(arg)
+                got_nadd = True
             elif opt in ("--nsig"):
                 if got_nsig: err.err(1,"Multiple nsig arguments!")
                 nsig = float(arg)
@@ -388,7 +399,7 @@ def main(argv):
                 signif = True
 
         if verbose>0: print("Fitting:")
-        excit, fiterr = dfit.fit(dbg=verbose,tol=crit,addex=nadd,skipfirst=skipfirst,allSignif=signif,nsigma=nsig,firstsingle=single,resetErange=reset,fitphase=fitphase)
+        excit, fiterr = dfit.fit(dbg=verbose,tol=crit,addex=nadd,niter=niter,skipfirst=skipfirst,allSignif=signif,nsigma=nsig,firstsingle=single,resetErange=reset,fitphase=fitphase)
         conf.opt["Fit"]["fiterr"]   = float(fiterr)
         conf.opt["Fit"]["range"]    = fitrange
         conf.opt["Fit"]["fitphase"] = fitphase
@@ -398,6 +409,7 @@ def main(argv):
         # Write Fit files
         if verbose>0: print("Write fit files")
         excit.excitFiles(dip[0][0].tprop)
+        dfit.writeFit(dbg=verbose)
         if verbose>0: print(" - done")
 
         done = True

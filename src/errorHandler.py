@@ -71,7 +71,7 @@ def usage(cmd=""):
     if cmd in ["","fit"]:
         print("")
         print(" Fit")
-        print("  ./eval.py [<gen-opt>] [<ft opt>] [<guess opt>] [--skip] [--single] [--signif] [--range=<lb,rb>] [--crit=<error criterion>] [--imag] [--fitphase] fit [<nadd>]")
+        print("  ./eval.py [<gen-opt>] [<ft opt>] [<guess opt>] [--skip] [--single] [--signif] [--range=<lb,rb>] [--crit=<error criterion> | --nadd=<nadd>] [--nsig=<nsig>] [--niter=<niter>] [--imag] [--fitphase] fit")
         print("    Fit current excitations (if not --skip), add and fit <nadd> excitations one after the other, and update eval.yaml.")
         print("    --imag: only use imaginary part for fitting; automatically true for boost excitation. (not supported yet)")
         print("    <nadd> defaults to 0")
@@ -81,6 +81,7 @@ def usage(cmd=""):
         print("    --signif: Compute significances that require fitting")
         print("    --fitphase: Use phase as fit parameter")
         print("    --crit: Convergence criterion (only relevant if nadd==0 or not present)")
+        print("    --niter: Maximum number of add-excitation iterations")
     if cmd in ["","plot"]:
         print("")
         print(" Plot")
