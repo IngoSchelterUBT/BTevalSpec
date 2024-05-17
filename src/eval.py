@@ -141,7 +141,7 @@ def main(argv):
         conf.opt["FT"]["smooth"] = smooth
         conf.opt["FT"]["rmDC"]   = rmDC
         if cmd=="ft": done = True
-    elif not done:
+    elif not done and not cmd=="pade":
         if verbose>0: print("Read Fourier transform",end="")
         for icalc in range(len(dip)):
             for iarea in range(len(dip[icalc])):
@@ -262,7 +262,7 @@ def main(argv):
                 if got_range: err.err(1,"Multiple range arguments!")
                 fitrange = [float(x) for x in arg.split(",")]
                 got_range = True
-                if len(range)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
+                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
             elif opt in ("--wref"):
                 if got_wref: err.err(1,"Multiple wref arguments!")
                 wref = float(arg)
@@ -386,7 +386,7 @@ def main(argv):
                 if got_range: err.err(1,"Multiple range arguments!")
                 fitrange = [float(x) for x in arg.split(",")]
                 got_range = True
-                if len(range)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
+                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
             elif opt in ("--skipfirst"):
                 skipfirst = True
             elif opt in ("--reset"):
