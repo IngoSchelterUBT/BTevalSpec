@@ -5,13 +5,13 @@
 
 #Import Libraries
 import numpy as np
-import numba as nb
+from numba import njit, prange
 from scipy.signal import butter, lfilter, freqz
 
 #------------------------------------------------------------------------------#
 #Routine for calculating the PADE-series
 #------------------------------------------------------------------------------#
-@nb.njit
+@njit
 def numba_padeseries(w, m, n, dt, dip):
   #Get matrix G and vector d eq~(33) in [1]
   b0 = 1.0
@@ -66,7 +66,7 @@ def numba_padeseries(w, m, n, dt, dip):
 # t[nf]                         Time modifier (should be very close to 1.)
 # a[ncalc][narea][ncomp][nex]   Amplitudes
 #------------------------------------------------------------------------------#
-@nb.njit
+@njit(parallel=True)
 def fspectrum(ncalc,narea,ncomp,rc,T,w,wi,p,tm,a):
     nrc = len(rc)
     nf  = len(w)
@@ -74,7 +74,7 @@ def fspectrum(ncalc,narea,ncomp,rc,T,w,wi,p,tm,a):
     for icalc in range(ncalc):
         for iarea in range(narea):
             for n in range(ncomp):
-                for i in range(nf):
+                for i in prange(nf): #this loop is parallelized
                     for iex in range(len(wi)):
                         wm     = w[i]-wi[iex]
                         wp     = w[i]+wi[iex]
