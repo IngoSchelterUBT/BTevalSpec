@@ -20,6 +20,7 @@ class Config:
         self.descript = self.conf.get("DESCRIPTION","")
         self.dipfiles = self.conf.get("DIPOLE"     ,[])
         self.ext      = self.conf.get("EXT"        ,{})
+        self.densft   = self.conf.get("DENSFT"     ,{})
         self.opt      = self.conf.get("OPT"        ,{})
         self.excit    = self.conf.get("SPEC"       ,[])
         tmp, self.ind, self.bsi = ruamel.yaml.util.load_yaml_guess_indent(open(ifile))
@@ -32,6 +33,7 @@ class Config:
         self.conf["DESCRIPTION"] = self.descript
         self.conf["DIPOLE"     ] = self.dipfiles
         self.conf["EXT"        ] = self.ext
+        self.conf["DENSFT"     ] = self.densft
         self.conf["OPT"        ] = self.opt
         self.conf["SPEC"       ] = self.excit
         yaml.indent(mapping=self.ind,sequence=self.ind,offset=self.bsi)
@@ -50,6 +52,9 @@ def writeTemplate(ofile):
     EXT:
       profile: laser_profile.dat    # Profile of excitation
       invertPhase: False            # Before BTDFT v3.5.2, the laser profile missed a factor "-1". InvertPhase==True compensates this error.
+    DENSFT:
+      densft: []
+      densen: []
     OPT:
       FT:
         calc: true

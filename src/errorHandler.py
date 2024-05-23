@@ -99,5 +99,13 @@ def usage(cmd=""):
         print(" Release")
         print("  ./eval.py [<gen-opt>] [--invert] release <listOfExcitations>")
         print("  Release (un-fix) all excitations")
+    if cmd in ["","decouple"]:
+        print("")
+        print(" Decouple")
+        print("  ./eval.py [<gen-opt>] [--jcalc=<calc-idx>] [--ftype=<file type>] decouple")
+        print("  Decouple given transition densities.")
+        print("  Requires Fourier-transfor of the density at as many energies as there are excitations (ideally the excitation energies themselves) and a calculation identifier (calculation index)")
+        print("  ftype can be 'compact' or 'cube' (default: 'cube')")
+        print("  jcalc determines the calculations index from which the density stems (default: 0)")
     print("")
     print("--------------------")

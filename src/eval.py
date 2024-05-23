@@ -21,6 +21,11 @@ import extern
 import dipole
 import excitations
 import fit
+import transdens
+import cubetools as ct
+#import BTgrid
+#import BTclust
+#import BTcompact
 
 #------------------------------------------------------------------------------#
 # Main
@@ -36,7 +41,7 @@ def main(argv):
     # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
     try:
-        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit="])
+        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc=","ftype="])
     except getopt.GetoptError:
         err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
 
@@ -412,6 +417,58 @@ def main(argv):
         dfit.writeFit(dbg=verbose)
         if verbose>0: print(" - done")
 
+        done = True
+
+    if cmd == "decouple":
+        #Check if excitations exist
+        nex = len(excit.exlist)
+        if nex==0: err.err(1,"No excitation for decoupling")
+        #Check if transition densities and energies exist and number=number of excitations
+        densname = conf.densft.get("densft",[])
+        densen   = conf.densft.get("densen",[])
+        if any([len(densname),len(densen)]!=nex): err.err(1,"Number of densities and energies must match number of excitations")
+        #Check if calculation index exists
+        jcalc = conf.densft.get("jcalc",0)
+        ftype = conf.densft.get("ftype","cube")
+        got_jcalc = False
+        got_ftype = False
+        for opt, arg in opts:
+            if opt in ("--jcalc"):
+                if got_jcalc: err.err(1,"Multiple jcalc arguments!")
+                jcalc = int(arg)
+                if jcalc>excit.ncalc: err.err(1,"jcalc is too large (or negative)",jcalc)
+                got_jcalc = True
+            elif opt in ("--ftype"):
+                if got_ftype: err.err(1,"Multiple ftype arguments!")
+                ftype = arg
+                if ftype not in ["cube","compact"]: err.err(1,"Unknown ftype ("+ftype+")")
+                got_ftype = True
+        #Read transition densities
+        densft   = []
+        densmeta = []
+        for fname in densname:
+            if ftype=="cube":
+                data, meta = ct.read_cube(fname)
+            elif ftype=="compact": err.err(1,"BTcompact not supported, yet!")
+                comp = BTcompact.BTcompact(fname=fname,comm=MPI.COMM_SELF)
+                data, meta = comp.toCube(comp.readVal(fname))
+            densft.append(data)
+            densmeta.append(meta)
+        #Generate Hw
+        energy  = np.zeros(nex,dtype=float)
+        for iex, ex in enumerate(excit.exlist):
+            energy[iex] = ex.energy
+        Hw = self.ext.getVal(energy)
+        #Call transdecoupling
+        transdens = transdens.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc)
+        #Write transition densities
+        for iex, ex in enumerate(excit.exlist):
+            fname = ex.name+"_TransDens.cube"
+            ct.write_cube(transdens[iex],meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
+        #Add jcalc/ftype to conf
+        conf.densft["jcalc"] = jcalc
+        conf.densft["ftype"] = ftype
+        #Done
         done = True
 
     if not done: err.err(1,"Unknown command "+cmd)
