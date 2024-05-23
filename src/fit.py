@@ -13,7 +13,7 @@ import errorHandler as err
 import dipole
 import excitations
 import extern
-from mathtools import fspectrum #, butter_lowpass_filter
+from mathtools import fspectrum, fspectrumDiff #, butter_lowpass_filter
 
 class Fit:
     def __init__(self,dip,ext,excit,fitrange,wref):
@@ -78,7 +78,7 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Get the fit function for a given set of frequencies and excitations
     #--------------------------------------------------------------------------#
-    def getFitFunc(self,excit,rc=[0,1],freq=None):
+    def getFitFunc(self,excit,rc=[0,1],freq=None,subtractfrom=None):
         # Setup new array
         if not isinstance(freq,np.ndarray): freq = self.freq
         nrc     = len(rc)
@@ -106,7 +106,10 @@ class Fit:
                     for iex, ex in enumerate(excit.exlist):
                         #ampl[icalc][iarea][n][iex] = -Ef*np.abs(np.dot(Ep,ex.dipole))*np.abs(Hw[iex])*ex.dipoles[iarea][n]
                         ampl[icalc][iarea][n][iex] = -Ef*       np.dot(Ep,ex.dipole) *np.abs(Hw[iex])*ex.dipoles[iarea][n] #*1/hbar, which is one in Ry a.u.
-        return fspectrum(self.ncalc,self.narea,self.ncomp,np.array(rc),T,freq,energy,phase,tmod,ampl)
+        if isinstance(subtractfrom,np.ndarray):
+            return fspectrumDiff(self.ncalc,self.narea,self.ncomp,np.array(rc),T,freq,energy,phase,tmod,ampl,subtractfrom)
+        else:
+            return fspectrum(self.ncalc,self.narea,self.ncomp,np.array(rc),T,freq,energy,phase,tmod,ampl)
 
     #--------------------------------------------------------------------------#
     # Compute Power spectrum from FT
@@ -127,8 +130,10 @@ class Fit:
     # Errors dat vs. fit functions
     #--------------------------------------------------------------------------#
     def getError(self,dat,fit,datnorm=None):
-        fdat = np.array(dat).flatten()
-        ffit = np.array(fit).flatten()
+        #fdat = np.array(dat).flatten()
+        #ffit = np.array(fit).flatten()
+        fdat = np.array(dat).ravel()
+        ffit = np.array(fit).ravel()
         if isinstance(datnorm,float):
             return np.linalg.norm(np.subtract(fdat,ffit))/datnorm
         else:
@@ -250,15 +255,13 @@ class Fit:
         if not isinstance(excit,excitations.Excitations): excit = self.excit
         if not isinstance(ext  ,     extern.Extern     ): ext   = self.ext
         excit.updateFromParam(params,noPhase,ext,errors=False) #fit errors are not known, yet
-        try:
-            ffit = self.getFitFunc(excit,self.rc,freq=self.freqLoc).flatten()
-        except:
-            raise
-        fdat = self.ftrcLoc.flatten()
         if self.breakMinimization==True:
             obj  = np.zeros(len(ffit),dtype=float)
         else:
-            obj  = np.subtract(fdat,ffit)
+            try:
+                obj = self.getFitFunc(excit,self.rc,freq=self.freqLoc,subtractfrom=self.ftrcLoc)#.ravel() (array need not be flat as it seems)
+            except:
+                raise
         return obj
 
     #--------------------------------------------------------------------------#
@@ -306,10 +309,12 @@ class Fit:
         else:
             self.freqLoc = np.copy(self.freq)
             self.ftrcLoc = np.copy(self.ftrc)
-        self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
+        #self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.flatten()) #Use ftrc as reference
+        self.ftrcnormLoc = np.linalg.norm(self.ftrcLoc.ravel()) #Use ftrc as reference
 
         try:
-            fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"excit":excit,"noPhase":noPhase,"ext":self.ext,"dbg":dbg,"breakmod":breakmod,"nfree":nfree})
+            #fitres = minimize(self.fitObj,params,iter_cb=self.fitInter,kws={"excit":excit,"noPhase":noPhase,"ext":self.ext,"dbg":dbg,"breakmod":breakmod,"nfree":nfree})
+            fitres = minimize(self.fitObj,params,kws={"excit":excit,"noPhase":noPhase,"ext":self.ext,"dbg":dbg,"breakmod":breakmod,"nfree":nfree})
         except:
             raise #self.excit is not updated in this case
 

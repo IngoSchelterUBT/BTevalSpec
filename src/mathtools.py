@@ -91,6 +91,35 @@ def fspectrum(ncalc,narea,ncomp,rc,T,w,wi,p,tm,a):
                             f[icalc][iarea][n][irc][i] += tmp[rc[irc]]
     return f
 
+#------------------------------------------------------------------------------#
+# Same as fspectrum but subtracts the fit function from a given data function
+#------------------------------------------------------------------------------#
+@njit(parallel=True)
+def fspectrumDiff(ncalc,narea,ncomp,rc,T,w,wi,p,tm,a,dat):
+    nrc = len(rc)
+    nf  = len(w)
+    f = np.empty(np.shape(dat))
+    for icalc in range(ncalc):
+        for iarea in range(narea):
+            for n in range(ncomp):
+                for i in prange(nf): #this loop is parallelized
+                    tmp = 0.+0.j
+                    for iex in range(len(wi)):
+                        wm     = w[i]-wi[iex]
+                        wp     = w[i]+wi[iex]
+                        t      = T*tm[iex]
+                        sincm  = np.sinc(wm*t/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
+                        coscm  = (1.-np.cos(wm*t))/(wm*t) if abs(wm)>0. else 0.
+                        sincp  = np.sinc(wp*t/np.pi)
+                        coscp  = (1.-np.cos(wp*t))/(wp*t) if abs(wp)>0. else 0.
+                        tmp    += a[icalc][iarea][n][iex]*(\
+                            np.exp(-1.0j*p[iex])*t*(coscp + 1.j*sincp) -\
+                            np.exp(+1.0j*p[iex])*t*(coscm + 1.j*sincm))
+                    tmpAr = np.array([np.real(tmp),np.imag(tmp)])
+                    for irc in range(nrc):
+                        f[icalc][iarea][n][irc][i] = dat[icalc][iarea][n][irc][i] - tmpAr[rc[irc]]
+    return f
+
 ##------------------------------------------------------------------------------#
 ## Butterworth lowpass filter
 ##------------------------------------------------------------------------------#
