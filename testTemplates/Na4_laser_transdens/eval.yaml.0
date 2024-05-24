@@ -1,0 +1,19 @@
+DESCRIPTION:
+DIPOLE: 
+- - dipole_global1_01.dat
+EXT:
+  profile: laser_profile.dat
+  invertPhase: true
+DENSFT:
+  densft: []
+  densen: []
+OPT:
+  FT:
+    calc: true
+  Pade:
+    calc: true
+  Fit:
+    range:
+    - 0.10
+    - 0.28
+SPEC: []

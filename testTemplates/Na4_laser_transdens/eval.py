@@ -21,7 +21,7 @@ import extern
 import dipole
 import excitations
 import fit
-import transdens as td
+import transdens
 import cubetools as ct
 #import BTgrid
 #import BTclust
@@ -426,7 +426,7 @@ def main(argv):
         #Check if transition densities and energies exist and number=number of excitations
         densname = conf.densft.get("densft",[])
         densen   = conf.densft.get("densen",[])
-        if any(nex!=nn for nn in [len(densname),len(densen)]): err.err(1,"Number of densities and energies must match number of excitations")
+        if any([len(densname),len(densen)]!=nex): err.err(1,"Number of densities and energies must match number of excitations")
         #Check if calculation index exists
         jcalc = conf.densft.get("jcalc",0)
         ftype = conf.densft.get("ftype","cube")
@@ -449,23 +449,22 @@ def main(argv):
         for fname in densname:
             if ftype=="cube":
                 data, meta = ct.read_cube(fname)
-            elif ftype=="compact":
-                err.err(1,"BTcompact not supported, yet!")
-                #comp = BTcompact.BTcompact(fname=fname,comm=MPI.COMM_SELF)
-                #data, meta = comp.toCube(comp.readVal(fname))
+            elif ftype=="compact": err.err(1,"BTcompact not supported, yet!")
+                comp = BTcompact.BTcompact(fname=fname,comm=MPI.COMM_SELF)
+                data, meta = comp.toCube(comp.readVal(fname))
             densft.append(data)
             densmeta.append(meta)
         #Generate Hw
         energy  = np.zeros(nex,dtype=float)
         for iex, ex in enumerate(excit.exlist):
             energy[iex] = ex.energy
-        Hw = ext.getVal(energy)
+        Hw = self.ext.getVal(energy)
         #Call transdecoupling
-        transDens = td.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc,dbg=verbose)
+        transdens = transdens.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc)
         #Write transition densities
         for iex, ex in enumerate(excit.exlist):
             fname = ex.name+"_TransDens.cube"
-            ct.write_cube(transDens[iex],meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
+            ct.write_cube(transdens[iex],meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
         #Add jcalc/ftype to conf
         conf.densft["jcalc"] = jcalc
         conf.densft["ftype"] = ftype
