@@ -3,6 +3,7 @@
 #==============================================================================#
 import errorHandler as err
 
+#==============================================================================#
 #in:
 #   densft: List containing the Fourier-Transformed densities at the energies given in densex 
 #   densen: energies at which the Fourier-Transformed densities are given; ideally these are the excitation energies
@@ -15,7 +16,8 @@ import errorHandler as err
 #
 # out:
 #   transdens: List containing the Transition densities (as 1d arrays on the grid)
-def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0)
+#==============================================================================#
+def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0)
 
     # Check
     nex = len(excit.exlist)
@@ -36,8 +38,20 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0)
                 np.exp(-1.0j*ex.phi)*T*(coscp + 1.j*sincp) -\
                 np.exp(+1.0j*ex.phi)*T*(coscm + 1.j*sincm))
 
+    #Verbose output
+    if dbg>0:
+        print("")
+        print("Transition-density correlation matrix")
+        print(b)
+
     # Invert matrix
     binv = np.linalg.inv(b)
+
+    #Verbose output
+    if dbg>0:
+        print("")
+        print("Inverted matrix")
+        print(b)
 
     # Apply inverted matrix
     transdens = []
