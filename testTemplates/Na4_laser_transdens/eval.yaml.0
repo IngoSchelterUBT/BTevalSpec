@@ -5,8 +5,28 @@ EXT:
   profile: laser_profile.dat
   invertPhase: true
 DENSFT:
-  densft: []
-  densen: []
+  densft:
+    - transd01_it010000_orbU00.cube
+    - transd02_it010000_orbU00.cube
+    - transd03_it010000_orbU00.cube
+    - transd04_it010000_orbU00.cube
+    - transd05_it010000_orbU00.cube
+    - transd06_it010000_orbU00.cube
+    - transd07_it010000_orbU00.cube
+    - transd08_it010000_orbU00.cube
+    - transd09_it010000_orbU00.cube
+    - transd10_it010000_orbU00.cube
+  densen:
+    - 0.13160
+    - 0.13431
+    - 0.15728
+    - 0.16797
+    - 0.19942
+    - 0.22630
+    - 0.22737
+    - 0.24732
+    - 0.27369
+    - 0.27475
 OPT:
   FT:
     calc: true
