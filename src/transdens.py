@@ -52,7 +52,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0):
     if dbg>0:
         print("")
         print("Inverted matrix")
-        print(b)
+        print(binv)
 
     # Apply inverted matrix
     transdens = []
