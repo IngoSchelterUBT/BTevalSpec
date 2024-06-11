@@ -237,23 +237,6 @@ def main(argv):
             if opt in ("--invert"): invert=True
         excit.release(whichname=args[1].split(","),dbg=verbose,inverse=invert)
         done=True
-    if cmd == "plot" and not done:
-        #----------------------------------------------------------------------#
-        # Plot spectrum
-        excit.plot(gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
-        for icalc in range(excit.ncalc):
-            excit.plot(gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrum_ampl_{icalc+1}.png")
-#        for iarea in range(excit.narea):
-#            for icomp in range(excit.ncomp):
-#                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
-        excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
-
-        #----------------------------------------------------------------------#
-        # Write Latex table
-        excit.latexTable()
-        excit.gnuTable()
-
-        done=True
 
     if not done:
         #----------------------------------------------------------------------#
@@ -274,6 +257,25 @@ def main(argv):
                 got_wref = True
         dfit = fit.Fit(dip,ext,excit,fitrange,wref)
         conf.opt["Fit"]["range"] = fitrange
+
+    if cmd == "plot" and not done:
+        #----------------------------------------------------------------------#
+        # Plot objective function
+        dfit.plotObjective()
+        #----------------------------------------------------------------------#
+        # Plot spectrum
+        excit.plot(gamma=np.pi/dip[0][0].tprop,fname="spectrum.png")
+        for icalc in range(excit.ncalc):
+            excit.plot(gamma=np.pi/dip[0][0].tprop,jcalc=icalc,fname=f"spectrum_ampl_{icalc+1}.png")
+#        for iarea in range(excit.narea):
+#            for icomp in range(excit.ncomp):
+#                excit.plot(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop,jarea=iarea,jcomp=icomp)
+        excit.plotPanels(conf.opt["Fit"]["range"],dw=0.00001,gamma=np.pi/dip[0][0].tprop)
+        #----------------------------------------------------------------------#
+        # Write Latex table
+        excit.latexTable()
+        excit.gnuTable()
+        done=True
 
     #--------------------------------------------------------------------------#
     # Handle commands that actually do something

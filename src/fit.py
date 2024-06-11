@@ -685,6 +685,43 @@ class Fit:
                         plt.show()
 
     #--------------------------------------------------------------------------#
+    # Plot add-ine objective
+    #--------------------------------------------------------------------------#
+    def plotObjective(self,latex=False):
+        scal   = np.ones(np.shape(self.scal))
+        fdat   = self.ftrc
+        ffit   = np.zeros(np.shape(self.ftfitrc))
+        _, dat = self.addExObj(fdat,ffit,scal)
+        fdat   = np.zeros(np.shape(self.ftrc))
+        ffit   = self.ftfitrc
+        _, fit = self.addExObj(fdat,ffit,scal)
+        fdat   = self.ftrc   
+        ffit   = self.ftfitrc
+        _, err = self.addExObj(fdat,ffit,scal)
+        if latex:
+            plt.rcParams["text.usetex"] = True
+            plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
+            plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
+        else:
+            plt.ylabel(r"Add-line objective [a.u.]")
+        plt.plot(self.freq,dat,label="Dat",color="#C0C0C3")
+        plt.plot(self.freq,fit,label="Fit",color="#36454F")
+        plt.plot(self.freq,err,label="Err",color="#DAA520")
+# Set different ylimits
+#        ax = plt.gca()
+#        ylim = ax.get_ylim()
+#        ax.set_ylim([ylim[0]*0.05, ylim[1]*0.05])
+        plt.xlabel("Energy [Ry]")
+        plt.legend(loc="upper right")
+        plt.savefig("fitState.png",dpi=300)
+        plt.show()
+        head = 'Energy (Ry) | dat | fit | error '
+        np.savetxt("fitState.dat",np.column_stack((self.freq,dat,fit,err)),header=head)
+        if latex:
+            plt.rcParams["text.latex.preamble"] = r""
+            plt.rcParams["text.usetex"] = False
+
+    #--------------------------------------------------------------------------#
     # Write fit and error functions
     #--------------------------------------------------------------------------#
     def writeFit(self,dbg=0):
