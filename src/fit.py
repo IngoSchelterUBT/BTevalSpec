@@ -16,7 +16,7 @@ import extern
 from mathtools import fspectrum, fspectrumDiff #, butter_lowpass_filter
 
 class Fit:
-    def __init__(self,dip,ext,excit,fitrange,wref):
+    def __init__(self,dip,ext,excit,fitrange,wref,imagonly=False):
         self.fitrange = fitrange
         self.dip      = dip
         self.ext      = ext
@@ -33,7 +33,8 @@ class Fit:
         self.freqPade = np.array([dip[0][0].freqPade[i] for i in range(len(dip[0][0].freqPade)) if dip[0][0].freqPade[i]>=self.fitrange[0] and dip[0][0].freqPade[i]<=self.fitrange[1]])
         self.Nf       = len(self.freq)
         self.NfPade   = len(self.freqPade)
-        self.rc       = np.array([1]) if self.dip[0][0].ext=="boost" else np.array([0,1]) #Use only imag(rc==1) part if boost excitation or real(rc==0) and imag(rc==1) part else
+        self.imagonly = imagonly
+        self.rc       = np.array([1]) if (self.dip[0][0].ext=="boost" or self.imagonly) else np.array([0,1]) #Use only imag(rc==1) part if boost excitation or real(rc==0) and imag(rc==1) part else
         self.nrc      = len(self.rc)
         self.ft       = []
         self.pw       = []

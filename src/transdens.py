@@ -18,7 +18,7 @@ import numpy as np
 # out:
 #   transdens: List containing the Transition densities (as 1d arrays on the grid)
 #==============================================================================#
-def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0):
+def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
 
     # Check
     nex = len(excit.exlist)
@@ -38,6 +38,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0):
             b[ien,iex] = c*(\
                 np.exp(-1.0j*ex.phase)*T*(coscp + 1.j*sincp) -\
                 np.exp(+1.0j*ex.phase)*T*(coscm + 1.j*sincm))
+    if imagonly: b=np.imag(b) #This makes B real-valued -> also use (real-valued) imag part of densft below
 
     #Verbose output
     if dbg>0:
@@ -57,8 +58,10 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0):
     # Apply inverted matrix
     transdens = []
     for iex, ex in enumerate(excit.exlist):
-        transdens.append(np.zeros(np.shape(densft[0])))
+        transdens.append(np.empty(np.shape(densft[0]),dtype=np.cdouble))
         for ien, dens in enumerate(densft):
-            transdens[iex] += binv[iex,ien]*dens #Check index order
-
+            if imagonly:
+                transdens[iex] += binv[iex,ien]*np.imag(dens) #Check index order
+            else:
+                transdens[iex] += binv[iex,ien]*        dens
     return transdens

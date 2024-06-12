@@ -25,7 +25,7 @@ import transdens as td
 import cubetools as ct
 #import BTgrid
 #import BTclust
-#import BTcompact
+import BTcompact
 
 #------------------------------------------------------------------------------#
 # Main
@@ -41,7 +41,7 @@ def main(argv):
     # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
     try:
-        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc=","ftype="])
+        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
     except getopt.GetoptError:
         err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
 
@@ -243,6 +243,7 @@ def main(argv):
         # Create fit structure
         fitrange  = conf.opt["Fit"].get("range",[0.0,0.4])
         wref      = 0.
+        imagonly  = conf.opt["Fit"].get("imagonly",False)
         got_range = False
         got_wref  = False
         for opt, arg in opts:
@@ -255,8 +256,11 @@ def main(argv):
                 if got_wref: err.err(1,"Multiple wref arguments!")
                 wref = float(arg)
                 got_wref = True
-        dfit = fit.Fit(dip,ext,excit,fitrange,wref)
-        conf.opt["Fit"]["range"] = fitrange
+            elif opt in ("--imag"):
+                imagonly = True
+        dfit = fit.Fit(dip,ext,excit,fitrange,wref,imagonly=imagonly)
+        conf.opt["Fit"]["range"]    = fitrange
+        conf.opt["Fit"]["imagonly"] = imagonly
 
     if cmd == "plot" and not done:
         #----------------------------------------------------------------------#
@@ -431,31 +435,46 @@ def main(argv):
         if any(nex!=nn for nn in [len(densname),len(densen)]): err.err(1,"Number of densities and energies must match number of excitations")
         #Check if calculation index exists
         jcalc = conf.densft.get("jcalc",0)
-        ftype = conf.densft.get("ftype","cube")
         got_jcalc = False
-        got_ftype = False
         for opt, arg in opts:
             if opt in ("--jcalc"):
                 if got_jcalc: err.err(1,"Multiple jcalc arguments!")
                 jcalc = int(arg)
                 if jcalc>excit.ncalc: err.err(1,"jcalc is too large (or negative)",jcalc)
                 got_jcalc = True
-            elif opt in ("--ftype"):
-                if got_ftype: err.err(1,"Multiple ftype arguments!")
-                ftype = arg
-                if ftype not in ["cube","compact"]: err.err(1,"Unknown ftype ("+ftype+")")
-                got_ftype = True
+        if excit.ncalc > 1 and not got_jcalc: err.err(1,"You need to specify the calculation from which you got the given FT densities via the --jcalc= option.")
         #Read transition densities
         densft   = []
         densmeta = []
+        if densname[0] is list:
+            if os.path.splitext(densname[0][0])[1] == ".cube":
+                ftype = "cube"
+            else:
+                err.err(1,"If the FT-density entries are lists, cube files are expected [real.cube,imag.cube]")
+        else:
+            if os.path.splitext(densname[0])[1] == ".compact":
+                ftype="compact"
+            elif os.path.splitext(densname[0])[1] == ".cube" and dfit.imagonly:
+                ftype="cube"
+            else:
+                err.err(1,"Expect either one complex-valued compact file or a list of real/imag cube file for each excitation.")
         for fname in densname:
             if ftype=="cube":
-                data, meta = ct.read_cube(fname)
+                #In case of cube files, densname contains a list with real- and imag part cube files
+                if dfit.imagonly:
+                    if densname[0] is list:
+                        data, meta = ct.read_cube(fname[1]) #Reading the imaginary part is sufficient in this case
+                    else:
+                        data, meta = ct.read_cube(fname) #Having only an imag part cube is fine in this case
+                    data *= 1.j
+                else:
+                    data, meta = ct.read_imcube(fname[0],fname[1])
+
             elif ftype=="compact":
-                err.err(1,"BTcompact not supported, yet!")
-                #comp = BTcompact.BTcompact(fname=fname,comm=MPI.COMM_SELF)
-                #data, meta = comp.toCube(comp.readVal(fname))
-            densft.append(data)
+                #In case of compact files, densname contains complex-valued compact files
+                comp = BTcompact.BTcompact(fname)
+                data, meta = comp.toCube(comp.readVal())
+            densft  .append(data)
             densmeta.append(meta)
         #Generate Hw
         energy  = np.zeros(nex,dtype=float)
@@ -463,14 +482,25 @@ def main(argv):
             energy[iex] = ex.energy
         Hw = ext.getVal(energy)
         #Call transdecoupling
-        transDens = td.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc,dbg=verbose)
+        transDens = td.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc,dbg=verbose,imagonly=dfit.imagonly)
         #Write transition densities
         for iex, ex in enumerate(excit.exlist):
+            #Transition densities should be real-valued -> Check
+            if verbose>0:
+                anorm = np.linalg.norm(        transDens[iex] )
+                rnorm = np.linalg.norm(np.real(transDens[iex]))
+                inorm = np.linalg.norm(np.imag(transDens[iex]))
+                print(f"Transition density | abs. norm | real norm (%) | imag norm (%)")
+                print(f"{iex:d19} {anorm:f9.4} {rnorm/anorm*100:f9.4} {inorm/anorm*100:f9.4}")
+            #Only write real-part (since the transition density should be real-valued)
             fname = ex.name+"_TransDens.cube"
-            ct.write_cube(transDens[iex],meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
+            ct.write_cube(numpy.real(transDens[iex]),meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
+            if verbose>1:
+                #Write imag part for debugging
+                fname = ex.name+"_TransDens_imag.cube"
+                ct.write_cube(numpy.imag(transDens[iex]),meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
         #Add jcalc/ftype to conf
         conf.densft["jcalc"] = jcalc
-        conf.densft["ftype"] = ftype
         #Done
         done = True
 
