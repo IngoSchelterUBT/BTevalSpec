@@ -65,3 +65,19 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
             else:
                 transdens[iex] += binv[iex,ien]*        dens
     return transdens
+
+#==============================================================================#
+# Compute the dipole of a given density
+#==============================================================================#
+def getDipole(dens,org,dxyz):
+    nn  = np.shape(dens)
+    dip = np.zeros((len(dens),3))
+    for n in range(nn[0]):
+        for ix in range(nn[1]):
+            for iy in range(nn[2]):
+                for iz in range(nn[3]):
+                    dip[n,0] += dens[ix,iy,iz]*(org[0]+ix*dxyz[0])
+                    dip[n,1] += dens[ix,iy,iz]*(org[1]+iy*dxyz[1])
+                    dip[n,2] += dens[ix,iy,iz]*(org[2]+iz*dxyz[2])
+    return dip
+

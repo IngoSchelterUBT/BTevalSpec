@@ -483,15 +483,20 @@ def main(argv):
         Hw = ext.getVal(energy)
         #Call transdecoupling
         transDens = td.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc,dbg=verbose,imagonly=dfit.imagonly)
-        #Write transition densities
-        for iex, ex in enumerate(excit.exlist):
-            #Transition densities should be real-valued -> Check
-            if verbose>0:
+        transDip  = -np.sqrt(2)*td.dipole(np.real(transDens),meta["org"],[meta["xvec"][0],meta["yvec"][1],meta["zvec"][2]]) #sqrt(2) = elementary charge in Ry units
+        if verbose>0:
+            print(f"Transition density | abs. norm | real norm (%) | imag norm (%) | sin^2(delta_ang) | delta_abs (%) ")
+            for iex, ex in enumerate(excit.exlist):
+                #Transition densities should be real-valued -> Check
                 anorm = np.linalg.norm(        transDens[iex] )
                 rnorm = np.linalg.norm(np.real(transDens[iex]))
                 inorm = np.linalg.norm(np.imag(transDens[iex]))
-                print(f"Transition density | abs. norm | real norm (%) | imag norm (%)")
-                print(f"{iex:d19} {anorm:f9.4} {rnorm/anorm*100:f9.4} {inorm/anorm*100:f9.4}")
+                #Check if transition densities reproduce fitted transition dipoles 
+                delta_ang = 1.-(np.dot(transDip[iex],excit.exlist[iex].dipole)/(np.linalg.norm(transDip[iex])*np.linalg.norm(excit.exlist[iex].dipole)))**2 #sin(x)^2 = 1-cos(x)^2 in [0:1]
+                delta_abs = (np.linalg.norm(excit.exlist[iex].dipole)-np.linalg.norm(transDip[iex]))/np.linalg.norm(excit.exlist[iex].dipole)
+                print(f"{iex:d19}   {anorm:f9.4}       {rnorm/anorm*100:f9.4}       {inorm/anorm*100:f9.4}            {delta_ang:f7.2}      {delta_abs*100:f9.4}")
+        #Write transition densities
+        for iex, ex in enumerate(excit.exlist):
             #Only write real-part (since the transition density should be real-valued)
             fname = ex.name+"_TransDens.cube"
             ct.write_cube(numpy.real(transDens[iex]),meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
