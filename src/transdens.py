@@ -30,7 +30,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
         c= -Ef*np.dot(Ep,ex.dipole)*np.abs(Hw[iex])#*1/hbar, which is one in Ry a.u.
         for ien, en in enumerate(densen):
             wm     = en-ex.energy
-            wp     = en-ex.energy
+            wp     = en+ex.energy
             sincm  = np.sinc(wm*T/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
             coscm  = (1.-np.cos(wm*T))/(wm*T) if abs(wm)>0. else 0.
             sincp  = np.sinc(wp*T/np.pi)
@@ -76,8 +76,9 @@ def getDipole(dens,org,dxyz):
         for ix in range(nn[1]):
             for iy in range(nn[2]):
                 for iz in range(nn[3]):
-                    dip[n,0] += dens[ix,iy,iz]*(org[0]+ix*dxyz[0])
-                    dip[n,1] += dens[ix,iy,iz]*(org[1]+iy*dxyz[1])
-                    dip[n,2] += dens[ix,iy,iz]*(org[2]+iz*dxyz[2])
+                    dip[n,0] += dens[n,ix,iy,iz]*(org[0]+ix*dxyz[0])
+                    dip[n,1] += dens[n,ix,iy,iz]*(org[1]+iy*dxyz[1])
+                    dip[n,2] += dens[n,ix,iy,iz]*(org[2]+iz*dxyz[2])
+                    norm += dens[n,ix,iy,iz]
     return dip
 
