@@ -25,7 +25,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
     if any(nex!=nn for nn in [len(densft),len(densen)]): err.err(2,"Number of densities and energies must match number of excitations")
 
     # Compute matrix
-    b = np.zeros((nex,nex))
+    b = np.zeros((nex,nex),dtype=np.complex64)
     for iex, ex in enumerate(excit.exlist):
         c= -Ef*np.dot(Ep,ex.dipole)*np.abs(Hw[iex])#*1/hbar, which is one in Ry a.u.
         for ien, en in enumerate(densen):
@@ -79,6 +79,5 @@ def getDipole(dens,org,dxyz):
                     dip[n,0] += dens[n,ix,iy,iz]*(org[0]+ix*dxyz[0])
                     dip[n,1] += dens[n,ix,iy,iz]*(org[1]+iy*dxyz[1])
                     dip[n,2] += dens[n,ix,iy,iz]*(org[2]+iz*dxyz[2])
-                    norm += dens[n,ix,iy,iz]
     return dip
 
