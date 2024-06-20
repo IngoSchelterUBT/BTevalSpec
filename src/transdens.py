@@ -30,7 +30,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
         c= -Ef*np.dot(Ep,ex.dipole)*np.abs(Hw[iex])#*1/hbar, which is one in Ry a.u.
         for ien, en in enumerate(densen):
             wm     = en-ex.energy
-            wp     = en-ex.energy
+            wp     = en+ex.energy
             sincm  = np.sinc(wm*T/np.pi) #np.sinc is defined as sin(pi*x)/(pi*x)
             coscm  = (1.-np.cos(wm*T))/(wm*T) if abs(wm)>0. else 0.
             sincp  = np.sinc(wp*T/np.pi)
