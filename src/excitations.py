@@ -36,6 +36,7 @@ class Excitation:
         self.amplErr         = np.array(exdict.get("amplErr"        ,  np.zeros((self.ncalc,)+self.dipoles.shape))) #Note: -"-
         self.dipole          = np.array(exdict.get("dipole"         ,  [0.]*self.ncomp))
         self.dipoleErr       = np.array(exdict.get("dipoleErr"      ,  [0.]*self.ncomp))
+        self.transdensDipole = np.array(exdict.get("transdensDipole",  [0.]*self.ncomp))
         self.strength        =          exdict.get("strength"       ,   0.          )
         self.strengthErr     =          exdict.get("strengthErr"    ,   0.          )
         self.strengthEped    = np.array(exdict.get("strengthEped"   ,  [0.]*self.ncalc)) #Oscillator strength times eped => Projection of oscillator strength on external field polarization direction
@@ -68,12 +69,13 @@ class Excitation:
         exdict["phase"          ] =    float(self.phase)
         exdict["phaseErr"       ] =    float(self.phaseErr)
         exdict["tmod"           ] =    float(self.tmod)
-        exdict["dipoles"        ] = [[ float(self.dipoles    [i][j])    for j in range(len(self.dipoles    [i]))] for i in range(len(self.dipoles   ))]
-        exdict["dipolesErr"     ] = [[ float(self.dipolesErr [i][j])    for j in range(len(self.dipolesErr [i]))] for i in range(len(self.dipolesErr))]
-        exdict["ampl"           ] = [[[float(self.ampl       [i][j][k]) for k in range(len(self.ampl    [i][j]))] for j in range(len(self.ampl   [i]))] for i in range(len(self.ampl   ))]
-        exdict["amplErr"        ] = [[[float(self.amplErr    [i][j][k]) for k in range(len(self.amplErr [i][j]))] for j in range(len(self.amplErr[i]))] for i in range(len(self.amplErr))]
-        exdict["dipole"         ] = [  float(self.dipole     [i])       for i in range(len(self.dipole        ))]
-        exdict["dipoleErr"      ] = [  float(self.dipoleErr  [i])       for i in range(len(self.dipoleErr     ))]
+        exdict["dipoles"        ] = [[ float(self.dipoles        [i][j])    for j in range(len(self.dipoles     [i]))] for i in range(len(self.dipoles   ))]
+        exdict["dipolesErr"     ] = [[ float(self.dipolesErr     [i][j])    for j in range(len(self.dipolesErr  [i]))] for i in range(len(self.dipolesErr))]
+        exdict["ampl"           ] = [[[float(self.ampl           [i][j][k]) for k in range(len(self.ampl     [i][j]))] for j in range(len(self.ampl   [i]))] for i in range(len(self.ampl   ))]
+        exdict["amplErr"        ] = [[[float(self.amplErr        [i][j][k]) for k in range(len(self.amplErr  [i][j]))] for j in range(len(self.amplErr[i]))] for i in range(len(self.amplErr))]
+        exdict["dipole"         ] = [  float(self.dipole         [i])       for i in range(len(self.dipole         ))]
+        exdict["dipoleErr"      ] = [  float(self.dipoleErr      [i])       for i in range(len(self.dipoleErr      ))]
+        exdict["transdensDipole"] = [  float(self.transdensDipole[i])       for i in range(len(self.transdensDipole))]
         exdict["strength"       ] =    float(self.strength)
         exdict["strengthErr"    ] =    float(self.strengthErr)
         exdict["strengthEped"   ] = [  float(self.strengthEped)         for i in range(len(self.strengthEped   ))]
@@ -117,6 +119,10 @@ class Excitation:
                 epol              = self.ext.epol[icalc]/np.linalg.norm(self.ext.epol[icalc])
                 self.epedErr        [icalc] = np.sqrt(sum([(tmp[i]*epol[i])**2 for i in range(self.ncomp)]))
                 self.strengthEpedErr[icalc] = np.sqrt((self.strength*self.epedErr[icalc])**2 + (self.strengthErr*self.eped[icalc])**2)
+
+    # Set dipoles from transition densities
+    def setTransdensDipole(self,tdd):
+        self.transdensDipole = tdd
 
     # Temporarily fixes the excitation
     def fixMe(self):
@@ -172,6 +178,13 @@ class Excitations:
         self.exlist.append(ex)
         if sort: self.sort()
         #return self.exlist.index(ex)
+
+    #-------------------------------------------------------------------------
+    # Set dipoles from transition densities
+    #-------------------------------------------------------------------------
+    def setTransdensDipoles(self,tdd):
+        for iex, ex in enumerate(self.exlist):
+            ex.setTransdensDipole(tdd[iex])
 
     #-------------------------------------------------------------------------
     # Copy excitations object (potentially remove excitations)

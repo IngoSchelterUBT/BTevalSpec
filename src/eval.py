@@ -484,21 +484,22 @@ def main(argv):
         #Call transdecoupling
         transDens = td.decouple(densft,densen,excit,dip[jcalc][0].tprop,dip[jcalc][0].efield,dip[jcalc][0].epol,Hw,jcalc=jcalc,dbg=verbose,imagonly=dfit.imagonly)
         transDip  = -np.sqrt(2)*td.getDipole(np.real(transDens),meta["org"],[meta["xvec"][0],meta["yvec"][1],meta["zvec"][2]]) #sqrt(2) = elementary charge in Ry units
+        excit.setTransdensDipoles(transDip)
         if verbose>0:
-            print(f"Transition density | abs. norm | real norm (%) | imag norm (%) | sin^2(delta_ang) | delta_abs (%) ")
+            print(f"Transition density | abs. norm | real norm | imag norm | sin^2(dAng) | dAbs")
             for iex, ex in enumerate(excit.exlist):
                 #Transition densities should be real-valued -> Check
                 anorm = np.linalg.norm(        transDens[iex] )
                 rnorm = np.linalg.norm(np.real(transDens[iex]))
                 inorm = np.linalg.norm(np.imag(transDens[iex]))
                 #Check if transition densities reproduce fitted transition dipoles 
-                delta_ang = 1.-(np.dot(transDip[iex],excit.exlist[iex].dipole)/(np.linalg.norm(transDip[iex])*np.linalg.norm(excit.exlist[iex].dipole)))**2 #sin(x)^2 = 1-cos(x)^2 in [0:1]
-                delta_abs = (np.linalg.norm(excit.exlist[iex].dipole)-np.linalg.norm(transDip[iex]))/np.linalg.norm(excit.exlist[iex].dipole)
-                print(f"{iex:19d}   {anorm:9.4f}       {rnorm/anorm*100:9.4f}       {inorm/anorm*100:9.4f}            {delta_ang:7.2f}      {delta_abs*100:9.4f}")
+                delta_ang = 1.-(np.dot(transDip[iex],ex.dipole)/(np.linalg.norm(transDip[iex])*np.linalg.norm(ex.dipole)))**2 #sin(x)^2 = 1-cos(x)^2 in [0:1]
+                delta_abs = (np.linalg.norm(transDip[iex])-np.linalg.norm(ex.dipole))/np.linalg.norm(ex.dipole)
+                print(f"{ex.name:19}  {anorm:9.4f}   {(rnorm/anorm)**2*100:7.2f} %   {(inorm/anorm)**2*100:7.2f} %   {delta_ang:7.2f}     {delta_abs*100:7.2f} %")
         #Write transition densities
         for iex, ex in enumerate(excit.exlist):
             #Only write real-part (since the transition density should be real-valued)
-            fname = ex.name+"_TransDens.cube"
+            fname = f"{ex.name}_{ex.energy:.5f}_TransDens.cube"
             ct.write_cube(np.real(transDens[iex]),meta,fname,comment1=f"{ex.name} transition density at {ex.energy} Ry / {ex.energy*13.606} eV",comment2="")
             if verbose>1:
                 #Write imag part for debugging

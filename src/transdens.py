@@ -58,7 +58,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
     # Apply inverted matrix
     transdens = []
     for iex, ex in enumerate(excit.exlist):
-        transdens.append(np.empty(np.shape(densft[0]),dtype=np.cdouble))
+        transdens.append(np.zeros(np.shape(densft[0]),dtype=np.cdouble))
         for ien, dens in enumerate(densft):
             if imagonly:
                 transdens[iex] += binv[iex,ien]*np.imag(dens) #Check index order
@@ -72,6 +72,7 @@ def decouple(densft,densen,excit,T,Ef,Ep,Hw,jcalc=0,dbg=0,imagonly=False):
 def getDipole(dens,org,dxyz):
     nn  = np.shape(dens)
     dip = np.zeros((len(dens),3))
+    d3r = dxyz[0]*dxyz[1]*dxyz[2]
     for n in range(nn[0]):
         for ix in range(nn[1]):
             for iy in range(nn[2]):
@@ -79,5 +80,5 @@ def getDipole(dens,org,dxyz):
                     dip[n,0] += dens[n,ix,iy,iz]*(org[0]+ix*dxyz[0])
                     dip[n,1] += dens[n,ix,iy,iz]*(org[1]+iy*dxyz[1])
                     dip[n,2] += dens[n,ix,iy,iz]*(org[2]+iz*dxyz[2])
-    return dip
+    return dip*d3r
 
