@@ -41,7 +41,7 @@ def main(argv):
     # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
     try:
-        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","no-rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
+        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
     except getopt.GetoptError:
         err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
 
@@ -110,10 +110,10 @@ def main(argv):
     if cmd == "ft" or conf.opt["FT"].get("calc",False) and not done:
         #--------------------------------------------------------------------------#
         # Fourier transform
-        minpw  = conf.opt["FT"].get("minpw" ,17  )
-        window = conf.opt["FT"].get("window",0.  )
-        smooth = conf.opt["FT"].get("smooth",0.  )
-        rmDC   = conf.opt["FT"].get("rmDC"  ,True)
+        minpw  = conf.opt["FT"].get("minpw" ,17   )
+        window = conf.opt["FT"].get("window",0.   )
+        smooth = conf.opt["FT"].get("smooth",0.   )
+        rmDC   = conf.opt["FT"].get("rmDC"  ,False)
         got_minpw  = False
         got_window = False
         got_smooth = False
@@ -130,8 +130,8 @@ def main(argv):
                 if got_smooth: err.err(1,"Multiple smooth arguments!")
                 smooth = float(arg)
                 got_smooth = True
-            elif opt in ("--no-rmDC"):
-                rmDC=False
+            elif opt in ("--rmDC"):
+                rmDC=True
 
         if verbose>0: print("Calculate Fourier transform",end="")
         with concurrent.futures.ThreadPoolExecutor() as executer:
