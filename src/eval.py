@@ -243,7 +243,7 @@ def main(argv):
         # Create fit structure
         fitrange  = conf.opt["Fit"].get("range",[0.0,0.4])
         wref      = 0.
-        imagonly  = conf.opt["Fit"].get("imagonly",False)
+        imagonly  = conf.opt["Fit"].get("imagonly",dip[0][0].ext=="boost")
         got_range = False
         got_wref  = False
         for opt, arg in opts:
