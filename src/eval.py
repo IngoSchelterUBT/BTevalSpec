@@ -207,7 +207,9 @@ def main(argv):
         #----------------------------------------------------------------------#
         # Read and Fourier transform external excitation
         if verbose>0: print("Initialize extern potential",end="")
-        ext = extern.Extern(conf.ext.get("profile",""),conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
+        extprof = conf.ext.get("profile","")
+        if dip[0][0].ext!="boost" and extprof=="": err.err(1,"Extern profile file required for non-boost calculation")
+        ext = extern.Extern(extprof,conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
         ext.write()
         if verbose>0: print(" - done")
 
