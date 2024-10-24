@@ -349,7 +349,6 @@ def main(argv):
         # Add new excitations
         if verbose>0: print("  - Add new excitations:")
         if got_energy:
-            #excit, nadd = fit.addEx(excit,dbg=verbose,addEnergies=energy)
             excit, nadd = fit.addEx(excit,dbg=verbose,addEnergies=energy)
         elif got_nex:
             excit, nadd = fit.addEx(excit,dbg=verbose,nadd=nex)
