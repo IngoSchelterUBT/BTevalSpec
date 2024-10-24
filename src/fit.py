@@ -352,15 +352,19 @@ class Fit:
     # (obj0 is a version without error-compensating scaling)
     #--------------------------------------------------------------------------#
     def addExObj(self,fdat,ffit,scal):
-        obj  = np.zeros(self.Nf)
-        obj0 = np.zeros(self.Nf)
+        obj        = np.zeros(self.Nf)
+        obj0       = np.zeros(self.Nf)
+        objByArea  = np.zeros((self.narea,self.Nf))
+        obj0ByArea = np.zeros((self.narea,self.Nf))
         for icalc in range(self.ncalc):
             for iarea in range(self.narea):
                 for icomp in range(self.ncomp):
                     for irc in range(self.nrc):
-                        obj  += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp])**2
-                        obj0 += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc])))**2
-        return np.sqrt(obj), np.sqrt(obj0)
+                        obj                 += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp])**2
+                        obj0                += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc])))**2
+                        objByArea [iarea,:] += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc]))/scal[icalc][iarea][icomp])**2
+                        obj0ByArea[iarea,:] += (np.abs(np.subtract(fdat[icalc][iarea][icomp][irc],ffit[icalc][iarea][icomp][irc])))**2
+        return np.sqrt(obj), np.sqrt(obj0), np.sqrt(objByArea), np.sqrt(obj0ByArea)
 
     #--------------------------------------------------------------------------#
     # Add new excitation
@@ -373,7 +377,7 @@ class Fit:
         scal   = self.scal
         if maxadd>=0: nadd = min(nadd,maxadd)
 
-        obj, obj0 = self.addExObj(fdat,ffit,scal)
+        obj, obj0, objByArea, obj0ByArea = self.addExObj(fdat,ffit,scal)
 
         maxen  = []
         maxhei = []
@@ -410,32 +414,56 @@ class Fit:
             excit0.add(energy=en,phase=phase,dipoles=dipoles,erange=piT)
 
         if dbg>0:
+            # Write data files
+            head = 'Energy (Ry) | unscaled addExObj | scaled addExObj '
+            np.savetxt("addExObj.dat",np.column_stack((self.freq,obj0,obj)),header=head)
+            for iarea in range(self.narea):
+                np.savetxt(f"addExObj_area{str(iarea+1).zfill(2)}.dat",np.column_stack((self.freq,obj0ByArea[iarea],objByArea[iarea])),header=head)
+
+            # Plot
+            # Objective by area
+            for iarea in range(self.narea):
+                fig, ax = plt.subplots()
+                if latex:
+                    plt.rcParams["text.usetex"] = True
+                    plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
+                    plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
+                else:
+                    plt.ylabel(r"Add-line objective [a.u.]")
+                ax.plot(self.freq,obj0ByArea[iarea,:],label="without scaling",color="#C0C0C3")
+                ax.plot(self.freq,objByArea [iarea,:],label="with    scaling",color="#36454F")
+                plt.xlabel("Energy [Ry]")
+                plt.legend(loc="upper right")
+                fig.savefig(f"addLineObjective_area{str(iarea+1).zfill(2)}.png",dpi=300)
+            # Total objective
+            fig, ax = plt.subplots()
             if latex:
                 plt.rcParams["text.usetex"] = True
                 plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"
                 plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
             else:
                 plt.ylabel(r"Add-line objective [a.u.]")
+            ax.axhline(y=meanHeight                 ,color="#B22222",linestyle="-",label=r"\overline{h}")
+            ax.axhline(y=meanHeight+nsigma*stdHeight,color="#B22222",linestyle=":",label=r"\overline{h}+2 \Delta h")
+            ax.plot(maxen,maxhei,"x",markersize=10,color="#DAA520")
+            ax.plot(self.freq,obj0,label="without scaling",color="#C0C0C3")
+            ax.plot(self.freq,obj ,label="with    scaling",color="#36454F")
+            plt.xlabel("Energy [Ry]")
+            plt.legend(loc="upper right")
+            fig.savefig("addLineObjective.png",dpi=300)
+            # Show all
+            plt.show()
+
 #!            plt.plot(sorted(heights,reverse=True),"x",markersize=10)
 #!            plt.axhline(y=meanHeight                      ,color="r",linestyle="-")
 #!            plt.axhline(y=meanHeight+nsigma*stdHeight,color="r",linestyle=":")
 #!            plt.savefig("heights.png")
 #!            plt.show()
-            plt.plot(self.freq,obj0,label="without scaling",color="#C0C0C3")
-            plt.plot(self.freq,obj ,label="with    scaling",color="#36454F")
 # Set different ylimits
 #            ax = plt.gca()
 #            ylim = ax.get_ylim()
 #            ax.set_ylim([ylim[0]*0.05, ylim[1]*0.05])
-            plt.xlabel("Energy [Ry]")
-            plt.legend(loc="upper right")
-            plt.axhline(y=meanHeight                 ,color="#B22222",linestyle="-",label=r"\overline{h}")
-            plt.axhline(y=meanHeight+nsigma*stdHeight,color="#B22222",linestyle=":",label=r"\overline{h}+2 \Delta h")
-            plt.plot(maxen,maxhei,"x",markersize=10,color="#DAA520")
-            plt.savefig("addLineObjective.png",dpi=300)
-            plt.show()
-            head = 'Energy (Ry) | unscaled addExObj | scaled addExObj '
-            np.savetxt("addExObj.dat",np.column_stack((self.freq,obj0,obj)),header=head)
+
             if latex:
                 plt.rcParams["text.latex.preamble"] = r""
                 plt.rcParams["text.usetex"] = False
