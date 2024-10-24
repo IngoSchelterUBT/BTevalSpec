@@ -343,18 +343,19 @@ def main(argv):
         #----------------------------------------------------------------------#
         # Fix existing excitations
         if not nofix:
-            if dbg>0: print("  - Fix excitations")
+            if verbose>0: print("  - Fix excitations")
             self.excit.fix()
         #----------------------------------------------------------------------#
         # Add new excitations
-        if dbg>0: print("  - Add new excitations:")
+        if verbose>0: print("  - Add new excitations:")
         if got_energy:
+            #excit, nadd = fit.addEx(excit,dbg=verbose,addEnergies=energy)
             excit, nadd = fit.addEx(excit,dbg=verbose,addEnergies=energy)
         elif got_nex:
             excit, nadd = fit.addEx(excit,dbg=verbose,nadd=nex)
         else:
             excit, nadd = fit.addEx(excit,dbg=verbose,nsigma=nsig)
-        if dbg>0: print("Added "+str(nadd))
+        if verbose>0: print("Added "+str(nadd))
         done=True
 
     if cmd == "fit" and not done:
