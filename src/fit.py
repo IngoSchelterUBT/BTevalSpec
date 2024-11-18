@@ -173,6 +173,8 @@ class Fit:
                 self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True,nsigma=nsigma)
         elif guesstype!="no":
             err.err(1,"Unknown guess type "+str(guesstype))
+        # Build fit-spectrum
+        self.update()
         return self.excit
 
     #--------------------------------------------------------------------------#
@@ -203,9 +205,10 @@ class Fit:
         # -> Use this to scale dipoles, not dipabs below
 
         # Approx. dipoles
-        #dipabs  = np.sqrt(np.linalg.norm(height)/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        #dipabs  = np.sqrt(     np.linalg.norm( height                                                                                   )/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
         #Use the following instead since the total transition dipole may vanish for excitations without dipole symmetry
-        dipabs  = np.sqrt(np.average([np.linalg.norm([heightArea[icomp][iarea] for icomp in range(self.ncomp)]) for iarea in range(self.narea)])/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        dipabs  = np.sqrt(sum([np.linalg.norm([heightArea[icomp][iarea] for icomp in range(self.ncomp)]) for iarea in range(self.narea)])/(T*Ef*np.abs(eped)*np.abs(Hw))) #Absolute value of the total dipole moment
+        #Todo: If |a_j| << sum_l |a_jl| then use second option, else, use first option
         dipoles = []
         for iarea in range(self.narea):
             dipoles.append([])

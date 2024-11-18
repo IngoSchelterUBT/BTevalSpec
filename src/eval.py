@@ -289,7 +289,7 @@ def main(argv):
     if (cmd == "guess" or any("--guess" in opt for opt in opts)) and not done: 
         #--------------------------------------------------------------------------#
         # Create initial guess for the spectrum fit
-        guesstype     = pade #conf.opt["Fit"].get("guess","pade")
+        guesstype     = "pade" #conf.opt["Fit"].get("guess","pade")
         #if guesstype=="no": guesstype="pade" #Choose pade as default if "no" is given by the eval.yaml
         thres         = 0.05
         nsig          = 2.
@@ -314,6 +314,13 @@ def main(argv):
         if verbose>0: print(" - done")
         #conf.opt["Fit"]["guess"] = "no" #Next time: No new initial guess
         if cmd=="guess": done = True
+
+        #----------------------------------------------------------------------#
+        # Write Fit files
+        if verbose>0: print("Write fit(-guess) files")
+        excit.excitFiles(dip[0][0].tprop)
+        dfit.writeFit(dbg=verbose)
+        if verbose>0: print(" - done")
 
     if cmd == "add" and not done:
         #----------------------------------------------------------------------#
