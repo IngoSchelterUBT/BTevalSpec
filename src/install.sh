@@ -1,5 +1,5 @@
 #!/bin/bash
 
 #create excecutable of python script
-pyinstaller --onefile eval.py
+pyinstaller --onefile BTevalSpec.py
 
