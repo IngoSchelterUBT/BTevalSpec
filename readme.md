@@ -238,6 +238,9 @@ DENSFT:                             # Specify Fourier-transformed densities n(r,
   #OR
   - [densft01r.cube,densft01i.cube] #     or lists of [real,imag] Gaussian cube files
   - [densft02r.cube,densft02i.cube]
+  #OR
+  - densft01i.cube                  #     or imag-valued Gaussian cube files with the --imag to the decouple command option
+  - densft02i.cube
   #...
   densen:                           #   the list of w_k (same order)
   - 0.131990
@@ -404,12 +407,12 @@ OPT:
 ```
 ./BTevalSpec.py -h guess
 --------------------
- Make a new guess based on the pade approximation
+ Make a new guess based on the Fourier (default) or Pade spectrum
 
   ./BTevalSpec.py [<gen-opt>] [--guess=pade [<pade opt>] [--thres=<thres>]| --guess=ft [<ft opt>] [--nsig=<nsig>]] [--range=<lb,rb>] guess
 
     Creates a new guess, sets the plot range, and updates eval.yaml.
-    The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft) spectrum
+    The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft, default) spectrum
     with the given <pade opt> or <ft opt> (if the latter were not computed previously).
 --------------------
 ```
@@ -559,15 +562,17 @@ OPT:
   jcalc determines the calculations index from which the density stems (default: 0).
 
 DENSFT:
-  densft: #List of n(r,omega) at omega specified below
-  #Using Gaussian cube files (real and imag parts)
-  - [densft01r.cube, densft01i.cube]
-  - [densft02r.cube, densft02i.cube]
-  #OR complex-valued BTcompact files
-  - btdft/densft01.compact
-  - btdft/densft02.compact
-    ...
-  densen: #Actual omega [Ry] at which the FT densities above are given
+  densft:                           #   List of n(r,w_k) (as many as excitations at w_k close to the excitation energies)
+  - densft01.compact                #     Either as complex-valued BTcompact files (requires BTDFT-modules)
+  - densft02.compact
+  #OR
+  - [densft01r.cube,densft01i.cube] #     or lists of [real,imag] Gaussian cube files
+  - [densft02r.cube,densft02i.cube]
+  #OR
+  - densft01i.cube                  #     or imag-valued Gaussian cube files with the --imag to the decouple command option
+  - densft02i.cube
+  #...
+  densen:                           #Actual omega [Ry] at which the FT densities above are given
   - 0.131990
   - 0.134330
     ...
@@ -579,14 +584,24 @@ DENSFT:
 
 ### Overview
 
-- Na2                 - Simple test using a global dipole moment from a laser excitation on a Na2 cluster.
+- Na2                 - Simple test using a global dipole moment from a laser excitation on a Na2 cluster. Also shows the error-supression.
 - Na4_laser_transdens - Simple test using a global dipole moment from a laser excitation on a Na4 cluster with subsequent transition-density evaluation [cf. Schelter et al., JCTC 14, 1910 (2018)].
 - Na4_boost           - Test using a global dipole moment from a boost excitation on a Na4 cluster. Numerical errors require the use of --wref to suppress line-shape errors.
 - Na2DA               - Na2-Na2 donor acceptor system with donor/acceptor specific dipole moments from a laser excitation with a gaussian profile to test fit to different spectral regions.
 - B302                - Global dipole moment from a boost calculation on a bacteriochlorophyll. This test tries to fit a broad excitation band with many close-lying excitations.
 - B302_2calc          - This test is comparable with B302 but uses dipole moments from two different calculations with different external-field polarizations.
 
-### Further information
+### Instructions
 
-Confer the readme.md in the single test directories
+Copy the `testTemplates/` directory into a directory, e.g., `test~/` (the tilde makes git ignore this directory)
+```
+cp -rP testTemplates test~
+```
+for actual testing.
+The `-P` option leaves symbolic links as such.
 
+Here is an overview of the single test cases:
+
+[Todo]
+
+Confer the `readme.md` files in the single test directories for instructions.

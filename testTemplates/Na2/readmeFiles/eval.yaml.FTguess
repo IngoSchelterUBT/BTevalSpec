@@ -1,0 +1,86 @@
+DESCRIPTION:                        # Description of evaluation 
+DIPOLE:                             # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
+- [dipole_global1_01.dat]
+EXT:
+  profile: laser_profile.dat        # Profile of excitation
+  invertPhase: true                 # Before BTDFT v3.6.0, the laser profile missed a factor "-1". InvertPhase==True compensates this error.
+DENSFT:
+  densft: []                        #if cube files: must contain a 2-list with real/imag part cube files per energy / if compact files: must contain one complex-valued compact file per energy
+  densen: []
+OPT:
+  FT:
+    calc: false
+    minpw: 17
+    window: 0.0
+    smooth: 0.0
+    rmDC: false
+  Pade:
+    calc: false
+    wmax: 0.5
+    dw: 1e-05
+    smooth: 0.0024756915176741214
+    thin: 0
+  Fit:
+    range:                          # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.40
+    imagonly: false
+SPEC:
+- name: S1
+  fix: false
+  energy: 0.15236331311434212
+  energyErr: 0.0
+  erange:
+  - 0.15067442563128142
+  - 0.15405220059740282
+  phase: 0.3707581987629949
+  phaseErr: 0.0
+  tmod: 1.0
+  dipoles:
+  - - -5.108630095631867e-14
+    - 5.750184567376131e-14
+    - 5.011365056760191
+  dipolesErr:
+  - - 0.0
+    - 0.0
+    - 0.0
+  ampl:
+  - - - 4.505741223764329e-16
+      - -5.071583411692587e-16
+      - -0.04419954802146159
+  amplErr:
+  - - - 0.0
+      - 0.0
+      - 0.0
+  dipole:
+  - -5.108630095631867e-14
+  - 5.750184567376131e-14
+  - 5.011365056760191
+  dipoleErr:
+  - 0.0
+  - 0.0
+  - 0.0
+  transdensDipole:
+  - 0.0
+  - 0.0
+  - 0.0
+  strength: 0.6377364474681952
+  strengthErr: 0.0
+  strengthEped:
+  - 0.6377364474681952
+  strengthErrEped:
+  - 0.0
+  strengths:
+  - 0.6377364474681952
+  strengthsErr:
+  - 0.0
+  eped:
+  - 1.0
+  epedErr:
+  - 0.0
+  signifFit: 0.0
+  signifErr: 0.0
+  signifAng: 0.0
+  signifExc: 0.0
+  signifRng: 0.0
+  signifPha: 0.0
