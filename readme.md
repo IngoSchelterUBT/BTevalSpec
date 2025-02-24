@@ -577,5 +577,16 @@ DENSFT:
 
 ## Examples/Testing
 
-Confer the readme.md in the testTemplates/ directory.
+### Overview
+
+- Na2                 - Simple test using a global dipole moment from a laser excitation on a Na2 cluster.
+- Na4_laser_transdens - Simple test using a global dipole moment from a laser excitation on a Na4 cluster with subsequent transition-density evaluation [cf. Schelter et al., JCTC 14, 1910 (2018)].
+- Na4_boost           - Test using a global dipole moment from a boost excitation on a Na4 cluster. Numerical errors require the use of --wref to suppress line-shape errors.
+- Na2DA               - Na2-Na2 donor acceptor system with donor/acceptor specific dipole moments from a laser excitation with a gaussian profile to test fit to different spectral regions.
+- B302                - Global dipole moment from a boost calculation on a bacteriochlorophyll. This test tries to fit a broad excitation band with many close-lying excitations.
+- B302_2calc          - This test is comparable with B302 but uses dipole moments from two different calculations with different external-field polarizations.
+
+### Further information
+
+Confer the readme.md in the single test directories
 
