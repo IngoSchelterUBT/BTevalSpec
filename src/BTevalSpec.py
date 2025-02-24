@@ -295,7 +295,7 @@ def main(argv):
     if (cmd == "guess" or any("--guess" in opt for opt in opts)) and not done: 
         #--------------------------------------------------------------------------#
         # Create initial guess for the spectrum fit
-        guesstype     = "pade" #conf.opt["Fit"].get("guess","pade")
+        guesstype     = "ft" #conf.opt["Fit"].get("guess","pade")
         #if guesstype=="no": guesstype="pade" #Choose pade as default if "no" is given by the eval.yaml
         thres         = 0.05
         nsig          = 2.

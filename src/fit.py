@@ -143,11 +143,11 @@ class Fit:
     #--------------------------------------------------------------------------#
     # Make an initial guess based on the sum of the Pade power spectra and the FT spectra
     #--------------------------------------------------------------------------#
-    def newGuess(self,guesstype="pade",hf=0.05,dbg=0,nsigma=2.):
+    def newGuess(self,guesstype="ft",hf=0.05,dbg=0,nsigma=2.):
         # Init empty excitation object and arrays
         self.excit = excitations.Excitations(ncalc=self.ncalc,narea=self.narea,ncomp=self.ncomp,ext=self.ext)
         # Pade-based guess
-        if guesstype in ["pade",True,"true"]:
+        if guesstype in ["pade"]:
             fdat       = self.pade
             f          = np.zeros(len(self.freqPade),dtype=float)
             # Sum up squared Pade spectra
@@ -167,7 +167,7 @@ class Fit:
                 phase, dipoles = self.guessExcit(energy)
                 #Add excitation to list
                 self.excit.add(energy=energy,phase=phase,dipoles=dipoles,erange=piT)
-        elif guesstype=="ft":
+        elif guesstype in ["ft",True,"true"]:
             self.excit, nadd = self.addEx(self.excit,dbg=dbg,nsigma=nsigma)
             if nadd==0:
                 self.excit, nadd = self.addEx(self.excit,dbg=dbg,singleMax=True,nsigma=nsigma)

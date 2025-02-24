@@ -1,0 +1,146 @@
+DESCRIPTION:                        # Description of evaluation 
+DIPOLE:                             # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
+- [dipole_global1_01.dat]
+EXT:
+  profile: laser_profile.dat        # Profile of excitation
+  invertPhase: true                 # Before BTDFT v3.6.0, the laser profile missed a factor "-1". InvertPhase==True compensates this error.
+DENSFT:
+  densft: []                        #if cube files: must contain a 2-list with real/imag part cube files per energy / if compact files: must contain one complex-valued compact file per energy
+  densen: []
+OPT:
+  FT:
+    calc: false
+    minpw: 17
+    window: 0.0
+    smooth: 0.0
+    rmDC: false
+  Pade:
+    calc: false
+    wmax: 0.5
+    dw: 1e-05
+    smooth: 0.0024756915176741214
+    thin: 0
+  Fit:
+    range:                          # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.40
+    imagonly: false
+    fiterr: 0.014566358766144911
+    fitphase: false
+SPEC:
+- name: S1
+  fix: false
+  energy: 0.15239580883025383
+  energyErr: 1.4194628343097578e-07
+  erange:
+  - 0.15067442563128142
+  - 0.15405220059740282
+  phase: 0.37412007750690296
+  phaseErr: 0.0
+  tmod: 1.0
+  dipoles:
+  - - -5.424111999571191e-14
+    - 6.11731751962629e-14
+    - 5.0169716555569215
+  dipolesErr:
+  - - 0.0008302100446387512
+    - 0.0008302100446504256
+    - 0.00041532322485993156
+  ampl:
+  - - - 4.783140333975073e-16
+      - -5.3944292017145e-16
+      - -0.044241120909747265
+  amplErr:
+  - - - 7.321034577635544e-06
+      - 7.3210345777384936e-06
+      - 5.179474387708871e-06
+  dipole:
+  - -5.424111999571191e-14
+  - 6.11731751962629e-14
+  - 5.0169716555569215
+  dipoleErr:
+  - 0.0008302100446387512
+  - 0.0008302100446504256
+  - 0.00041532322485993156
+  transdensDipole:
+  - 0.0
+  - 0.0
+  - 0.0
+  strength: 0.6393005346933102
+  strengthErr: 0.0001058473021306623
+  strengthEped:
+  - 0.6393005346933102
+  strengthErrEped:
+  - 0.005817912903419648
+  strengths:
+  - 0.6393005346933102
+  strengthsErr:
+  - 0.0001058473021306623
+  eped:
+  - 1.0
+  epedErr:
+  - 0.009098928672456832
+  signifFit: 0.0
+  signifErr: 0.9999044096398144
+  signifAng: 1.0
+  signifExc: 0.0
+  signifRng: 0.9999998629428902
+  signifPha: 1.0
+- name: S2
+  fix: false
+  energy: 0.28405897555836274
+  energyErr: 0.00016962149755276972
+  erange:
+  - 0.28309368253887557
+  - 0.2864714575049969
+  phase: 1.5178519655318017
+  phaseErr: 0.0
+  tmod: 1.0
+  dipoles:
+  - - -3.3245030369914774e-13
+    - -1.6918771875352301e-12
+    - 0.715122433158881
+  dipolesErr:
+  - - 0.13993282988152583
+    - 0.13993282987781583
+    - 0.07014835594724858
+  ampl:
+  - - - 1.7374525839820738e-17
+      - 8.842092663340061e-17
+      - -3.737374595632324e-05
+  amplErr:
+  - - - 7.313172951154813e-06
+      - 7.313172950960921e-06
+      - 5.184641384320875e-06
+  dipole:
+  - -3.3245030369914774e-13
+  - -1.6918771875352301e-12
+  - 0.715122433158881
+  dipoleErr:
+  - 0.13993282988152583
+  - 0.13993282987781583
+  - 0.07014835594724858
+  transdensDipole:
+  - 0.0
+  - 0.0
+  - 0.0
+  strength: 0.02421129781962077
+  strengthErr: 0.004749909367765807
+  strengthEped:
+  - 0.02421129781962077
+  strengthErrEped:
+  - 0.009257578420088085
+  strengths:
+  - 0.02421129781962077
+  strengthsErr:
+  - 0.004749909367765807
+  eped:
+  - 1.0
+  epedErr:
+  - 0.32819961548175525
+  signifFit: 0.0
+  signifErr: 0.8867321581627796
+  signifAng: 1.0
+  signifExc: 0.0
+  signifRng: 0.9663040214407741
+  signifPha: 1.0

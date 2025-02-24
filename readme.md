@@ -404,12 +404,12 @@ OPT:
 ```
 ./BTevalSpec.py -h guess
 --------------------
- Make a new guess based on the pade approximation
+ Make a new guess based on the Fourier (default) or Pade spectrum
 
   ./BTevalSpec.py [<gen-opt>] [--guess=pade [<pade opt>] [--thres=<thres>]| --guess=ft [<ft opt>] [--nsig=<nsig>]] [--range=<lb,rb>] guess
 
     Creates a new guess, sets the plot range, and updates eval.yaml.
-    The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft) spectrum
+    The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft, default) spectrum
     with the given <pade opt> or <ft opt> (if the latter were not computed previously).
 --------------------
 ```
@@ -577,5 +577,16 @@ DENSFT:
 
 ## Examples/Testing
 
-Confer the readme.md in the testTemplates/ directory.
+Copy the `testTemplates/` directory into a directory, e.g., `test~/` (the tilde makes git ignore this directory)
+```
+cp -rP testTemplates test~
+```
+for actual testing.
+The `-P` option leaves symbolic links as such.
+
+Here is an overview of the single test cases:
+
+[Todo]
+
+Confer the `readme.md` files in the single test directories for instructions.
 

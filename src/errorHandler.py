@@ -262,12 +262,12 @@ def usage(cmd=""):
     if cmd in ["all","guess"]:
         print("")
         print(" ----------")
-        print(" Make a new guess based on the pade approximation")
+        print(" Make a new guess based on the Fourier (default) or Pade spectrum)")
         print("")
         print("  ./BTevalSpec.py [<gen-opt>] [--guess=pade [<pade opt>] [--thres=<thres>]| --guess=ft [<ft opt>] [--nsig=<nsig>]] [--range=<lb,rb>] guess")
         print("")
         print("    Creates a new guess, sets the plot range, and updates eval.yaml.")
-        print("    The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft) spectrum")
+        print("    The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft, default) spectrum")
         print("    with the given <pade opt> or <ft opt> (if the latter were not computed previously).")
     if cmd in ["all","rm"]:
         print("")
