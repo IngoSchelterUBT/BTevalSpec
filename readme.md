@@ -238,6 +238,9 @@ DENSFT:                             # Specify Fourier-transformed densities n(r,
   #OR
   - [densft01r.cube,densft01i.cube] #     or lists of [real,imag] Gaussian cube files
   - [densft02r.cube,densft02i.cube]
+  #OR
+  - densft01i.cube                  #     or imag-valued Gaussian cube files with the --imag to the decouple command option
+  - densft02i.cube
   #...
   densen:                           #   the list of w_k (same order)
   - 0.131990
@@ -559,15 +562,17 @@ OPT:
   jcalc determines the calculations index from which the density stems (default: 0).
 
 DENSFT:
-  densft: #List of n(r,omega) at omega specified below
-  #Using Gaussian cube files (real and imag parts)
-  - [densft01r.cube, densft01i.cube]
-  - [densft02r.cube, densft02i.cube]
-  #OR complex-valued BTcompact files
-  - btdft/densft01.compact
-  - btdft/densft02.compact
-    ...
-  densen: #Actual omega [Ry] at which the FT densities above are given
+  densft:                           #   List of n(r,w_k) (as many as excitations at w_k close to the excitation energies)
+  - densft01.compact                #     Either as complex-valued BTcompact files (requires BTDFT-modules)
+  - densft02.compact
+  #OR
+  - [densft01r.cube,densft01i.cube] #     or lists of [real,imag] Gaussian cube files
+  - [densft02r.cube,densft02i.cube]
+  #OR
+  - densft01i.cube                  #     or imag-valued Gaussian cube files with the --imag to the decouple command option
+  - densft02i.cube
+  #...
+  densen:                           #Actual omega [Ry] at which the FT densities above are given
   - 0.131990
   - 0.134330
     ...

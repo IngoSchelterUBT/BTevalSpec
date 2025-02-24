@@ -2,7 +2,7 @@
 
 For a quick fit, run
 ```
-./quickfit.sh
+./run.sh
 ```
 
 # [optional] Print the general help message

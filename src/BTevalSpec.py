@@ -72,11 +72,11 @@ def main(argv):
             err.usage(cmd=cmd)
             sys.exit()
         elif opt in ("-v", "--verbose"):
-            if got_verbose: err.err(1,"Multiple verbose arguments!")
+            if got_verbose: err.err(1,"Multiple verbose arguments!",cmd=cmd)
             verbose = int(arg)
             got_verbose = True
         elif opt in ("-f", "--file"):
-            if got_ifile: err.err(1,"Multiple file arguments!")
+            if got_ifile: err.err(1,"Multiple file arguments!",cmd=cmd)
             ifile   = arg
             got_ifile = True
 
@@ -95,7 +95,7 @@ def main(argv):
     # Read configuration from input file
     if verbose>0: print(f"Read configuration file {ifile}",end="")
     if not os.path.isfile(ifile):
-        err.err.err(1,"No configuration file '{ifile}'. Select an existing file using '-f <file>' option or create a new configuration file using the 'new' command")
+        err.err.err(1,"No configuration file '{ifile}'. Select an existing file using '-f <file>' option or create a new configuration file using the 'new' command",cmd=cmd)
     conf = config.Config(ifile)
     if verbose>0: print(" - done")
 
@@ -125,15 +125,15 @@ def main(argv):
         got_smooth = False
         for opt, arg in opts:
             if opt in ("--minpw"):
-                if got_minpw: err.err(1,"Multiple minpw arguments!")
+                if got_minpw: err.err(1,"Multiple minpw arguments!",cmd=cmd)
                 minpw = int(arg)
                 got_minpw = True
             elif opt in ("--window"):
-                if got_window: err.err(1,"Multiple window arguments!")
+                if got_window: err.err(1,"Multiple window arguments!",cmd=cmd)
                 window = float(arg)
                 got_window = True
             elif opt in ("--smooth"):
-                if got_smooth: err.err(1,"Multiple smooth arguments!")
+                if got_smooth: err.err(1,"Multiple smooth arguments!",cmd=cmd)
                 smooth = float(arg)
                 got_smooth = True
             elif opt in ("--rmDC"):
@@ -172,19 +172,19 @@ def main(argv):
         got_thin   = False
         for opt, arg in opts:
             if opt in ("--wmax"):
-                if got_wmax: err.err(1,"Multiple wmax arguments!")
+                if got_wmax: err.err(1,"Multiple wmax arguments!",cmd=cmd)
                 wmax = float(arg)
                 got_wmax = True
             elif opt in ("--dw"):
-                if got_dw: err.err(1,"Multiple dw arguments!")
+                if got_dw: err.err(1,"Multiple dw arguments!",cmd=cmd)
                 dw = float(arg)
                 got_dw = True
             elif opt in ("--smooth"):
-                if got_smooth: err.err(1,"Multiple smooth arguments!")
+                if got_smooth: err.err(1,"Multiple smooth arguments!",cmd=cmd)
                 smooth = float(arg)
                 got_smooth = True
             elif opt in ("--thin"):
-                if got_thin: err.err(1,"Multiple thin arguments!")
+                if got_thin: err.err(1,"Multiple thin arguments!",cmd=cmd)
                 thin = float(arg)
                 got_thin = True
         if verbose>0: print("Calculate Pade approximation",end="")
@@ -214,7 +214,7 @@ def main(argv):
         # Read and Fourier transform external excitation
         if verbose>0: print("Initialize extern potential",end="")
         extprof = conf.ext.get("profile","")
-        if dip[0][0].ext!="boost" and extprof=="": err.err(1,"Extern profile file required for non-boost calculation")
+        if dip[0][0].ext!="boost" and extprof=="": err.err(1,"Extern profile file required for non-boost calculation",cmd=cmd)
         ext = extern.Extern(extprof,conf.ext.get("invertPhase",False),dip[0][0].efield,dip[0][0].text,[dip[icalc][0].epol for icalc in range(len(dip))])
         ext.write()
         if verbose>0: print(" - done")
@@ -231,7 +231,7 @@ def main(argv):
         try:
             excit.remove(rmname=args[1].split(","),dbg=verbose)
         except:
-            err.err(1,"No excitations given as second argument or wrong format")
+            err.err(1,"No excitations given as second argument or wrong format",cmd=cmd)
         done=True
     if cmd == "fix" and not done:
         invert  = False
@@ -256,12 +256,12 @@ def main(argv):
         got_wref  = False
         for opt, arg in opts:
             if opt in ("--range"):
-                if got_range: err.err(1,"Multiple range arguments!")
+                if got_range: err.err(1,"Multiple range arguments!",cmd=cmd)
                 fitrange = [float(x) for x in arg.split(",")]
                 got_range = True
-                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
+                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'",cmd=cmd)
             elif opt in ("--wref"):
-                if got_wref: err.err(1,"Multiple wref arguments!")
+                if got_wref: err.err(1,"Multiple wref arguments!",cmd=cmd)
                 wref = float(arg)
                 got_wref = True
             elif opt in ("--imag"):
@@ -304,15 +304,15 @@ def main(argv):
         got_nsig      = False
         for opt, arg in opts:
             if opt in ("--guess"):
-                if got_guesstype: err.err(1,"Multiple guess arguments!")
+                if got_guesstype: err.err(1,"Multiple guess arguments!",cmd=cmd)
                 guesstype = arg
                 got_guesstype = True
             elif opt in ("--thres"):
-                if got_thres: err.err(1,"Multiple thres arguments!")
+                if got_thres: err.err(1,"Multiple thres arguments!",cmd=cmd)
                 thres = float(arg)
                 got_thres = True
             elif opt in ("--nsig"):
-                if got_nsig: err.err(1,"Multiple nsig arguments!")
+                if got_nsig: err.err(1,"Multiple nsig arguments!",cmd=cmd)
                 nsig = float(arg)
                 got_nsig = True
         if verbose>0: print("Initial guess",end="")
@@ -340,15 +340,15 @@ def main(argv):
         got_energy  = False
         for opt, arg in opts:
             if opt in ("--energy"):
-                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!")
+                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!",cmd=cmd)
                 energy = [float(x) for x in arg.split(",")]
                 got_energy = True
             elif opt in ("--nsig"):
-                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!")
+                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!",cmd=cmd)
                 nsig = float(arg)
                 got_nsig = True
             elif opt in ("--nex"):
-                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!")
+                if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!",cmd=cmd)
                 nex  = int(arg)
                 got_nex  = True
             elif opt in ("--nofix"):
@@ -390,29 +390,29 @@ def main(argv):
         got_nadd  = False
         for opt, arg in opts:
             if opt in ("--niter"):
-                if got_niter: err.err(1,"Multiple niter arguments!")
+                if got_niter: err.err(1,"Multiple niter arguments!",cmd=cmd)
                 niter = int(arg)
                 if niter>0: nadd = 1000 #almost unlimited number of excitations can be added
                 got_niter = True
             if opt in ("--crit"):
-                if got_nadd or got_crit: err.err(1,"Multiple nadd/crit arguments (exclusive)!")
+                if got_nadd or got_crit: err.err(1,"Multiple nadd/crit arguments (exclusive)!",cmd=cmd)
                 crit = float(arg)
                 nadd = 1000 #almost unlimited number of excitations can be added
-                if crit>1. or crit<0.:  err.err(1,"Criterion must be within [0;1]")
+                if crit>1. or crit<0.:  err.err(1,"Criterion must be within [0;1]",cmd=cmd)
                 got_crit = True
             elif opt in ("--nadd"):
-                if got_nadd or got_crit: err.err(1,"Multiple nadd/crit arguments (exclusive)!")
+                if got_nadd or got_crit: err.err(1,"Multiple nadd/crit arguments (exclusive)!",cmd=cmd)
                 nadd = int(arg)
                 got_nadd = True
             elif opt in ("--nsig"):
-                if got_nsig: err.err(1,"Multiple nsig arguments!")
+                if got_nsig: err.err(1,"Multiple nsig arguments!",cmd=cmd)
                 nsig = float(arg)
                 got_nsig = True
             elif opt in ("--range"):
-                if got_range: err.err(1,"Multiple range arguments!")
+                if got_range: err.err(1,"Multiple range arguments!",cmd=cmd)
                 fitrange = [float(x) for x in arg.split(",")]
                 got_range = True
-                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'")
+                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'",cmd=cmd)
             elif opt in ("--skipfirst"):
                 skipfirst = True
             elif opt in ("--reset"):
@@ -443,21 +443,21 @@ def main(argv):
     if cmd == "decouple":
         #Check if excitations exist
         nex = len(excit.exlist)
-        if nex==0: err.err(1,"No excitation for decoupling")
+        if nex==0: err.err(1,"No excitation for decoupling",cmd=cmd)
         #Check if transition densities and energies exist and number=number of excitations
         densname = conf.densft.get("densft",[])
         densen   = conf.densft.get("densen",[])
-        if any(nex!=nn for nn in [len(densname),len(densen)]): err.err(1,"Number of densities and energies must match number of excitations")
+        if any(nex!=nn for nn in [len(densname),len(densen)]): err.err(1,"Number of densities and energies must match number of excitations",cmd=cmd)
         #Check if calculation index exists
         jcalc = conf.densft.get("jcalc",0)
         got_jcalc = False
         for opt, arg in opts:
             if opt in ("--jcalc"):
-                if got_jcalc: err.err(1,"Multiple jcalc arguments!")
+                if got_jcalc: err.err(1,"Multiple jcalc arguments!",cmd=cmd)
                 jcalc = int(arg)
-                if jcalc>excit.ncalc: err.err(1,"jcalc is too large (or negative)",jcalc)
+                if jcalc>excit.ncalc: err.err(1,"jcalc is too large (or negative)",jcalc,cmd=cmd)
                 got_jcalc = True
-        if excit.ncalc > 1 and not got_jcalc: err.err(1,"You need to specify the calculation from which you got the given FT densities via the --jcalc= option.")
+        if excit.ncalc > 1 and not got_jcalc: err.err(1,"You need to specify the calculation from which you got the given FT densities via the --jcalc= option.",cmd=cmd)
         #Read transition densities
         densft   = []
         densmeta = []
@@ -465,14 +465,14 @@ def main(argv):
             if os.path.splitext(densname[0][0])[1] == ".cube":
                 ftype = "cube"
             else:
-                err.err(1,"If the FT-density entries are lists, cube files are expected [real.cube,imag.cube]")
+                err.err(1,"If the FT-density entries are lists, cube files are expected [real.cube,imag.cube]",cmd=cmd)
         else:
             if os.path.splitext(densname[0])[1] == ".compact":
                 ftype="compact"
             elif os.path.splitext(densname[0])[1] == ".cube" and dfit.imagonly:
                 ftype="cube"
             else:
-                err.err(1,"Expect either one complex-valued compact file or a list of real/imag cube file for each excitation.")
+                err.err(1,"Expect either one complex-valued compact file or a list of real/imag cube file for each excitation.",cmd=cmd)
         for fname in densname:
             if ftype=="cube":
                 #In case of cube files, densname contains a list with real- and imag part cube files
@@ -481,7 +481,8 @@ def main(argv):
                         data, meta = ct.read_cube(fname[1]) #Reading the imaginary part is sufficient in this case
                     else:
                         data, meta = ct.read_cube(fname) #Having only an imag part cube is fine in this case
-                    data *= 1.j
+                    #data *= 1.j     #This does not work since it is tried to save the result in the original data, which is a real-valued array
+                    data = 1.j*data #This creates a new complex-valued arrey
                 else:
                     data, meta = ct.read_imcube(fname[0],fname[1])
 
@@ -491,7 +492,7 @@ def main(argv):
                   comp = BTcompact.BTcompact(fname)
                   data, meta = comp.toCube(comp.readVal())
                 except:
-                  err.err(1,"BTcompact format not supported by this version")
+                  err.err(1,"BTcompact format not supported by this version",cmd=cmd)
             densft  .append(data)
             densmeta.append(meta)
         #Generate Hw
@@ -528,7 +529,7 @@ def main(argv):
         #Done
         done = True
 
-    if not done: err.err(1,"Unknown command "+cmd)
+    if not done: err.err(1,"Unknown command "+cmd,cmd=cmd)
 
     #--------------------------------------------------------------------------#
     # Update configuration file
