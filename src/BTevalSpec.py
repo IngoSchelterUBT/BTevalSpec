@@ -14,6 +14,7 @@ import os.path
 from scipy.optimize import curve_fit
 import concurrent.futures
 import getopt
+import ruamel.yaml
 
 #Import own & third-party modules
 import errorHandler as err
@@ -461,7 +462,7 @@ def main(argv):
         #Read transition densities
         densft   = []
         densmeta = []
-        if densname[0] is list:
+        if isinstance(densname[0],ruamel.yaml.comments.CommentedSeq):
             if os.path.splitext(densname[0][0])[1] == ".cube":
                 ftype = "cube"
             else:

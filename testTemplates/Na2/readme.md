@@ -1,8 +1,9 @@
-# [shortcut] Quick-Fit
+
+# Shortcut
 
 For a quick fit, run
 ```
-./run.sh
+./quickfit.sh
 ```
 
 # [optional] Print the general help message
@@ -131,4 +132,3 @@ The `--signif` option enables the additional computation of the significance-val
 
 Note that the actual fitting is done with the non-error-suppressed objective function. Thus, the error suppression helps with finding very small lines but fitting the latter can be prone to errors (especially their oscillator strength).
 See `readmeFiles/eval.yaml.final` and `readmeFiles/excit_1.dat.final` for the final results after this step.
->>>>>>> 0c966f386f67575489a81af1297851463108122a

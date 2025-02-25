@@ -1,0 +1,23 @@
+DENSFT:
+  densft:
+    - [densft01_0.131600Ry_it010000_real.cube, densft01_0.131600Ry_it010000_imag.cube]
+    - [densft02_0.134310Ry_it010000_real.cube, densft02_0.134310Ry_it010000_imag.cube]
+    - [densft03_0.157280Ry_it010000_real.cube, densft03_0.157280Ry_it010000_imag.cube]
+    - [densft04_0.167970Ry_it010000_real.cube, densft04_0.167970Ry_it010000_imag.cube]
+    - [densft05_0.199420Ry_it010000_real.cube, densft05_0.199420Ry_it010000_imag.cube]
+    - [densft06_0.226300Ry_it010000_real.cube, densft06_0.226300Ry_it010000_imag.cube]
+    - [densft07_0.227370Ry_it010000_real.cube, densft07_0.227370Ry_it010000_imag.cube]
+    - [densft08_0.247320Ry_it010000_real.cube, densft08_0.247320Ry_it010000_imag.cube]
+    - [densft09_0.273690Ry_it010000_real.cube, densft09_0.273690Ry_it010000_imag.cube]
+    - [densft10_0.274750Ry_it010000_real.cube, densft10_0.274750Ry_it010000_imag.cube]
+  densen:
+    - 0.131600
+    - 0.134310
+    - 0.157280
+    - 0.167970
+    - 0.199420
+    - 0.226300
+    - 0.227370
+    - 0.247320
+    - 0.273690
+    - 0.274750

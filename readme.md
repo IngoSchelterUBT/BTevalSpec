@@ -557,7 +557,7 @@ OPT:
 
   ./BTevalSpec.py [<gen-opt>] [--jcalc=<calc-idx>] decouple
 
-  Decouple given Fourier-transformed densities n(r,omega) at given omega to get the proper transition densities.
+  Decouple given Fourier-transformed densities n(r,omega) at given omega to get the proper transition densities n_j.
   Requires Fourier-transform of the density at as many energies as there are excitations (ideally the excitation energies themselves) and a calculation identifier (calculation index).
   jcalc determines the calculations index from which the density stems (default: 0).
 
@@ -577,6 +577,21 @@ DENSFT:
   - 0.134330
     ...
   jcalc: 0
+
+  After the decoupling, you can the following output with one lines per excitation:
+
+Transition density | abs. norm | real norm | imag norm | sin^2(dAng) | dAbs
+S1                      0.0259     99.92 %      0.08 %      0.00        0.90 %
+...
+
+- Col 1) Excitation name
+- Col 2) int |n_j| d^3r
+- Col 3) Real-valued fraction (must be close to 100%)
+- Col 4) Imag-valued fraction (must be close to   0%)
+- Col 5) Compares the angle between the transition dipole from the fit and the one evaluated from the transition density (must be close to 0)
+- Col 6) Compares the modulus of the transition dipole from the fit and the one evaluated from the transition density (must be close to 0)
+
+If any of the columns 4-6 shows unrealistic values (significantly different from 0), something went wrong.
 --------------------
 ```
 

@@ -52,9 +52,6 @@ def writeTemplate(ofile):
     EXT:
       profile: laser_profile.dat    # Profile of excitation
       invertPhase: False            # Before BTDFT v3.6.0, the laser profile missed a factor "-1". InvertPhase==True compensates this error.
-    DENSFT:
-      densft: []                    #if cube files: must contain a 2-list with real/imag part cube files per energy / if compact files: must contain one complex-valued compact file per energy
-      densen: []
     OPT:
       FT:
         calc: true

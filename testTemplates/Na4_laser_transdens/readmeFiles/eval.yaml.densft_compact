@@ -1,0 +1,23 @@
+DENSFT:
+  densft:
+    - densft01_0.131600Ry_it010000.compact
+    - densft02_0.134310Ry_it010000.compact
+    - densft03_0.157280Ry_it010000.compact
+    - densft04_0.167970Ry_it010000.compact
+    - densft05_0.199420Ry_it010000.compact
+    - densft06_0.226300Ry_it010000.compact
+    - densft07_0.227370Ry_it010000.compact
+    - densft08_0.247320Ry_it010000.compact
+    - densft09_0.273690Ry_it010000.compact
+    - densft10_0.274750Ry_it010000.compact
+  densen:
+    - 0.131600
+    - 0.134310
+    - 0.157280
+    - 0.167970
+    - 0.199420
+    - 0.226300
+    - 0.227370
+    - 0.247320
+    - 0.273690
+    - 0.274750
