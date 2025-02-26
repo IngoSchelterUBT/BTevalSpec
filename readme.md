@@ -125,7 +125,7 @@ The laser-profile file together with the dipole-moment header keys `LASERFIELD` 
 It must contain `1+NLASER` columns with the time grid (col `1`) and the time-profile of the electric dipole field in col `2:NLASER+1`.
 Currently, only a single laser is supportet.
 
-## Add-Line Objective
+## Add-Line Objective & Error Suppression
 
 ### Description
 
@@ -145,6 +145,11 @@ If the error suppression is active, there are two add-line objectives plotted: O
 Here is an example from the `Na2DA` test including the new-line guess (crosses) based on the error-suppressed add-line objective (dark solid line):
 
 ![Na2DA_addLineObj1_wref](testTemplates/Na2DA/readmeFiles/addLineObj1_wref.png   "Add-line objective (for fit iteration 2, wref=1) from the Na2DA test")
+
+Remember that the add-line objective without error suppression (light gray line) shows the remaining part of the spectrum that is missing in the fit.
+The error suppression in this case removes a large part of the add-line objective at abount `0.15 Ry`.
+The difference between the line is the line-shape error, that is removed by the error suppression, i.e., the error from fitting previous lines at about `0.15 Ry`.
+The previously fitted lines at that energy were more than 100 times larger than the remaining ones that are visible in the error-suppressed add-line objective.
 
 ## Run
 
