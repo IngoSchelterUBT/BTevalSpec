@@ -358,7 +358,7 @@ def main(argv):
         # Fix existing excitations
         if not nofix:
             if verbose>0: print("  - Fix excitations")
-            self.excit.fix()
+            excit.fix()
         #----------------------------------------------------------------------#
         # Add new excitations
         if verbose>0: print("  - Add new excitations:")
