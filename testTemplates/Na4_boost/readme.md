@@ -1,6 +1,6 @@
 # Shortcut
 
-Run `run.sh``
+Run `./run.sh`
 
 # Fitting
 

@@ -8,8 +8,8 @@ Authors: Ingo W. Schelter (<ingo.schelter@uni-bayreuth.de>) and Rian R. Richter
 
 The underlying theory and algorithms are explained in
 
-- Ingo Schelter and Stephan Kümmel, "Accurate Evaluation of Real-Time Density Functional Theory Providing Access to Challenging Electron Dynamics", JCTC 14, 1910-1927 (2018), doi: 10.1021/acs.jctc.7b01013,
-- Ingo Schelter, Johannes M. Foerster, Rian Richter, Nils Schild, and Stephan Kümmel, unpublished (2025)
+- [Schelter2018] Ingo Schelter and Stephan Kümmel, "Accurate Evaluation of Real-Time Density Functional Theory Providing Access to Challenging Electron Dynamics", JCTC 14, 1910-1927 (2018), doi: 10.1021/acs.jctc.7b01013,
+- [Schelter2025] Ingo Schelter, Johannes M. Foerster, Rian Richter, Nils Schild, and Stephan Kümmel, unpublished (2025)
 
 Please, cite the latest reference if you use BTevalSpec.py.
 
@@ -124,6 +124,27 @@ All existing key-value pairs are described above (some are currently not and may
 The laser-profile file together with the dipole-moment header keys `LASERFIELD` and `LASERPOL[XYZ]` defines the time-depend electric field and is only required for a electric-dipole-field excitation.
 It must contain `1+NLASER` columns with the time grid (col `1`) and the time-profile of the electric dipole field in col `2:NLASER+1`.
 Currently, only a single laser is supportet.
+
+## Add-Line Objective
+
+### Description
+
+The script frequently plots a kind of spectrum which is called the "add-line objective" in the following and the examples/tests.
+This function (cf. [Schelter2025]) is a comprehensive, energy-resolved measure for how much the current fit deviates from the actual data (i.e., the Fourier spectra from all provided dipole-moment files from different calculations, spatial areas, Cartesian components, and complex components).
+
+The add-line objective is used to find new excitations and can be inspected during the fit procedure by the user to evaluate the quality of the fit.
+
+### Line-Shape error & Error Compensation
+
+Often, an excitation does not match its analytical line shape perfectly, which then leads to the "line-shape error".
+This line-shape error remains visible in the add-line objective after fitting this excitation.
+If there is a small excitation next to the large, already fitted excitation, it is superimposed by the latter's line-shape error.
+To allow finding this small excitation "behind" the line-shape errors of larger excitations, `BTevalSpec.py` provides an error-suppression mechanism (cf. [Schelter2025]).
+If the error suppression is active, there are two add-line objectives plotted: One with error suppression and one without as a reference.
+
+Here is an example from the `Na2DA` test including the new-line guess (crosses) based on the error-suppressed add-line objective (dark solid line):
+
+![Na2DA_addLineObj1_wref](testTemplates/Na2DA/readmeFiles/addLineObj1_wref.png   "Add-line objective (for fit iteration 2, wref=1) from the Na2DA test")
 
 ## Run
 
@@ -625,8 +646,8 @@ If any of the columns 4-6 shows unrealistic values (significantly different from
 
 - Na2                 - Simple test using a global dipole moment from a laser excitation on a Na2 cluster. Also shows the error-supression.
 - Na4_laser_transdens - Simple test using a global dipole moment from a laser excitation on a Na4 cluster with subsequent transition-density evaluation [cf. Schelter et al., JCTC 14, 1910 (2018)].
-- Na4_boost           - Test using a global dipole moment from a boost excitation on a Na4 cluster. Numerical errors require the use of --wref to suppress line-shape errors.
-- Na2DA               - Na2-Na2 donor acceptor system with donor/acceptor specific dipole moments from a laser excitation with a gaussian profile to test fit to different spectral regions.
+- Na4_boost           - Test using a global dipole moment from a boost excitation on a Na4 cluster.
+- Na2DA               - Imperfect H-aggregate consisting of a Na2-Na2 donor-acceptor system with donor/acceptor specific dipole moments from a laser excitation with a gaussian profile to test fit to different spectral regions. Significances are considered there.
 - B302                - Global dipole moment from a boost calculation on a bacteriochlorophyll. This test tries to fit a broad excitation band with many close-lying excitations.
 - B302_2calc          - This test is comparable with B302 but uses dipole moments from two different calculations with different external-field polarizations.
 

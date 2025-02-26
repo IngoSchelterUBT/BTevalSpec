@@ -433,6 +433,7 @@ class Fit:
                     plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
                 else:
                     plt.ylabel(r"Add-line objective [a.u.]")
+                ax.set_title(f"Add-line objective: Area {iarea:d}")
                 ax.plot(self.freq,obj0ByArea[iarea,:],label="without scaling",color="#C0C0C3")
                 ax.plot(self.freq,objByArea [iarea,:],label="with    scaling",color="#36454F")
                 plt.xlabel("Energy [Ry]")

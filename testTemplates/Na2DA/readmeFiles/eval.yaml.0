@@ -1,0 +1,17 @@
+DESCRIPTION:                        # Description of evaluation 
+DIPOLE:                             # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
+- [dipole_atomgroups1_01.dat, dipole_atomgroups1_02.dat]
+EXT:
+  profile: laser_profile.dat        # Profile of excitation
+  invertPhase: true                 # Before BTDFT v3.6.0, the laser profile missed a factor "-1". InvertPhase==True compensates this error.
+OPT:
+  FT:
+    calc: true
+  Pade:
+    calc: true
+  Fit:
+    range:                          # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.40
+DENSFT: {}
+SPEC: []
