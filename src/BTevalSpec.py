@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #------------------------------------------------------------------------------#
-# author: Ingo Schelter & Rian Richter
+# Authors: Ingo Schelter* & Rian Richter
+#   *Correspondence to ingo.schelter@uni-bayreuth.de
 #------------------------------------------------------------------------------#
 # See errorHandler.py for usage information or call
 # ./BTevalSpec.py -h
@@ -8,15 +9,13 @@
 import numpy as np
 import sys
 import os.path
-#import matplotlib
-#matplotlib.use("Qt5Agg")
-#import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 import concurrent.futures
 import getopt
 import ruamel.yaml
 
 #Import own & third-party modules
+sys.path.append("../../src/")
 import errorHandler as err
 import config
 import extern
@@ -47,10 +46,10 @@ def main(argv):
     #--------------------------------------------------------------------------#
     # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
-    try:
-        opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
-    except getopt.GetoptError:
-        err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
+    #try:
+    opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
+    #except getopt.GetoptError:
+    #    err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
 
     #--------------------------------------------------------------------------#
     # Get command argument

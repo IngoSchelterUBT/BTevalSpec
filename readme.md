@@ -1,4 +1,19 @@
-# Purpose
+# BTevalSpec.py - Documentation
+
+## Authors & Correspondence
+
+Authors: Ingo W. Schelter (<ingo.schelter@uni-bayreuth.de>) and Rian R. Richter
+
+## Cite
+
+The underlying theory and algorithms are explained in
+
+- Ingo Schelter and Stephan Kümmel, "Accurate Evaluation of Real-Time Density Functional Theory Providing Access to Challenging Electron Dynamics", JCTC 14, 1910-1927 (2018), doi: 10.1021/acs.jctc.7b01013,
+- Ingo Schelter, Johannes M. Foerster, Rian Richter, Nils Schild, and Stephan Kümmel, unpublished (2025)
+
+Please, cite the latest reference if you use BTevalSpec.py.
+
+## Purpose
 
 In general, Bayreuth spectrum evaluation script `BTevalSpec.py` takes the induced time-dependent dipole moment, e.g., from an electronic real-time TDDFT calculation, computes the corresponding spectrum, and evaluates the latter for excitation energies and oscillator strengths by fitting spectral lines with the proper shape.
 If densities `n(r,w_k)` are given at energies `w_k` close to the actual excitation energies, BTevalSpec.py can also compute the true transition densities.
@@ -7,50 +22,44 @@ The script is able to evaluate dipole-moment data emerging from a so called boos
 The dipole-moment data may also be devided into different spatial regions that are, e.g., associated with different molecules to compute molecular contributions to supermolecular excitations.
 Finally, the script accepts dipole-moment data from different calculations with different external-field polarizations to improve the evaluation.
 
-# Reference
+## Installation
 
-The underlying theory and algorithms are explained in
-
- - Ingo Schelter and Stephan Kümmel, "Accurate Evaluation of Real-Time Density Functional Theory Providing Access to Challenging Electron Dynamics", JCTC 14, 1910-1927 (2018), doi: 10.1021/acs.jctc.7b01013,
- - Ingo Schelter, Johannes M. Foerster, Rian Richter, Nils Schild, and Stephan Kümmel, unpublished (2025)
-
-Please, cite the above references if you use BTevalSpec.py.
-
-# Installation
-
-## Requirements
+### Requirements
 
 BTevalSpec.py requires Python3 (tested for 3.10.5) with the following modules:
- - numpy
- - sys
- - os
- - scipy
- - concurrent.futures
- - matplotlib
- - getopt
- - re
- - ruamel.yaml
- - lmfit
- - numba
- - pyinstaller
 
-## Directory
+- numpy
+- sys
+- os
+- scipy
+- concurrent.futures
+- matplotlib
+- getopt
+- re
+- ruamel.yaml
+- lmfit
+- numba
+- [optional] pyinstaller
+- [optional] mpi4py (for BTDFT support)
+
+### Directory
 
 The following directories exist:
- - `src/` contains the source code (main script `eval.py`) and install script (`install.sh`), which can build a one-file executable using `pyinstaller`.
- - `testTemplates/` provides several test cases including input files. This directory is a template that can be copied for actual test directories.
- - `tools/` contains templates for auxiliary gnuplot and shell scripts, e.g., for visualizing data.
 
-# Input file(s)
+- `src/` contains the source code (main script `eval.py`) and install script (`install.sh`), which can build a one-file executable using `pyinstaller`.
+- `testTemplates/` provides several test cases including input files. This directory is a template that can be copied for actual test directories.
+- `tools/` contains templates for auxiliary gnuplot and shell scripts, e.g., for visualizing data.
+
+## Input file(s)
 
 There are two kinds of input files: dipole moments and the laser profile (cf. the test directory for examples).
 
-## Dipole moment
+### Dipole moment
 
 A dipole-moment file consist of a header and a data section.
 The data section must provide four columns containing the equidistant time grid (col 1) and the x/y/z components of the induced(!) dipole moment (col 2-3), all in Rydberg atomic units.
 
-```
+```text
 #time                 |           x          |           y          |           z          |
  0.000000000000000E+00  0.000000000000000E+00  0.000000000000000E+00  0.000000000000000E+00
  2.067068666828068E-01 -7.324170588265575E-17  8.349368755249521E-16  3.133584764152223E-10
@@ -63,7 +72,7 @@ The data section must provide four columns containing the equidistant time grid 
 The header contains meta information such as the type, strength, and polarization of the external perturbation.
 Some quantities carry units, others don't.
 
-```
+```text
 # Column
 # 1  2                    3      4                                          description
 #
@@ -104,24 +113,24 @@ Some quantities carry units, others don't.
 #!BT DIP0                 dip_ry 4.759665E-14,-6.683266E-14,1.188267E-12    The initial dipole moment (which was subtracted from the time-dependent dipole moment to get the induced dipole moment in the data section)
 ```
 
-All header lines must begin with a "#!BT" (col 1) followed by a key (col 2).
-If a key expects a dimensional value, column 3 contains a unit string.
+All header lines must begin with a `#!BT` (col `1`) followed by a key (col `2`).
+If a key expects a dimensional value, column `3` contains a unit string.
 Otherwise, it is empty.
-Finally, column 4 contains the actual value.
+Finally, column `4` contains the actual value.
 All existing key-value pairs are described above (some are currently not and may never used).
 
-## Laser profile
+### Laser profile
 
-The laser-profile file together with the dipole-moment header keys "LASERFIELD" and "LASERPOL[XYZ]" defines the time-depend electric field and is only required for a electric-dipole-field excitation.
-It must contain 1+NLASER columns with the time grid (col 1) and the time-profile of the electric dipole field in col (2:NLASER+1).
+The laser-profile file together with the dipole-moment header keys `LASERFIELD` and `LASERPOL[XYZ]` defines the time-depend electric field and is only required for a electric-dipole-field excitation.
+It must contain `1+NLASER` columns with the time grid (col `1`) and the time-profile of the electric dipole field in col `2:NLASER+1`.
 Currently, only a single laser is supportet.
 
-# Run
+## Run
 
 `BTevalSpec.py` requires some custom modules that are included in the `src` directory.
 Therefore, you can either call `BTevalSpec.py` directly from the src directory or create a symbolic link or build a one-file executable using `pyinstaller` and put into a location in your binary path.
 
-```
+```text
 ./BTevalSpec.py -h
 --------------------
 Usage:
@@ -150,9 +159,10 @@ Usage:
 --------------------
 ```
 
-## Overview
+### Workflow
 
 To run `BTevalSpec.py`
+
  1. Create a directory
  2. Put in or link the input files (dipole moments and laser profile if required)
  3. Either link `BTevalSpec.py` into the directory or call a pyinstalled-version of the script
@@ -163,7 +173,7 @@ To run `BTevalSpec.py`
  8. Evaluate the excitations found using the implemented significance measures
  9. [optional] Decouple Fourier-transformed densities into transition densities
 
-```
+```text
 ./BTevalSpec.py -h gen
 
 --------------------
@@ -207,10 +217,11 @@ To run `BTevalSpec.py`
 --------------------
 ```
 
-## eval.yaml
+### eval.yaml
 
-```
+```text
 ./BTevalSpec.py -h yaml
+
 --------------------
  eval.yaml file format:
 
@@ -301,12 +312,13 @@ SPEC:                               # Spectral information (fit)
 --------------------
 ```
 
-## Commands
+### Commands
 
-### Overview
+#### Command Overview
 
-```
+```text
 ./BTevalSpec.py -h cmd
+
 --------------------
  Command overview:
 
@@ -330,10 +342,11 @@ SPEC:                               # Spectral information (fit)
           It is also possible to manually adjust the eval.yaml file.
 ```
 
-### New
+#### New
 
-```
+```text
 ./BTevalSpec.py -h new
+
 --------------------
  Create a new configuration file
 
@@ -362,10 +375,11 @@ OPT:
 --------------------
 ```
 
-### Fourier Transform
+#### Fourier Transform
 
-```
+```text
 ./BTevalSpec.py -h ft
+
 --------------------
  Fourier transform
 
@@ -382,10 +396,11 @@ OPT:
 --------------------
 ```
 
-### Pade approximation
+#### Pade approximation
 
-```
+```text
 ./BTevalSpec.py -h pade
+
 --------------------
  Pade approx
 
@@ -402,10 +417,11 @@ OPT:
 --------------------
 ```
 
-### New guess
+#### New guess
 
-```
+```text
 ./BTevalSpec.py -h guess
+
 --------------------
  Make a new guess based on the Fourier (default) or Pade spectrum
 
@@ -417,10 +433,11 @@ OPT:
 --------------------
 ```
 
-### Remove excitation
+#### Remove excitation
 
-```
+```text
 ./BTevalSpec.py -h rm
+
 --------------------
  Remove excitation without fit
 
@@ -431,10 +448,11 @@ OPT:
 --------------------
 ```
 
-### Add excitation
+#### Add excitation
 
-```
+```text
 ./BTevalSpec.py -h add
+
 --------------------
  Add excitation without fit
 
@@ -447,10 +465,11 @@ OPT:
 --------------------
 ```
 
-### Reset excitation energy interval
+#### Reset excitation energy interval
 
-```
+```text
 ./BTevalSpec.py -h reset
+
 --------------------
  Reset energy range to the standard pi/T interval around the current excitations' energy values
 
@@ -461,10 +480,11 @@ OPT:
 --------------------
 ```
 
-### Fit
+#### Fit
 
-```
+```text
 ./BTevalSpec.py -h fit
+
 --------------------
  Fit
 
@@ -505,10 +525,11 @@ OPT:
 --------------------
 ```
 
-### Plotting
-       
-```
+#### Plotting
+
+```text
 ./BTevalSpec.py -h plot
+
 --------------------
  Plot
 
@@ -519,14 +540,15 @@ OPT:
 --------------------
 ```
 
-### Fix excitations
+#### Fix excitations
 
-```
+```text
 ./BTevalSpec.py -h fix
+
 --------------------
  Fix
 
-```
+
   ./BTevalSpec.py [<gen-opt>] [--invert] fix <listOfExcitations>
 
     Fix the given list of excitations or energy range (those are excluded from the fit)
@@ -535,10 +557,11 @@ OPT:
 --------------------
 ```
 
-### Release excitations
+#### Release excitations
 
-```
+```text
 ./BTevalSpec.py -h release
+
 --------------------
  Release
 
@@ -548,10 +571,11 @@ OPT:
 --------------------
 ```
 
-### Compute transition densities
+#### Compute transition densities
 
-```
+```text
 ./BTevalSpec.py -h decouple
+
 --------------------
  Decouple
 
@@ -595,9 +619,9 @@ If any of the columns 4-6 shows unrealistic values (significantly different from
 --------------------
 ```
 
-## Examples/Testing
+### Examples/Testing
 
-### Overview
+#### Overview
 
 - Na2                 - Simple test using a global dipole moment from a laser excitation on a Na2 cluster. Also shows the error-supression.
 - Na4_laser_transdens - Simple test using a global dipole moment from a laser excitation on a Na4 cluster with subsequent transition-density evaluation [cf. Schelter et al., JCTC 14, 1910 (2018)].
@@ -606,12 +630,14 @@ If any of the columns 4-6 shows unrealistic values (significantly different from
 - B302                - Global dipole moment from a boost calculation on a bacteriochlorophyll. This test tries to fit a broad excitation band with many close-lying excitations.
 - B302_2calc          - This test is comparable with B302 but uses dipole moments from two different calculations with different external-field polarizations.
 
-### Instructions
+#### Instructions
 
 Copy the `testTemplates/` directory into a directory, e.g., `test~/` (the tilde makes git ignore this directory)
-```
+
+```bash
 cp -rP testTemplates test~
 ```
+
 for actual testing.
 The `-P` option leaves symbolic links as such.
 
