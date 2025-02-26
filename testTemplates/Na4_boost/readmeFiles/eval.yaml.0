@@ -1,0 +1,14 @@
+DESCRIPTION:                        # Description of evaluation 
+DIPOLE:                             # List of dipole moment files; different calculations are only allowed to differ in the boost direction or laser polarization
+- [dipole_global1_01.dat]
+OPT:
+  FT:
+    calc: true
+  Pade:
+    calc: true
+  Fit:
+    range:                          # Range of spectrum which should be fitted in Ry
+    - 0.10
+    - 0.28
+DENSFT: {}
+SPEC: []
