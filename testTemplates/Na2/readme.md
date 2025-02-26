@@ -167,7 +167,7 @@ It will, however, show you the next add-line objective function using the error-
 
 - with `wref=0.01`, the two presumably artificial peaks are supressed by a large amount but still larger than the actual line at about `0.28 Ry`.
   ![addLine1_wref1E-2](readmeFiles/addLineObj1_wref1E-2.png "Add-line objective after first fit with wref=0.01")
-- with `wref=1.0`, the two presumably artificial peaks are completly supressed so that the code identifies the peak `0.28 Ry` as small excitation. 
+- with `wref=1.0`, the two presumably artificial peaks are completly supressed so that the code identifies the peak `0.28 Ry` as small excitation.
   ![addLine1_wref1E0](readmeFiles/addLineObj1_wref1E0.png "Add-line objective after first fit with wref=1.0")
 
 With this knowledge, you can now add and fit this line calling
