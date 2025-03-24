@@ -134,7 +134,7 @@ This function (cf. [Schelter2025]) is a comprehensive, energy-resolved measure f
 
 The add-line objective is used to find new excitations and can be inspected during the fit procedure by the user to evaluate the quality of the fit.
 
-### Line-Shape error & Error Compensation
+### Line-Shape error & Error Suppression
 
 Often, an excitation does not match its analytical line shape perfectly, which then leads to the "line-shape error".
 This line-shape error remains visible in the add-line objective after fitting this excitation.
