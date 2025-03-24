@@ -401,7 +401,7 @@ OPT:
 --------------------
 ```
 
-#### Fourier Transform
+#### Fourier transform
 
 ```text
 ./BTevalSpec.py -h ft
@@ -513,19 +513,20 @@ Fourier transform
 ./BTevalSpec.py -h add
 
 --------------------
-Add excitation without fitting
+ Add excitation without fitting
 
-  ./BTevalSpec.py [<gen-opt>] [--nsig=<nsig> | --nex=<nex> | --energy=<en>] [--nofix] add
+  ./BTevalSpec.py [<gen-opt>] [--nsig=<nsig> | --nadd=<nex> | --energy=<en>] [--nofix] add
 
     Add new excitations either at given energies (optional) or automatically using a sigma-threshold without fitting
     Before adding new excitations, the existing ones are fixed. Switch that off with the --nofix option.
+    By deault, one batch of excitations is added with default parameters (as does the 'fit' command with '--niter=1' but without fitting)
 
     <gen-opt>         General options
     --nsig=<nsig>     For the current iteration, determines the threshold for adding new lines in the following way: (default: 2.0)
                       The code takes the residue spectrum, which is essentially the Fourier spectrum minus the fit spectrum, which shows several peaks from the sine-cardinal shaped spectral lines.
                       In order to distinguish main peaks from side peaks, the code finds all peak in the given spectral range and computes the mean peak height (hbar) and the peak-height standard deviation (hsig).
                       Peaks that exceed hbar+<nsig>*hsig are accepted as new lines.
-    --nex=<nex>       Add <nex> of the next largest excitations (default: 0, i.e., disabled)
+    --nadd=<nex>      Add <nex> of the next largest excitations (default: 0, i.e., disabled)
     --energy=<en>     Add excitations at the given energies (as comma-separated list, e.g., <en>=0.160,0.171). Initial values for line heights are extracted from the spectrum (default: , i.e., disabled)
     --nofix           Old lines are automatically fixed (i.e., they gain a 'fix=True' in eval.yaml and are not fitted until released). The --nofix flag suppresses this behaviour.
     --range=<lb,rb>   Determines the considered frequency range (in Ry) (default: 0.0,0.4 )

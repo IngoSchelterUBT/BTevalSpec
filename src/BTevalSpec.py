@@ -47,7 +47,7 @@ def main(argv):
     # Get all command-line arguments and options
     #--------------------------------------------------------------------------#
     #try:
-    opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","nex=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
+    opts, args = getopt.getopt(argv,"hv:f:",["help","verbose=","file=","minpw=","smooth=","window=","rmDC","wmax=","dw=","thin=","thres=","nsig=","nadd=","niter=","energy=","guess=","nofix","skip","single","range=","wref=","imag","exclude=","invert","signif","fitphase","reset","crit=","jcalc="])
     #except getopt.GetoptError:
     #    err.err(1,"In processing command line (e.g. missing argument or unknown option)!")
 
@@ -347,7 +347,7 @@ def main(argv):
                 if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!",cmd=cmd)
                 nsig = float(arg)
                 got_nsig = True
-            elif opt in ("--nex"):
+            elif opt in ("--nadd"):
                 if got_nex or got_nsig or got_energy: err.err(1,"Multiple nex/nsig/energy arguments (exclude each other)!",cmd=cmd)
                 nex  = int(arg)
                 got_nex  = True

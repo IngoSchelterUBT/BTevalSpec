@@ -447,8 +447,11 @@ class Fit:
                 plt.ylabel(r"$\|\boldsymbol{\Delta}_s\|^\prime$ [a.u.]")
             else:
                 plt.ylabel(r"Add-line objective [a.u.]")
-            ax.axhline(y=meanHeight                 ,color="#B22222",linestyle="-",label=r"\overline{h}")
-            ax.axhline(y=meanHeight+nsigma*stdHeight,color="#B22222",linestyle=":",label=r"\overline{h}+2 \Delta h")
+            try:
+                ax.axhline(y=meanHeight                 ,color="#B22222",linestyle="-",label=r"\overline{h}")
+                ax.axhline(y=meanHeight+nsigma*stdHeight,color="#B22222",linestyle=":",label=r"\overline{h}+2 \Delta h")
+            except:
+                pass
             ax.plot(maxen,maxhei,"x",markersize=10,color="#DAA520")
             ax.plot(self.freq,obj0,label="without scaling",color="#C0C0C3")
             ax.plot(self.freq,obj ,label="with    scaling",color="#36454F")
