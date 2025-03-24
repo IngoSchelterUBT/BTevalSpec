@@ -407,18 +407,27 @@ OPT:
 ./BTevalSpec.py -h ft
 
 --------------------
- Fourier transform
+Fourier transform
 
-  ./BTevalSpec.py [<gen-opt>] [--minpw=<pw>] [--smooth=<smooth>] [--window=<window>] [--no-rmDC] ft
+  ./BTevalSpec.py [<gen-opt>] [--minpw=<pw>] [--smooth=<smooth>] [--window=<win>] [--rmDC] ft
 
-    Fourier transforms the dipole moment files, writes the transformations, and updates eval.yaml. 
+    Fourier-transforms the induced dipole moment, writes them into files, and updates eval.yaml. 
 
-  Note: If not disabled in the eval.yaml file, the Fourier transform is automatically computed if you use the 'fit' command.
-        This command is useful, if you only want the Fourier spectrum in the first place without any fitting.
+    <gen-opt>         General options
+    --minpw=<pw>      Pad the induced dipole moment with zeros up to 2^<pw> to increase the frequency-space sampling rate (without changing the FT itself) (default: 17)
+    --smooth=<smooth> Multiply the induced dipole moment with a decaying exponential function e^(-<smooth>*t) for smoother lines (default: 0)
+    --window=<win>    Applies a Kaiser-Bessel window with parameter <win> to the induced dipole moment (default: 0)
+    --rmDC            Remove the DC (omega=0) component of the induced dipole moment d(t) by subtracting int d(t) dt. This is usually not recommended.
+
+  Attention: A smoothed or windowed signal cannot be used for subsequent fitting but is only intended for visual inspection.
+
+  Note: The Fourier transform is automatically computed if you use the 'fit' command.
+        The 'ft' command is useful, if you only want the Fourier spectrum in the first place without any fitting.
 
   Note: If the Fourier transform was computed previously, it is not computed again but read from the previously generated files
-        which is automatically enforced by setting 'FT: {calc: false}' in the eval.yaml file.
-        If, for some reason (e.g. you deleted the FT files), you want to compute the Fourier transform again, you have to set this option to 'true' again in eval.yaml.
+        This is automatically enforced by setting 'FT: {calc: false}' in the eval.yaml file after computing the Fourier transform once.
+        If, for some reason (e.g. you deleted the FT files), you want to compute the Fourier transform again, you have to set this option to 'true' again in eval.yaml of use the 'ft' command manually.
+
 --------------------
 ```
 
@@ -432,14 +441,22 @@ OPT:
 
   ./BTevalSpec.py [<gen-opt>] [--wmax=<wmax>] [--dw=<dw>] [--smooth=<smooth>] [--thin=<thin>] pade
 
-    Pade approximates the dipole moment files, writes the transformations, and updates eval.yaml.
+    Computes the Pade spectrum of the induced dipole moment, writes them into files, and updates eval.yaml.
 
-  Note: If not disabled in the eval.yaml file, the Pade spectrum is automatically computed if you use the 'fit' command.
-        This command is useful, if you only want the Pade spectrum in the first place without any fitting.
+    <gen-opt>         General options
+    --wmax=<wmax>     Upper omega boundary (in Ry units) (default: 0.5)
+    --smooth=<smooth> Multiply the induced dipole moment with a decaying exponential function e^(-<smooth>*t) for smoother lines. This is alway applied for computing the Pade spectrum.
+                      Smaller <smooth> values (=decay rates) result in sharper lines (but still smooth in contrast to the Fourier spectrum). Too small values, however, can produce artifacts. (default: ln(100)/<propagation time>)
+    --dw=<dw>         Frequency-space sampling step size (default: 1E-5)
+    --thin=<thin>     Thins out the dipole-moment samples using only every <thin>'s value to lower the computation burden and file size (default: 0)
+
+  Note: The Pade spectrum is automatically computed if you use the 'fit' command.
+        The 'pade' command is useful, if you only want the Pade spectrum in the first place without any fitting.
 
   Note: If the Pade spectrum was computed previously, it is not computed again but read from the previously generated files
-        which is automatically enforced by setting 'Pade: {calc: false}' in the eval.yaml file.
-        If, for some reason (e.g. you deleted the FT files), you want to compute the Fourier transform again, you have to set this option to 'true' again in eval.yaml.
+        This is automatically enforced by setting 'Pade: {calc: false}' in the eval.yaml file after computing the Pade spectrum once.
+        If, for some reason (e.g. you deleted the Pade files), you want to compute the Pade spectrum again, you have to set this option to 'true' again in eval.yaml of use the 'pade' command manually.
+
 --------------------
 ```
 
@@ -449,13 +466,29 @@ OPT:
 ./BTevalSpec.py -h guess
 
 --------------------
- Make a new guess based on the Fourier (default) or Pade spectrum
+ Make a new guess based on the Fourier (default) or Pade spectrum)
 
-  ./BTevalSpec.py [<gen-opt>] [--guess=pade [<pade opt>] [--thres=<thres>]| --guess=ft [<ft opt>] [--nsig=<nsig>]] [--range=<lb,rb>] guess
+  ./BTevalSpec.py [<gen-opt>] [--guess=pade [<pade opt>] [--thres=<thres>]| --guess=ft [<ft opt>] [--nsig=<nsig>]] [--range=<lb,rb>] [--imag] guess
 
-    Creates a new guess, sets the plot range, and updates eval.yaml.
+    Creates an initial guess for the first batch of spectral lines without fitting and updates eval.yaml.
     The guess is based on the Pade (--guess=pade) or Fourier (--guess=ft, default) spectrum
     with the given <pade opt> or <ft opt> (if the latter were not computed previously).
+
+    <gen-opt>         General options
+    --guess=<guess>   Guess is based on the FT (<guess>=ft, default) or Pade (<guess>=pade) spectrum. If you use either, you can use the corresponding options of the 'ft' or 'pade' command, respectively.
+    --thres=<thres>   If <guess>=pade: Real number in ]0,1] that determines how large a line in the Pade spectrum needs to be relative to the largest lines in order to be considered as for the initial guess. (default: 0.05, i.e., lines with a height of at least 5% of the largest one are considered)
+                      Smaller <smooth> values (=decay rates) result in sharper lines (but still smooth in contrast to the Fourier spectrum). Too small values, however, can produce artifacts. (default: ln(100)/<propagation time>)
+    --nsig=<nsig>     For the current iteration, determines the threshold for adding new lines in the following way: (default: 2.0)
+                      The code takes the residue spectrum, which is essentially the Fourier spectrum minus the fit spectrum, which shows several peaks from the sine-cardinal shaped spectral lines.
+                      In order to distinguish main peaks from side peaks, the code finds all peak in the given spectral range and computes the mean peak height (hbar) and the peak-height standard deviation (hsig).
+                      Peaks that exceed hbar+<nsig>*hsig are accepted as new lines.
+    --range=<lb,rb>   Determines the considered frequency range (in Ry) (default: 0.0,0.4 )
+                      Attention: This option is written into eval.yaml and remembered for future runs.
+    --imag            Only consider imaginary part. (default: true for boost, false else)
+                      Attention: This option is written into eval.yaml and remembered for future runs. To undo it, set the 'imagonly' entry in eval.yaml to 'false' again.
+
+  Note: The guess is automatically computed if you use the 'fit' command.
+        The 'guess' command is useful, if you only want a guess without fitting.
 --------------------
 ```
 
@@ -470,7 +503,7 @@ OPT:
   ./BTevalSpec.py [<gen-opt>] rm <exlist>
 
     Remove <exlist> from the list of excitations, where exlist is a comma-separated list of excitation labels, e.g., S1,S2,S3
-    Instead, you can also remove teh excitation manually from eval.yaml.
+    Alternatively, you can also remove the excitation manually from eval.yaml.
 --------------------
 ```
 
@@ -480,14 +513,27 @@ OPT:
 ./BTevalSpec.py -h add
 
 --------------------
- Add excitation without fit
+Add excitation without fitting
 
-  ./BTevalSpec.py [<gen-opt>] [--nsig=<nsig> | --nex=<nex> | --energy=<list-of-energies>] [--nofix] add
+  ./BTevalSpec.py [<gen-opt>] [--nsig=<nsig> | --nex=<nex> | --energy=<en>] [--nofix] add
 
-    Add new excitations either at given energies (optional) or automatically using a sigma-threshold (default: 2.0), i.e.,
-    add excitations that are larger than the mean value of maxima of ft-fit plus <nsig> times the standard deviation of maxima heights
-    Do no fit but guess phase and dipoles moments.
-    Before adding new excitations, the existing ones are fixed. Switch that off with the --nofix option
+    Add new excitations either at given energies (optional) or automatically using a sigma-threshold without fitting
+    Before adding new excitations, the existing ones are fixed. Switch that off with the --nofix option.
+
+    <gen-opt>         General options
+    --nsig=<nsig>     For the current iteration, determines the threshold for adding new lines in the following way: (default: 2.0)
+                      The code takes the residue spectrum, which is essentially the Fourier spectrum minus the fit spectrum, which shows several peaks from the sine-cardinal shaped spectral lines.
+                      In order to distinguish main peaks from side peaks, the code finds all peak in the given spectral range and computes the mean peak height (hbar) and the peak-height standard deviation (hsig).
+                      Peaks that exceed hbar+<nsig>*hsig are accepted as new lines.
+    --nex=<nex>       Add <nex> of the next largest excitations (default: 0, i.e., disabled)
+    --energy=<en>     Add excitations at the given energies (as comma-separated list, e.g., <en>=0.160,0.171). Initial values for line heights are extracted from the spectrum (default: , i.e., disabled)
+    --nofix           Old lines are automatically fixed (i.e., they gain a 'fix=True' in eval.yaml and are not fitted until released). The --nofix flag suppresses this behaviour.
+    --range=<lb,rb>   Determines the considered frequency range (in Ry) (default: 0.0,0.4 )
+                      Attention: This option is written into eval.yaml and remembered for future runs.
+    --imag            Only consider imaginary part (default: true for boost, false else)
+                      Attention: This option is written into eval.yaml and remembered for future runs. To undo it, set the 'imagonly' entry in eval.yaml to 'false' again.
+    --wref=<wref>     Reference-omega for error suppression - suppresses the line-shape error of already fitted lines (that produce spurious lines in the residue spectrum) when searching for new lines.
+                      Usually: small error suppression for <wref>=0.01, large suppression for <wref>=1.0. (default: 0.0)
 --------------------
 ```
 
@@ -501,8 +547,9 @@ OPT:
 
   ./BTevalSpec.py [<gen-opt>] reset
 
-  Note: When an excitation is added by the code, its energy is restricted to a symmetric interval around the initial energy value to stabilize the fit.
-        If you note that a rng significance value of an excitation is not close to 1, it may be useful to reset the energy ranges and, thus, give more freedom to the energy fit
+    <gen-opt>         General options
+    When an excitation is added by the code, its energy parameter during the fit is restricted to a symmetric interval around the initial energy value to stabilize the fit.
+    If you note that the rng significance of an excitation is not close to 1, you can try to reset the energy ranges once and, thus, give more freedom to the energy fit.
 --------------------
 ```
 
@@ -512,34 +559,56 @@ OPT:
 ./BTevalSpec.py -h fit
 
 --------------------
- Fit
+Fit
 
-  ./BTevalSpec.py [<gen-opt>] [<ft opt>] [<guess opt>] [--reset] [--skip] [--single] [--signif] [--range=<lb,rb>] [--crit=<error criterion> | --nadd=<nadd>] [--nsig=<nsig>] [--niter=<niter>] [--imag] [--fitphase] fit
+  ./BTevalSpec.py [<gen-opt>] [<ft opt>] [<guess opt>] [--reset] [--skip] [--single] [--signif] [--range=<lb,rb>] [--crit=<convcrit> | --nadd=<nadd>] [--nsig=<nsig>] [--niter=<niter>] [--imag] [--wref=<wref>] [--fitphase] fit
 
-    Fit current excitations (if not --skip), add and fit <nadd> excitations one after the other, and update eval.yaml.
-    --skip: Skip the first collective fit of existing excitations (useful if eval.yaml was changed manually)
-    --imag: only use imaginary part for fitting; automatically true for boost excitation.
-    <nadd> defaults to 0
-    --single: Instead of fitting all excitations at once, fit them one after the other from high to low strength 
-    Does a prior Fourier transform if not already done.
-    Does a prior Guess if not already done; requires a range option.
-    --signif: Compute the significance-values that require fitting (are costly)
-    --fitphase: Use phase as fit parameter
-    --crit: Convergence criterion (only relevant if nadd==0 or not present): Add excitations until the fit error drops below this criterion.
-    --niter: Maximum number of add-excitation iterations (in each iteration, the number of added excitations is determined by the <nsig> threshold)
-    --reset: Reset energy range
+    Fit excitations following this scheme:
+      1) Fit the present (from eval.yaml) excitations (use --skip to skip this step)
+      2) Fix the present (old) excitations
+      3) Add one batch of new excitations. How many excitations are added in one iteration is controlled by the --nsig (and/or the --nadd) parameter)
+      4) Fit new excitations together (or singly if --single option is given)
+      5) Release the old excitations
+      6) Fit all excitations together
+      7) Go to 2) until --niter iterations are done or --nadd excitations were added or the comprehensive error falls below the convergence criterion <convcrit>
+      8) Compute significances (if --signif is given, also the computationally demanding ones are computed)
+
+    <gen-opt>         General options
+    <ft-opt>          'ft' command options, if ft is was not done before
+    <guess-opt>       'guess' command options, if no lines are present yet
+    --skip            Skip the first collective fit of existing excitations (useful if eval.yaml was changed manually)
+    --nadd=<nadd>     Add up to <nadd> excitations (default: 0)
+    --single          Instead of fitting all excitations at once, fit them one after the other from high to low strength 
+                      Does a prior Fourier transform if not already done.
+                      Does a prior Guess if not already done; requires a range option.
+    --signif          Compute the significance-values that require fitting (costly)
+    --fitphase        Use phase as fit parameter
+                      Attention: This option is written into eval.yaml and remembered for future runs. To undo it, set the 'fitphase' entry in eval.yaml to 'false' again.
+    --crit=<convcrit> Convergence criterion (only relevant if nadd==0 or not present): Add excitations until the fit error drops below this criterion. (default: 0., i.e., disabled)
+    --niter           Maximum number of add-excitation iterations (in each iteration, the number of added excitations is determined by the <nsig> threshold)
+    --reset           Reset energy range (cf. 'reset' command)
+    --nsig=<nsig>     For the current iteration, determines the threshold for adding new lines in the following way: (default: 2.0)
+                      The code takes the residue spectrum, which is essentially the Fourier spectrum minus the fit spectrum, which shows several peaks from the sine-cardinal shaped spectral lines.
+                      In order to distinguish main peaks from side peaks, the code finds all peak in the given spectral range and computes the mean peak height (hbar) and the peak-height standard deviation (hsig).
+                      Peaks that exceed hbar+<nsig>*hsig are accepted as new lines.
+    --range=<lb,rb>   Determines the considered frequency range (in Ry) (default: 0.0,0.4 )
+                      Attention: This option is written into eval.yaml and remembered for future runs.
+    --imag            Only consider imaginary part (default: true for boost, false else)
+                      Attention: This option is written into eval.yaml and remembered for future runs. To undo it, set the 'imagonly' entry in eval.yaml to 'false' again.
+    --wref=<wref>     Reference-omega for error suppression - suppresses the line-shape error of already fitted lines (that produce spurious lines in the residue spectrum) when searching for new lines.
+                      Usually: small error suppression for <wref>=0.01, large suppression for <wref>=1.0. (default: 0.0)
 
   Note: The simplest approach to fit a spectrum is to do
         1) one iteration at a time using
-           `./BTevalSpec.py --skip [--nsig=<nsig>] --niter=1 fit`
+           ./BTevalSpec.py --skip [--nsig=<nsig>] --niter=1 fit
         2) then evaluate the added excitations (e.g. by inspecting the significance measures)
         3) backup the resulting eval.yaml
         4) go to 1) (use --skip to suppress the initial fitting of the input excitations, use the --nsig option to change the threshold for adding new excitation)
 
  Note: If any significance measure is not close to 1, this can (!) indicate that an excitation is erroneous. Try to remove the the excitation using
-           `./BTevalSpec.py rm <excitation identifier>`
+           ./BTevalSpec.py rm <excitation identifier>
        and call
-           `./BTevalSpec.py fit`
+           ./BTevalSpec.py fit
        to just fit the remaining excitations again
        If the rng significance of an excitation is not close to 1, resetting the energy range using --reset gives the fitting more freedom, which helps sometimes.
 
@@ -559,10 +628,19 @@ OPT:
 --------------------
  Plot
 
-  ./BTevalSpec.py [<gen-opt>] [--exclude=<listOfExcitations>] plot <listOfMeasures>
+  ./BTevalSpec.py [<gen-opt>] [--range=<lb,rb>] [--imag] [--wref=<wref>] [--exclude=<excit>] plot <listOfMeasures>
 
-    Plots <listOfMeasure> in {pade, ft, fit, err, spectrum} with excitations
-    --exclude=<listOfExcitations>: Excitations that are excluded from the (fitted) data
+    Plots <listOfMeasure> in {pade, ft, fit, err, spectrum} with excitations.
+
+    <gen-opt>         General options
+    <listOfMeasures>  [not supported yet] Measures to plot
+    --exclude=<excit> [not supported yet] Comma-separated list of excitations that are excluded from the (fitted) data (default: '' )
+    --range=<lb,rb>   Determines the considered frequency range (in Ry) (default: 0.0,0.4 )
+                      Attention: This option is written into eval.yaml and remembered for future runs.
+    --imag            Only consider imaginary part (default: true for boost, false else)
+                      Attention: This option is written into eval.yaml and remembered for future runs. To undo it, set the 'imagonly' entry in eval.yaml to 'false' again.
+    --wref=<wref>     Reference-omega for error suppression - suppresses the line-shape error of already fitted lines (that produce spurious lines in the residue spectrum) when searching for new lines.
+                      Usually: small error suppression for <wref>=0.01, large suppression for <wref>=1.0. (default: 0.0)
 --------------------
 ```
 
@@ -574,12 +652,14 @@ OPT:
 --------------------
  Fix
 
+  ./BTevalSpec.py [<gen-opt>] [--invert] fix {<listOfExcitations>|all}
 
-  ./BTevalSpec.py [<gen-opt>] [--invert] fix <listOfExcitations>
+    Fix the given list of excitations (by name). Those remain but are excluded from the fit (i.e., parameters are fixed).
+    If you call with 'all' instead of a list of excitations, all excitations are fixed
 
-    Fix the given list of excitations or energy range (those are excluded from the fit)
+    <gen-opt>         General options
     --invert: Do the same but inverted
-    You can do this manually in eval.yaml as well
+    You can do this manually in eval.yaml as well by setting the 'fix=True' for the respective excitations.
 --------------------
 ```
 
@@ -591,9 +671,11 @@ OPT:
 --------------------
  Release
 
-  ./BTevalSpec.py [<gen-opt>] [--invert] release <listOfExcitations>
+  ./BTevalSpec.py [<gen-opt>] [--invert] release {<listOfExcitations>|all}
 
-  Release (un-fix) all excitations, cf. 'fix' command
+    Release (un-fix) the given list of excitations (by name), cf. 'fix' command
+    If you call with 'all' instead of a list of excitations, all excitations are released
+    You can do this manually in eval.yaml as well by setting the 'fix=False' for the respective excitations.
 --------------------
 ```
 
@@ -666,9 +748,5 @@ cp -rP testTemplates test~
 
 for actual testing.
 The `-P` option leaves symbolic links as such.
-
-Here is an overview of the single test cases:
-
-[Todo]
 
 Confer the `readme.md` files in the single test directories for instructions.

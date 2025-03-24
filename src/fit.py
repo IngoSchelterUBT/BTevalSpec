@@ -721,16 +721,16 @@ class Fit:
     # Plot add-ine objective
     #--------------------------------------------------------------------------#
     def plotObjective(self,latex=False):
-        scal   = np.ones(np.shape(self.scal))
-        fdat   = self.ftrc
-        ffit   = np.zeros(np.shape(self.ftfitrc))
-        _, dat = self.addExObj(fdat,ffit,scal)
-        fdat   = np.zeros(np.shape(self.ftrc))
-        ffit   = self.ftfitrc
-        _, fit = self.addExObj(fdat,ffit,scal)
-        fdat   = self.ftrc   
-        ffit   = self.ftfitrc
-        _, err = self.addExObj(fdat,ffit,scal)
+        scal        = np.ones(np.shape(self.scal))
+        fdat        = self.ftrc
+        ffit        = np.zeros(np.shape(self.ftfitrc))
+        _, dat,_ ,_ = self.addExObj(fdat,ffit,scal)
+        fdat        = np.zeros(np.shape(self.ftrc))
+        ffit        = self.ftfitrc
+        _, fit,_ ,_ = self.addExObj(fdat,ffit,scal)
+        fdat        = self.ftrc   
+        ffit        = self.ftfitrc
+        _, err,_ ,_ = self.addExObj(fdat,ffit,scal)
         if latex:
             plt.rcParams["text.usetex"] = True
             plt.rcParams["text.latex.preamble"] = r"\usepackage{amsmath}"

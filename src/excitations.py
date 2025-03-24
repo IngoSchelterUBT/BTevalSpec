@@ -125,11 +125,13 @@ class Excitation:
         self.transdensDipole = tdd
 
     # Temporarily fixes the excitation
-    def fixMe(self):
+    def fixMe(self,permanent=False):
         self.fixtmp = True
+        if permanent: self.fix = True
 
     # Release temporary fix
-    def releaseMe(self):
+    def releaseMe(self,permanent=False):
+        if permanent: self.fix = False
         self.fixtmp = self.fix
 
     # Reset erange
@@ -277,7 +279,7 @@ class Excitations:
     #-------------------------------------------------------------------------
     # Temporarily fix all or specific excitations
     #-------------------------------------------------------------------------
-    def fix(self,whichidx=None,whichname=None,dbg=0,inverse=False):
+    def fix(self,whichidx=None,whichname=None,dbg=0,inverse=False,permanent=False):
         for iex, ex in enumerate(self.exlist):
             if inverse:
                 if isinstance(whichidx,list):
@@ -288,24 +290,24 @@ class Excitations:
                 if isinstance(whichidx,list):
                     if not iex in whichidx: continue
                 if isinstance(whichname,list):
-                    if not ex.name in whichname: continue
-            ex.fixMe()
+                    if not (ex.name in whichname or "all" in whichname): continue
+            ex.fixMe(permanent=permanent)
             if dbg>0: print(f"Fix excitation {ex.name}")
 
     #-------------------------------------------------------------------------
     # Temporarily fix excitations in a given interval (or the inverse interval)
     #-------------------------------------------------------------------------
-    def fixErange(self,erange,inverse=False):
+    def fixErange(self,erange,inverse=False,permanent=False):
         for iex, ex in enumerate(self.exlist):
             if ex.energy < erange[1] and ex.energy >erange[0]: # inside inverval
-                if not inverse: ex.fixMe()                     # fix if not inverse
+                if not inverse: ex.fixMe(permanent=permanent)  # fix if not inverse
             else:                                              #outside inverval
-                if     inverse: ex.fixMe()                     # fix if     inverse
+                if     inverse: ex.fixMe(permanent=permanent)  # fix if     inverse
 
     #-------------------------------------------------------------------------
     # Release all or specific excitations
     #-------------------------------------------------------------------------
-    def release(self,whichidx=None,whichname=None,dbg=0,inverse=False):
+    def release(self,whichidx=None,whichname=None,dbg=0,inverse=False,permanent=False):
         for iex, ex in enumerate(self.exlist):
             if inverse:
                 if isinstance(whichidx,list):
@@ -316,8 +318,8 @@ class Excitations:
                 if isinstance(whichidx,list):
                     if not iex in whichidx: continue
                 if isinstance(whichname,list):
-                    if not ex.name in whichname: continue
-            ex.releaseMe()
+                    if not (ex.name in whichname or "all" in whichname): continue
+            ex.releaseMe(permanent=permanent)
             if dbg>0: print(f"Release excitation {ex.name}")
 
     #-------------------------------------------------------------------------

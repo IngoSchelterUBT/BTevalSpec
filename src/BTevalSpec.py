@@ -237,13 +237,13 @@ def main(argv):
         invert  = False
         for opt, arg in opts:
             if opt in ("--invert"): invert=True
-        excit.fix(whichname=args[1].split(","),dbg=verbose,inverse=invert)
+        excit.fix(whichname=args[1].split(","),dbg=verbose,inverse=invert,permanent=True)
         done=True
     if cmd == "release" and not done:
         invert  = False
         for opt, arg in opts:
             if opt in ("--invert"): invert=True
-        excit.release(whichname=args[1].split(","),dbg=verbose,inverse=invert)
+        excit.release(whichname=args[1].split(","),dbg=verbose,inverse=invert,permanent=True)
         done=True
 
     if not done:
@@ -362,11 +362,11 @@ def main(argv):
         # Add new excitations
         if verbose>0: print("  - Add new excitations:")
         if got_energy:
-            excit, nadd = fit.addEx(excit,dbg=verbose,addEnergies=energy)
+            excit, nadd = dfit.addEx(excit,dbg=verbose,addEnergies=energy)
         elif got_nex:
-            excit, nadd = fit.addEx(excit,dbg=verbose,nadd=nex)
+            excit, nadd = dfit.addEx(excit,dbg=verbose,nadd=nex)
         else:
-            excit, nadd = fit.addEx(excit,dbg=verbose,nsigma=nsig)
+            excit, nadd = dfit.addEx(excit,dbg=verbose,nsigma=nsig)
         if verbose>0: print("Added "+str(nadd))
         done=True
 
@@ -378,7 +378,6 @@ def main(argv):
         skipfirst = False
         signif    = False
         single    = False
-        fitrange  = conf.opt["Fit"].get("range",[0.0,0.4])
         nsig      = 2.
         nadd      = 0
         reset     = False
@@ -408,11 +407,6 @@ def main(argv):
                 if got_nsig: err.err(1,"Multiple nsig arguments!",cmd=cmd)
                 nsig = float(arg)
                 got_nsig = True
-            elif opt in ("--range"):
-                if got_range: err.err(1,"Multiple range arguments!",cmd=cmd)
-                fitrange = [float(x) for x in arg.split(",")]
-                got_range = True
-                if len(fitrange)!=2: err.err(1,"Fit range must contain 2 float values, e.g., '--range=0.1,0.4'",cmd=cmd)
             elif opt in ("--skipfirst"):
                 skipfirst = True
             elif opt in ("--reset"):
